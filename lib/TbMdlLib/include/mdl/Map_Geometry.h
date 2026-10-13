@@ -33,6 +33,7 @@
 
 namespace tb::mdl
 {
+class Brush;
 class Map;
 
 bool transformSelection(
@@ -76,6 +77,9 @@ bool csgConvexMerge(Map& map);
 bool csgSubtract(Map& map);
 bool csgIntersect(Map& map);
 bool csgHollow(Map& map);
+
+// Replaces exactly one selected brush, keeping its parent and selecting the pieces.
+bool replaceWithFracture(Map& map, std::vector<Brush> fragments);
 
 bool extrudeBrushes(
   Map& map, const std::vector<vm::polygon3d>& faces, const vm::vec3d& delta);

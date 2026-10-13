@@ -303,6 +303,8 @@ public:
 
   void csgHollow();
   bool canDoCsgHollow() const;
+  void fractureBrush();
+  bool canFractureBrush() const;
 
   void csgIntersect();
   bool canDoCsgIntersect() const;

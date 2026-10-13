@@ -3,6 +3,7 @@ add_library(TbUiLib STATIC)
 target_sources(TbUiLib
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AboutDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/FractureDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Action.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ActionBuilder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ActionContext.cpp

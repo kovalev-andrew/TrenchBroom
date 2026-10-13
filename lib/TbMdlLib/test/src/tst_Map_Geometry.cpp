@@ -21,6 +21,7 @@
 #include "Matchers.h"
 #include "mdl/BrushBuilder.h"
 #include "mdl/BrushFace.h"
+#include "mdl/BrushFracture.h"
 #include "mdl/BrushNode.h"
 #include "mdl/CatchConfig.h"
 #include "mdl/EditorContext.h"
@@ -38,6 +39,7 @@
 #include "mdl/Matchers.h"
 #include "mdl/NodeHandles.h"
 #include "mdl/ParallelUVCoordSystem.h"
+#include "mdl/PasteType.h"
 #include "mdl/TestFactory.h"
 #include "mdl/TestUtils.h"
 #include "mdl/WorldNode.h"
@@ -545,18 +547,19 @@ TEST_CASE("Map_Geometry")
 
       CHECK_THAT(
         brushNode->brush().vertexPositions(),
-        UnorderedEquals(std::vector<vm::vec3d>{
-          // bottom face
-          {100, 100, 100},
-          {200, 100, 100},
-          {200, 200, 100},
-          {100, 200, 100},
-          // top face
-          {100, 100, 200},
-          {200, 100, 200},
-          {200, 200, 200},
-          {100, 200, 200},
-        }));
+        UnorderedEquals(
+          std::vector<vm::vec3d>{
+            // bottom face
+            {100, 100, 100},
+            {200, 100, 100},
+            {200, 200, 100},
+            {100, 200, 100},
+            // top face
+            {100, 100, 200},
+            {200, 100, 200},
+            {200, 200, 200},
+            {100, 200, 200},
+          }));
 
       // Shear the -Y face by (50, 0, 0). That means the verts with Y=100 will get
       // sheared.
@@ -564,18 +567,19 @@ TEST_CASE("Map_Geometry")
 
       CHECK_THAT(
         brushNode->brush().vertexPositions(),
-        UnorderedEquals(std::vector<vm::vec3d>{
-          // bottom face
-          {150, 100, 100},
-          {250, 100, 100},
-          {200, 200, 100},
-          {100, 200, 100},
-          // top face
-          {150, 100, 200},
-          {250, 100, 200},
-          {200, 200, 200},
-          {100, 200, 200},
-        }));
+        UnorderedEquals(
+          std::vector<vm::vec3d>{
+            // bottom face
+            {150, 100, 100},
+            {250, 100, 100},
+            {200, 200, 100},
+            {100, 200, 100},
+            // top face
+            {150, 100, 200},
+            {250, 100, 200},
+            {200, 200, 200},
+            {100, 200, 200},
+          }));
     }
 
     SECTION("pillar")
@@ -590,18 +594,19 @@ TEST_CASE("Map_Geometry")
 
       CHECK_THAT(
         brushNode->brush().vertexPositions(),
-        UnorderedEquals(std::vector<vm::vec3d>{
-          // bottom face
-          {0, 0, 0},
-          {100, 0, 0},
-          {100, 100, 0},
-          {0, 100, 0},
-          // top face
-          {0, 0, 400},
-          {100, 0, 400},
-          {100, 100, 400},
-          {0, 100, 400},
-        }));
+        UnorderedEquals(
+          std::vector<vm::vec3d>{
+            // bottom face
+            {0, 0, 0},
+            {100, 0, 0},
+            {100, 100, 0},
+            {0, 100, 0},
+            // top face
+            {0, 0, 400},
+            {100, 0, 400},
+            {100, 100, 400},
+            {0, 100, 400},
+          }));
 
       // Shear the +Z face by (50, 0, 0). That means the verts with Z=400 will get
       // sheared.
@@ -609,18 +614,19 @@ TEST_CASE("Map_Geometry")
 
       CHECK_THAT(
         brushNode->brush().vertexPositions(),
-        UnorderedEquals(std::vector<vm::vec3d>{
-          // bottom face
-          {0, 0, 0},
-          {100, 0, 0},
-          {100, 100, 0},
-          {0, 100, 0},
-          // top face
-          {50, 0, 400},
-          {150, 0, 400},
-          {150, 100, 400},
-          {50, 100, 400},
-        }));
+        UnorderedEquals(
+          std::vector<vm::vec3d>{
+            // bottom face
+            {0, 0, 0},
+            {100, 0, 0},
+            {100, 100, 0},
+            {0, 100, 0},
+            // top face
+            {50, 0, 400},
+            {150, 0, 400},
+            {150, 100, 400},
+            {50, 100, 400},
+          }));
     }
   }
 
@@ -1362,6 +1368,54 @@ TEST_CASE("Map_Geometry")
             {-2840, 364, 248}},
           0.001));
     }
+  }
+
+  SECTION("replaceWithFracture")
+  {
+    const auto format = GENERATE(MapFormat::Standard, MapFormat::Valve);
+    auto& map = fixture.create({.mapFormat = format});
+    auto* original = createBrushNode(map);
+    auto* parent = map.editorContext().currentLayer();
+    REQUIRE(addNodes(map, {{parent, {original}}}).size() == 1);
+    selectNodes(map, {original});
+    const auto before = serializeSelectedNodes(map);
+    const auto childCount = parent->childCount();
+    const auto fragments = fractureBrush(
+      original->brush(), map.worldBounds(), format, BrushFaceAttributes{"inside"}, 8, 17);
+    REQUIRE(fragments);
+    REQUIRE(replaceWithFracture(map, fragments.value()));
+    REQUIRE(map.selection().brushes.size() == 8);
+    CHECK(parent->childCount() == childCount + 7);
+    for (const auto* node : map.selection().brushes)
+    {
+      CHECK(node->parent() == parent);
+    }
+    const auto after = serializeSelectedNodes(map);
+    map.undoCommand();
+    CHECK(parent->childCount() == childCount);
+    CHECK(serializeSelectedNodes(map) == before);
+    map.redoCommand();
+    CHECK(serializeSelectedNodes(map) == after);
+
+    // Exercise the real map writer/parser, not a bespoke serialization format.
+    auto otherFixture = MapFixture{};
+    auto& other = otherFixture.create({.mapFormat = format});
+    REQUIRE(paste(other, after) == PasteType::Node);
+    REQUIRE(other.selection().brushes.size() == 8);
+    CHECK(serializeSelectedNodes(other) == after);
+  }
+
+  SECTION("replaceWithFracture rejects invalid selection without edits")
+  {
+    auto& map = fixture.create();
+    CHECK_FALSE(replaceWithFracture(map, {}));
+    auto* original = createBrushNode(map);
+    REQUIRE(
+      addNodes(map, {{map.editorContext().currentLayer(), {original}}}).size() == 1);
+    selectNodes(map, {original});
+    const auto before = serializeSelectedNodes(map);
+    CHECK_FALSE(replaceWithFracture(map, {original->brush()}));
+    CHECK(serializeSelectedNodes(map) == before);
   }
 
   SECTION("csgHollow")

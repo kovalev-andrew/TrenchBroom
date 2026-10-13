@@ -1,0 +1,58 @@
+name: Fracture Windows build and tests
+
+on:
+  push:
+    branches: [codex/voronoi-fracture]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.10.*
+          cache: true
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install Pandoc
+        run: choco install pandoc --yes --no-progress
+      - name: Cache dependency builds
+        uses: actions/cache@v4
+        with:
+          path: ~/AppData/Local/vcpkg/archives
+          key: fracture-vcpkg-windows-${{ hashFiles('vcpkg.json', '.gitmodules') }}
+      - name: Configure
+        shell: pwsh
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          -DTB_ENABLE_PCH=1
+      - name: Build editor and model tests
+        run: cmake --build build --target TrenchBroom TbMdlLibTest --parallel 4
+      - name: Geometry and map integration tests
+        working-directory: build/lib/TbMdlLib/test
+        run: ./TbMdlLibTest.exe "BrushFracture,Map_Geometry"
+      - name: Package portable editor
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem build -Filter TrenchBroom.exe -Recurse | Select-Object -First 1
+          if (-not $exe) { throw 'Editor executable missing' }
+          $dir = $exe.Directory.FullName
+          windeployqt --release --no-translations $exe.FullName
+          if ($LASTEXITCODE -ne 0) { throw 'Qt deployment failed' }
+          Copy-Item LICENSE.txt "$dir/LICENSE.txt"
+          Compress-Archive -Path "$dir/*" -DestinationPath TrenchBroom-Fracture-Windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TrenchBroom-Fracture-Windows
+          path: TrenchBroom-Fracture-Windows.zip
+          retention-days: 14

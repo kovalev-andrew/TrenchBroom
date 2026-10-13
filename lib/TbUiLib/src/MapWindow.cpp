@@ -88,6 +88,7 @@
 #include "ui/EdgeTool.h"
 #include "ui/FaceInspector.h"
 #include "ui/FaceTool.h"
+#include "ui/FractureDialog.h"
 #include "ui/InfoPanel.h"
 #include "ui/Inspector.h"
 #include "ui/LaunchGameEngineDialog.h"
@@ -294,8 +295,8 @@ QAction* MapWindow::findAction(const std::filesystem::path& path)
   if (const auto iAction = actionsMap.find(path); iAction != std::end(actionsMap))
   {
     const auto& action = iAction->second;
-    if (const auto iQAction = m_actionMap.find(&action);
-        iQAction != std::end(m_actionMap))
+    if (
+      const auto iQAction = m_actionMap.find(&action); iQAction != std::end(m_actionMap))
     {
       return iQAction->second;
     }
@@ -673,10 +674,10 @@ QString describeSelection(const mdl::Map& map)
   // now, turn `tokens` into a comma-separated string
   if (!tokens.empty())
   {
-    pipeSeparatedSections << QObject::tr("%1%2 selected")
-                               .arg(QString::fromStdString(
-                                 kdl::str_join(tokens, ", ", ", and ", " and ")))
-                               .arg(layersDescription);
+    pipeSeparatedSections
+      << QObject::tr("%1%2 selected")
+           .arg(QString::fromStdString(kdl::str_join(tokens, ", ", ", and ", " and ")))
+           .arg(layersDescription);
   }
 
   // count hidden objects
@@ -685,39 +686,40 @@ QString describeSelection(const mdl::Map& map)
   size_t hiddenBrushes = 0u;
   size_t hiddenPatches = 0u;
 
-  map.worldNode().accept(kdl::overload(
-    [](auto&& thisLambda, const mdl::WorldNode& worldNode) {
-      worldNode.visitChildren(thisLambda);
-    },
-    [](auto&& thisLambda, const mdl::LayerNode& layerNode) {
-      layerNode.visitChildren(thisLambda);
-    },
-    [&](auto&& thisLambda, const mdl::GroupNode& groupNode) {
-      if (!editorContext.visible(groupNode))
-      {
-        ++hiddenGroups;
-      }
-      groupNode.visitChildren(thisLambda);
-    },
-    [&](auto&& thisLambda, const mdl::EntityNode& entityNode) {
-      if (!editorContext.visible(entityNode))
-      {
-        ++hiddenEntities;
-      }
-      entityNode.visitChildren(thisLambda);
-    },
-    [&](const mdl::BrushNode& brushNode) {
-      if (!editorContext.visible(brushNode))
-      {
-        ++hiddenBrushes;
-      }
-    },
-    [&](const mdl::PatchNode& patchNode) {
-      if (!editorContext.visible(patchNode))
-      {
-        ++hiddenPatches;
-      }
-    }));
+  map.worldNode().accept(
+    kdl::overload(
+      [](auto&& thisLambda, const mdl::WorldNode& worldNode) {
+        worldNode.visitChildren(thisLambda);
+      },
+      [](auto&& thisLambda, const mdl::LayerNode& layerNode) {
+        layerNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::GroupNode& groupNode) {
+        if (!editorContext.visible(groupNode))
+        {
+          ++hiddenGroups;
+        }
+        groupNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::EntityNode& entityNode) {
+        if (!editorContext.visible(entityNode))
+        {
+          ++hiddenEntities;
+        }
+        entityNode.visitChildren(thisLambda);
+      },
+      [&](const mdl::BrushNode& brushNode) {
+        if (!editorContext.visible(brushNode))
+        {
+          ++hiddenBrushes;
+        }
+      },
+      [&](const mdl::PatchNode& patchNode) {
+        if (!editorContext.visible(patchNode))
+        {
+          ++hiddenPatches;
+        }
+      }));
 
   // print hidden objects
   if (hiddenGroups > 0 || hiddenEntities > 0 || hiddenBrushes > 0)
@@ -742,8 +744,10 @@ QString describeSelection(const mdl::Map& map)
     }
 
     pipeSeparatedSections << QObject::tr("%1 hidden")
-                               .arg(QString::fromStdString(kdl::str_join(
-                                 hiddenDescriptors, ", ", ", and ", " and ")));
+                               .arg(
+                                 QString::fromStdString(
+                                   kdl::str_join(
+                                     hiddenDescriptors, ", ", ", and ", " and ")));
   }
 
   return QString::fromLatin1("   ")
@@ -1111,9 +1115,10 @@ bool MapWindow::exportDocument(const mdl::ExportOptions& options)
     QMessageBox::critical(
       this,
       "",
-      tr("You can't overwrite the current document.\nPlease choose a different file name "
-         "to export "
-         "to."));
+      tr(
+        "You can't overwrite the current document.\nPlease choose a different file name "
+        "to export "
+        "to."));
     return false;
   }
 
@@ -1815,6 +1820,34 @@ bool MapWindow::canDoCsgHollow() const
   return selection.hasOnlyBrushes() && !selection.brushes.empty();
 }
 
+void MapWindow::fractureBrush()
+{
+  if (!canFractureBrush())
+  {
+    return;
+  }
+  auto& map = m_document->map();
+  auto dialog = FractureDialog{
+    map.selection().brushes.front()->brush(),
+    map.worldBounds(),
+    map.worldNode().mapFormat(),
+    map.currentMaterialName(),
+    this};
+  if (
+    dialog.exec() == QDialog::Accepted
+    && !mdl::replaceWithFracture(map, dialog.takeFragments()))
+  {
+    QMessageBox::warning(this, tr("Fracture Brush"), tr("Could not replace the brush."));
+  }
+}
+
+bool MapWindow::canFractureBrush() const
+{
+  const auto& selection = m_document->map().selection();
+  return selection.hasOnlyBrushes() && selection.brushes.size() == 1
+         && !m_mapView->toolBox().anyModalToolActive();
+}
+
 void MapWindow::csgIntersect()
 {
   if (canDoCsgIntersect())
@@ -2136,12 +2169,13 @@ const mdl::CompilationProfile* MapWindow::lastCompilationProfile() const
     const auto& compilationProfiles =
       m_document->map().gameInfo().compilationConfig.profiles;
 
-    if (const auto iLastCompilationProfile = std::ranges::find_if(
-          compilationProfiles,
-          [&](const auto& profile) {
-            return profile.name == *m_lastCompilationProfileName;
-          });
-        iLastCompilationProfile != compilationProfiles.end())
+    if (
+      const auto iLastCompilationProfile = std::ranges::find_if(
+        compilationProfiles,
+        [&](const auto& profile) {
+          return profile.name == *m_lastCompilationProfileName;
+        });
+      iLastCompilationProfile != compilationProfiles.end())
     {
       return &*iLastCompilationProfile;
     }
