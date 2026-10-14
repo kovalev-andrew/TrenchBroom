@@ -1,8 +1,8 @@
-name: Fracture Windows build and tests
+name: reyondboom Windows build and tests
 
 on:
   push:
-    branches: [codex/voronoi-fracture]
+    branches: [reyondboom]
   workflow_dispatch:
 
 permissions:
@@ -57,9 +57,9 @@ jobs:
           $bulletLicense = Get-ChildItem build -Filter copyright -Recurse | Where-Object { $_.FullName -match 'share[\\/]bullet3[\\/]copyright$' } | Select-Object -First 1
           if (-not $bulletLicense) { throw 'Bullet license missing' }
           Copy-Item $bulletLicense.FullName "$dir/Bullet-LICENSE.txt"
-          Compress-Archive -Path "$dir/*" -DestinationPath TrenchBroom-Fracture-Windows.zip
+          Compress-Archive -Path "$dir/*" -DestinationPath reyondboom-Windows.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: TrenchBroom-Fracture-Windows
-          path: TrenchBroom-Fracture-Windows.zip
+          name: reyondboom-Windows
+          path: reyondboom-Windows.zip
           retention-days: 14

@@ -1,4 +1,6 @@
-# Settle Brushes
+# reyondboom — Settle Brushes
+
+**English (primary)** · [Русский](SETTLE.ru.md) · [Overview](README.md)
 
 Select 1–128 brushes, then choose **Edit → CSG → Settle…**. This native tool is
 included alongside Fracture in this branch, based on TrenchBroom v2026.2.

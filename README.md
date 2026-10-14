@@ -1,4 +1,33 @@
-# TrenchBroom
+# reyondboom
+
+**English (primary)** · [Русский](README.ru.md)
+
+reyondboom is a TrenchBroom v2026.2-based toolset for creating and placing brush rubble.
+Development happens on the [`reyondboom` branch](https://github.com/reyond9079/TrenchBroom/tree/reyondboom).
+
+- **[Fracture](FRACTURE.md)** splits one brush into 2–128 convex Voronoi fragments,
+  with a seed, cut material, wireframe preview and a single Undo operation.
+- **[Settle](SETTLE.md)** simulates gravity and collisions for 1–128 selected brushes,
+  with friction, bounce, an initial kick, Pause/Resume and undoable placement.
+
+## Quick start
+
+Download the `reyondboom-Windows` artifact from a successful
+[Windows build](https://github.com/reyond9079/TrenchBroom/actions/workflows/fracture.yml?query=branch%3Areyondboom).
+Extract the artifact and its enclosed `reyondboom-Windows.zip` into a separate folder,
+then run `TrenchBroom.exe`. The executable retains the upstream editor name.
+
+Select a brush → **Edit → CSG → Fracture…** → **Apply**. Keep the fragments selected,
+then choose **Edit → CSG → Settle…** → **Simulate / Restart** → **Apply**.
+Create an unselected floor brush first; Settle does not add an automatic floor.
+
+English documentation is authoritative and maintained first. Russian translations
+are maintained alongside it. All source-code comments must be in English.
+See [AGENTS.md](AGENTS.md) for contributor conventions and [BUILD.md](BUILD.md) for
+build prerequisites. Fracture and Settle remain experimental; validate generated
+geometry with your game's BSP compiler. The upstream GPL license is preserved.
+
+## Upstream TrenchBroom
 
 [![TrenchBroom Icon](app/TrenchBroom/resources/graphics/images/AppIcon.png)](https://www.youtube.com/watch?v=shcAvnYp9ow)
 

@@ -1,4 +1,6 @@
-# Voronoi brush fracture
+# reyondboom — Voronoi brush fracture
+
+**English (primary)** · [Русский](FRACTURE.ru.md) · [Overview](README.md)
 
 This experimental branch is based on TrenchBroom **v2026.2**.
 

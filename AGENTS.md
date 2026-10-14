@@ -37,6 +37,14 @@
 - Prefer one section per member function.
 - For free functions, prefer one test case per file and one section per function.
 
+## Documentation and language
+- The toolset and development branch are named `reyondboom`.
+- Maintain English documentation first; English is the authoritative version.
+- Keep Russian translations in matching `*.ru.md` files and update them with the English originals.
+- Link English first and Russian second from documentation entry points.
+- Write all source-code comments and developer-facing identifiers in English.
+- Preserve upstream attribution, licensing and existing third-party notices.
+
 ## Code style
 - Format changes with clang-format. The repository style is defined in /.clang-format.
 - Respect the existing include ordering rules from /.clang-format. In particular, Qt headers must come first.
