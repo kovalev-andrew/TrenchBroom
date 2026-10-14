@@ -303,6 +303,9 @@ public:
 
   void csgHollow();
   bool canDoCsgHollow() const;
+  void settleBrushes();
+  bool canSettleBrushes() const;
+
   void fractureBrush();
   bool canFractureBrush() const;
 

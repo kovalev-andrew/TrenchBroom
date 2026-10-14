@@ -81,6 +81,9 @@ bool csgHollow(Map& map);
 // Replaces exactly one selected brush, keeping its parent and selecting the pieces.
 bool replaceWithFracture(Map& map, std::vector<Brush> fragments);
 
+// Updates brushes in selection order without replacing nodes or their metadata.
+bool applySettledBrushes(Map& map, std::vector<Brush> brushes);
+
 bool extrudeBrushes(
   Map& map, const std::vector<vm::polygon3d>& faces, const vm::vec3d& delta);
 

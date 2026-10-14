@@ -89,6 +89,7 @@
 #include "ui/FaceInspector.h"
 #include "ui/FaceTool.h"
 #include "ui/FractureDialog.h"
+#include "ui/SettleDialog.h"
 #include "ui/InfoPanel.h"
 #include "ui/Inspector.h"
 #include "ui/LaunchGameEngineDialog.h"
@@ -1814,6 +1815,66 @@ bool MapWindow::canDoCsgHollow() const
   const auto& map = m_document->map();
   const auto& selection = map.selection();
   return selection.hasOnlyBrushes() && !selection.brushes.empty();
+}
+
+void MapWindow::settleBrushes()
+{
+  if (!canSettleBrushes())
+  {
+    return;
+  }
+  auto& map = m_document->map();
+  const auto& selected = map.selection().brushes;
+  auto source = std::vector<mdl::Brush>{};
+  for (const auto* node : selected)
+  {
+    source.push_back(node->brush());
+  }
+  auto obstacles = std::vector<mdl::Brush>{};
+  const auto collect = [&](auto&& self, mdl::Node& node) -> void {
+    if (auto* brush = dynamic_cast<mdl::BrushNode*>(&node))
+    {
+      if (
+        map.editorContext().visible(*brush)
+        && std::find(selected.begin(), selected.end(), brush) == selected.end())
+      {
+        obstacles.push_back(brush->brush());
+      }
+      return;
+    }
+    for (auto* child : node.children())
+    {
+      self(self, *child);
+    }
+  };
+  collect(collect, map.worldNode());
+  if (obstacles.size() > mdl::BrushSettleSimulation::MaxObstacles)
+  {
+    QMessageBox::warning(
+      this,
+      tr("Settle Brushes"),
+      tr(
+        "Too many visible obstacle brushes (maximum 4096). Hide unrelated layers before "
+        "using Settle."));
+    return;
+  }
+  auto dialog =
+    SettleDialog{std::move(source), std::move(obstacles), map.worldBounds(), this};
+  if (
+    dialog.exec() == QDialog::Accepted
+    && !mdl::applySettledBrushes(map, dialog.takeBrushes()))
+  {
+    QMessageBox::warning(
+      this, tr("Settle Brushes"), tr("Could not apply the settled brushes."));
+  }
+}
+
+bool MapWindow::canSettleBrushes() const
+{
+  const auto& selection = m_document->map().selection();
+  return selection.hasOnlyBrushes() && !selection.brushes.empty()
+         && selection.brushes.size() <= mdl::BrushSettleSimulation::MaxBodies
+         && !m_mapView->toolBox().anyModalToolActive();
 }
 
 void MapWindow::fractureBrush()

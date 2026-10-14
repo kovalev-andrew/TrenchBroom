@@ -829,6 +829,29 @@ bool replaceWithFracture(Map& map, std::vector<Brush> fragments)
   return transaction.commit();
 }
 
+bool applySettledBrushes(Map& map, std::vector<Brush> brushes)
+{
+  const auto& selection = map.selection();
+  if (
+    !selection.hasOnlyBrushes() || brushes.empty()
+    || selection.brushes.size() != brushes.size())
+  {
+    return false;
+  }
+  auto changes = std::vector<std::pair<Node*, NodeContents>>{};
+  for (size_t i = 0; i < brushes.size(); ++i)
+  {
+    if (
+      !brushes[i].closed() || !brushes[i].fullySpecified()
+      || !map.worldBounds().contains(brushes[i].bounds()))
+    {
+      return false;
+    }
+    changes.emplace_back(selection.brushes[i], NodeContents{std::move(brushes[i])});
+  }
+  return updateNodeContents(map, "Settle Brushes", std::move(changes));
+}
+
 bool csgHollow(Map& map)
 {
   const auto brushNodes = map.selection().brushes;

@@ -1141,6 +1141,17 @@ void ActionManager::createEditMenu()
   auto& csgMenu = editMenu.addMenu("CSG");
   csgMenu.addItem(addAction(
     Action{
+      "Menu/Edit/CSG/Settle",
+      QObject::tr("Settle..."),
+      ActionContext::Any,
+      QKeySequence{},
+      [](auto& context) { context.mapWindow().settleBrushes(); },
+      [](const auto& context) {
+        return context.hasDocument() && context.mapWindow().canSettleBrushes();
+      },
+    }));
+  csgMenu.addItem(addAction(
+    Action{
       "Menu/Edit/CSG/Fracture",
       QObject::tr("Fracture..."),
       ActionContext::Any,

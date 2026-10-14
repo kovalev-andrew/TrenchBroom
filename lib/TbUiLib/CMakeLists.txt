@@ -88,6 +88,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FaceInspector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FaceTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FractureDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SettleDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FaceToolController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FileDialogDefaultDir.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FileEventFilter.cpp

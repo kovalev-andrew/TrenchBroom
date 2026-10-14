@@ -15,6 +15,7 @@ target_sources(TbMdlLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushFaceReader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushFaceReference.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushFracture.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushSettle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushNode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushRendererBrushCache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CircleShape.cpp
@@ -207,10 +208,13 @@ target_sources(TbMdlLib
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+target_include_directories(TbMdlLib SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS})
+
 target_link_libraries(TbMdlLib
   PRIVATE
     CompilerConfig
     PrecompileStdHeaders
+    ${BULLET_LIBRARIES}
     assimp::assimp
     freeimage::FreeImage
     miniz::miniz

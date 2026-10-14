@@ -1366,6 +1366,46 @@ TEST_CASE("Map_Geometry")
     }
   }
 
+  SECTION(
+    "applySettledBrushes preserves nodes, selection and supports undo and serialization")
+  {
+    const auto format = GENERATE(MapFormat::Standard, MapFormat::Valve);
+    auto& map = fixture.create({.mapFormat = format});
+    auto* first = createBrushNode(map);
+    auto* second = createBrushNode(map);
+    auto* parent = map.editorContext().currentLayer();
+    REQUIRE(addNodes(map, {{parent, {first, second}}}).size() == 2);
+    selectNodes(map, {first, second});
+    const auto before = serializeSelectedNodes(map);
+    const auto selected = map.selection().brushes;
+    auto settled = std::vector<Brush>{};
+    for (size_t i = 0; i < selected.size(); ++i)
+    {
+      auto brush = selected[i]->brush();
+      REQUIRE(brush.transform(
+        map.worldBounds(),
+        vm::translation_matrix(vm::vec3d{double(i) * 64, 0, -64}),
+        true));
+      settled.push_back(std::move(brush));
+    }
+    CHECK_FALSE(applySettledBrushes(map, {}));
+    CHECK(serializeSelectedNodes(map) == before);
+    REQUIRE(applySettledBrushes(map, settled));
+    CHECK(map.selection().brushes == selected);
+    CHECK(first->parent() == parent);
+    CHECK(second->parent() == parent);
+    const auto after = serializeSelectedNodes(map);
+    CHECK(after != before);
+    map.undoCommand();
+    CHECK(serializeSelectedNodes(map) == before);
+    map.redoCommand();
+    CHECK(serializeSelectedNodes(map) == after);
+    auto otherFixture = MapFixture{};
+    auto& other = otherFixture.create({.mapFormat = format});
+    REQUIRE(paste(other, after) == PasteType::Node);
+    CHECK(serializeSelectedNodes(other) == after);
+  }
+
   SECTION("replaceWithFracture")
   {
     const auto format = GENERATE(MapFormat::Standard, MapFormat::Valve);
