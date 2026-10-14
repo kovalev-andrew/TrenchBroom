@@ -116,6 +116,9 @@ FractureDialog::FractureDialog(
 {
   setWindowTitle(tr("Fracture Brush (Voronoi)"));
   resize(560, 620);
+  m_count->setObjectName("fragmentCount");
+  m_seed->setObjectName("fractureSeed");
+  m_material->setObjectName("cutMaterial");
   m_count->setRange(2, int(mdl::MaxFractureFragments));
   m_count->setValue(12);
   m_seed->setRange(0, std::numeric_limits<int>::max());
@@ -125,7 +128,9 @@ FractureDialog::FractureDialog(
   form->addRow(tr("Seed"), m_seed);
   form->addRow(tr("Cut material"), m_material);
   auto* generate = new QPushButton{tr("Generate Preview"), this};
+  generate->setObjectName("generatePreview");
   auto* nextSeed = new QPushButton{tr("Another Variant"), this};
+  nextSeed->setObjectName("anotherVariant");
   auto* previewButtons = new QHBoxLayout{};
   previewButtons->addWidget(generate);
   previewButtons->addWidget(nextSeed);

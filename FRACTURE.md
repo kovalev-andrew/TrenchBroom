@@ -45,6 +45,14 @@ Voronoi nearest-site inequalities, seeded reproducibility, Standard/Valve format
 exterior UV retention, invalid sites, a rotated thin brush far from the origin,
 replacement, Undo/Redo, and map serialization/parsing.
 
+`TbUiLibTest "FractureDialog"` checks preview invalidation, material validation,
+seed regeneration, applying exactly the generated geometry, and cancellation.
+
+TrenchBroom corrects coordinates within 0.001 map units of an integer. The runtime
+plane-distance tolerance accounts for that three-dimensional displacement, and
+the volume tolerance scales with the source surface area. Results are numerical
+brush geometry, not exact symbolic solids.
+
 The branch also contains a Windows workflow that builds the editor and model
 tests, runs these tests, and packages the editor as a downloadable Actions artifact.
 See BUILD.md for the normal local build prerequisites.

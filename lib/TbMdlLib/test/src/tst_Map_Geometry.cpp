@@ -547,19 +547,18 @@ TEST_CASE("Map_Geometry")
 
       CHECK_THAT(
         brushNode->brush().vertexPositions(),
-        UnorderedEquals(
-          std::vector<vm::vec3d>{
-            // bottom face
-            {100, 100, 100},
-            {200, 100, 100},
-            {200, 200, 100},
-            {100, 200, 100},
-            // top face
-            {100, 100, 200},
-            {200, 100, 200},
-            {200, 200, 200},
-            {100, 200, 200},
-          }));
+        UnorderedEquals(std::vector<vm::vec3d>{
+          // bottom face
+          {100, 100, 100},
+          {200, 100, 100},
+          {200, 200, 100},
+          {100, 200, 100},
+          // top face
+          {100, 100, 200},
+          {200, 100, 200},
+          {200, 200, 200},
+          {100, 200, 200},
+        }));
 
       // Shear the -Y face by (50, 0, 0). That means the verts with Y=100 will get
       // sheared.
@@ -567,19 +566,18 @@ TEST_CASE("Map_Geometry")
 
       CHECK_THAT(
         brushNode->brush().vertexPositions(),
-        UnorderedEquals(
-          std::vector<vm::vec3d>{
-            // bottom face
-            {150, 100, 100},
-            {250, 100, 100},
-            {200, 200, 100},
-            {100, 200, 100},
-            // top face
-            {150, 100, 200},
-            {250, 100, 200},
-            {200, 200, 200},
-            {100, 200, 200},
-          }));
+        UnorderedEquals(std::vector<vm::vec3d>{
+          // bottom face
+          {150, 100, 100},
+          {250, 100, 100},
+          {200, 200, 100},
+          {100, 200, 100},
+          // top face
+          {150, 100, 200},
+          {250, 100, 200},
+          {200, 200, 200},
+          {100, 200, 200},
+        }));
     }
 
     SECTION("pillar")
@@ -594,19 +592,18 @@ TEST_CASE("Map_Geometry")
 
       CHECK_THAT(
         brushNode->brush().vertexPositions(),
-        UnorderedEquals(
-          std::vector<vm::vec3d>{
-            // bottom face
-            {0, 0, 0},
-            {100, 0, 0},
-            {100, 100, 0},
-            {0, 100, 0},
-            // top face
-            {0, 0, 400},
-            {100, 0, 400},
-            {100, 100, 400},
-            {0, 100, 400},
-          }));
+        UnorderedEquals(std::vector<vm::vec3d>{
+          // bottom face
+          {0, 0, 0},
+          {100, 0, 0},
+          {100, 100, 0},
+          {0, 100, 0},
+          // top face
+          {0, 0, 400},
+          {100, 0, 400},
+          {100, 100, 400},
+          {0, 100, 400},
+        }));
 
       // Shear the +Z face by (50, 0, 0). That means the verts with Z=400 will get
       // sheared.
@@ -614,19 +611,18 @@ TEST_CASE("Map_Geometry")
 
       CHECK_THAT(
         brushNode->brush().vertexPositions(),
-        UnorderedEquals(
-          std::vector<vm::vec3d>{
-            // bottom face
-            {0, 0, 0},
-            {100, 0, 0},
-            {100, 100, 0},
-            {0, 100, 0},
-            // top face
-            {50, 0, 400},
-            {150, 0, 400},
-            {150, 100, 400},
-            {50, 100, 400},
-          }));
+        UnorderedEquals(std::vector<vm::vec3d>{
+          // bottom face
+          {0, 0, 0},
+          {100, 0, 0},
+          {100, 100, 0},
+          {0, 100, 0},
+          // top face
+          {50, 0, 400},
+          {150, 0, 400},
+          {150, 100, 400},
+          {50, 100, 400},
+        }));
     }
   }
 

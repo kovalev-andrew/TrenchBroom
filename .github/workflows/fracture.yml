@@ -37,10 +37,13 @@ jobs:
           -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
           -DTB_ENABLE_PCH=1
       - name: Build editor and model tests
-        run: cmake --build build --target TrenchBroom TbMdlLibTest --parallel 4
+        run: cmake --build build --target TrenchBroom TbMdlLibTest TbUiLibTest --parallel 4
       - name: Geometry and map integration tests
         working-directory: build/lib/TbMdlLib/test
         run: ./TbMdlLibTest.exe "BrushFracture,Map_Geometry"
+      - name: Preview dialog tests
+        working-directory: build/lib/TbUiLib/test
+        run: ./TbUiLibTest.exe "FractureDialog"
       - name: Package portable editor
         shell: pwsh
         run: |
