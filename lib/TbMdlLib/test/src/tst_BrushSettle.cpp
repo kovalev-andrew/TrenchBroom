@@ -3,6 +3,7 @@
  SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "mdl/BrushBuilder.h"
+#include "mdl/BezierPatch.h"
 #include "mdl/BrushFace.h"
 #include "mdl/BrushFracture.h"
 #include "mdl/BrushSettle.h"
@@ -61,6 +62,39 @@ TEST_CASE("BrushSettle")
     REQUIRE(result);
     CHECK(result.value().front().bounds().min.z() >= -0.25);
     CHECK(result.value().front().bounds().min.z() < 0.25);
+  }
+
+  SECTION("Curved Bezier patch surfaces catch falling brushes")
+  {
+    auto controls = std::vector<BezierPatch::Point>{};
+    for (const double y : {-1.0, 0.0, 1.0})
+      for (const double x : {-1.0, 0.0, 1.0})
+        controls.push_back({x * 256, y * 256, 32 * (x * x + y * y), 0, 0});
+    const auto patch = BezierPatch{3, 3, controls, "stone"};
+    const auto points = patch.evaluate(3);
+    REQUIRE(points.size() == 81);
+    auto triangles = std::vector<SettleTriangle>{};
+    for (size_t row = 0; row < 8; ++row)
+      for (size_t col = 0; col < 8; ++col)
+      {
+        const auto a = points[row * 9 + col].xyz();
+        const auto b = points[row * 9 + col + 1].xyz();
+        const auto c = points[(row + 1) * 9 + col + 1].xyz();
+        const auto d = points[(row + 1) * 9 + col].xyz();
+        triangles.push_back({a, b, c});
+        triangles.push_back({c, d, a});
+      }
+    auto created = BrushSettleSimulation::create({cube}, {}, bounds, options, triangles);
+    REQUIRE(created);
+    auto sim = std::move(created).value();
+    for (int i = 0; i < 1201 && !sim->finished(); ++i)
+      sim->step();
+    REQUIRE(sim->finished());
+    REQUIRE(sim->sleeping());
+    const auto result = sim->result();
+    REQUIRE(result);
+    CHECK(result.value().front().bounds().min.z() > 31.75);
+    CHECK(result.value().front().bounds().min.z() < 35);
   }
 
   SECTION("Falls onto an existing floor and sleeps")

@@ -21,7 +21,11 @@ namespace
 double volume(const Brush& b)
 {
   double result = 0;
-  const auto center = b.bounds().center();
+  // A bounding-box center can lie outside a thin, rotated convex brush.
+  auto center = vm::vec3d{};
+  for (const auto& vertex : b.vertexPositions())
+    center = center + vertex;
+  center = center / double(b.vertexCount());
   for (const auto& f : b.faces())
   {
     const auto p = f.vertexPositions();
@@ -162,6 +166,7 @@ Result<Perforation> perforateBrush(
   for (const auto& hole : holes)
   {
     auto faces = source.faces();
+    auto contourPlanes = std::vector<vm::plane3d>{};
     for (size_t i = 0; i < hole.points.size(); ++i)
     {
       const auto a = hole.points[i] + hole.center;
@@ -171,6 +176,7 @@ Result<Perforation> perforateBrush(
       auto side = BrushFace::create(p, p + normal * 64.0, q, face.attributes(), format);
       if (!side)
         return Error{"Could not construct a hole side."};
+      contourPlanes.push_back(side.value().boundary());
       faces.push_back(std::move(side).value());
     }
     auto plug = Brush::create(worldBounds, std::move(faces));
@@ -179,11 +185,10 @@ Result<Perforation> perforateBrush(
         "A hole produced invalid or too small geometry. Try another seed or larger "
         "sizes."};
     // Confirm no requested contour edge was lost to geometric healing.
-    size_t sideCount = 0;
-    for (const auto& f : plug.value().faces())
-      if (std::abs(vm::dot(f.boundary().normal, normal)) < 1e-6)
-        ++sideCount;
-    if (sideCount != options.sides)
+    // Match the constructed planes: point correction can slightly rotate a plane.
+    if (!std::ranges::all_of(contourPlanes, [&](const auto& plane) {
+          return plug.value().findFace(plane).has_value();
+        }))
       return Error{
         "A hole lost contour sides. Increase its size or reduce the side count."};
     result.plugs.push_back(std::move(plug).value());

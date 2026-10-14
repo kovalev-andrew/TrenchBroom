@@ -6,6 +6,7 @@
 #include "mdl/BrushFace.h"
 #include "mdl/BrushPerforate.h"
 #include "mdl/MapFormat.h"
+#include "vm/mat_ext.h"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
@@ -82,6 +83,23 @@ TEST_CASE("BrushPerforate")
       CHECK(plug.bounds().min.x() == -128);
       CHECK(plug.bounds().max.x() == 128);
     }
+  }
+  SECTION("Thin rotated brushes have an interior volume reference point")
+  {
+    auto rotated = BrushBuilder{format, bounds}
+                     .createCuboid(vm::bbox3d{{-512, -512, -16}, {512, 512, 16}}, "stone")
+                     .value();
+    const auto transform = vm::rotation_matrix(vm::normalize(vm::vec3d{1, 1, 1}), 0.43);
+    REQUIRE(rotated.transform(bounds, transform, true));
+    const auto direction = transform * vm::vec3d{0, 0, 1};
+    const auto selectedFace = rotated.findFace(direction);
+    REQUIRE(selectedFace);
+    options = {8, 9, 24, 48, 4, 42};
+    const auto result = perforateBrush(rotated, *selectedFace, bounds, format, options);
+    if (!result)
+      result.if_error([](const auto& error) { FAIL(error.msg); });
+    REQUIRE(result);
+    CHECK(result.value().plugs.size() == 8);
   }
 }
 } // namespace tb::mdl
