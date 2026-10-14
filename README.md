@@ -4,9 +4,11 @@ A custom modification of Trenchbroom.
 
 **English (primary)** · [Russian](README.ru.md)
 
-reyondboom is a TrenchBroom v2026.2-based toolset for creating and placing brush rubble.
-Development happens on the [`reyondboom` branch](https://github.com/reyond9079/TrenchBroom/tree/reyondboom).
+ReyondBroom is a TrenchBroom v2026.2-based toolset for creating and placing brush rubble.
+Development happens on the [`ReyondBroom` branch](https://github.com/reyond9079/TrenchBroom/tree/ReyondBroom).
 
+- **[Perforate](PERFORATE.md)** creates random polygonal through-holes, with exact
+  counts, side counts, size ranges, spacing and optional selected `func_wall` plugs.
 - **[Fracture](FRACTURE.md)** splits one brush into 2–128 convex Voronoi fragments,
   with a seed, cut material, wireframe preview and a single Undo operation.
 - **[Settle](SETTLE.md)** simulates gravity and collisions for 1–128 selected brushes,
@@ -14,9 +16,9 @@ Development happens on the [`reyondboom` branch](https://github.com/reyond9079/T
 
 ## Quick start
 
-Download the `reyondboom-Windows` artifact from a successful
-[Windows build](https://github.com/reyond9079/TrenchBroom/actions/workflows/fracture.yml?query=branch%3Areyondboom).
-Extract the artifact and its enclosed `reyondboom-Windows.zip` into a separate folder,
+Download the `ReyondBroom-Windows` artifact from a successful
+[Windows build](https://github.com/reyond9079/TrenchBroom/actions/workflows/fracture.yml?query=branch%3AReyondBroom).
+Extract the artifact and its enclosed `ReyondBroom-Windows.zip` into a separate folder,
 then run `TrenchBroom.exe`. The executable retains the upstream editor name.
 
 Select a brush → **Edit → CSG → Fracture…** → **Apply**. Keep the fragments selected,

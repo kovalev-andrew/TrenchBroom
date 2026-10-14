@@ -1141,6 +1141,17 @@ void ActionManager::createEditMenu()
   auto& csgMenu = editMenu.addMenu("CSG");
   csgMenu.addItem(addAction(
     Action{
+      "Menu/Edit/CSG/Perforate",
+      QObject::tr("Perforate..."),
+      ActionContext::Any,
+      QKeySequence{},
+      [](auto& context) { context.mapWindow().perforateBrush(); },
+      [](const auto& context) {
+        return context.hasDocument() && context.mapWindow().canPerforateBrush();
+      },
+    }));
+  csgMenu.addItem(addAction(
+    Action{
       "Menu/Edit/CSG/Settle",
       QObject::tr("Settle..."),
       ActionContext::Any,

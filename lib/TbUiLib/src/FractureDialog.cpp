@@ -5,6 +5,7 @@
 
 #include "ui/FractureDialog.h"
 
+#include <QCheckBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QLabel>
@@ -16,6 +17,8 @@
 #include <QVBoxLayout>
 
 #include "mdl/BrushFaceAttributes.h"
+#include "mdl/BrushFace.h"
+#include "vm/mat_ext.h"
 #include "mdl/BrushFracture.h"
 
 #include <algorithm>
@@ -29,7 +32,6 @@ class FracturePreview : public QWidget
 private:
   const std::vector<mdl::Brush>& m_fragments;
   vm::vec3d m_center;
-  double m_explode = 0.5;
 
 public:
   FracturePreview(
@@ -40,12 +42,6 @@ public:
   {
     setMinimumSize(420, 300);
     setAccessibleName(tr("Fracture wireframe preview"));
-  }
-
-  void setExplode(const double value)
-  {
-    m_explode = value;
-    update();
   }
 
 protected:
@@ -76,12 +72,11 @@ protected:
     for (size_t i = 0; i < m_fragments.size(); ++i)
     {
       const auto& brush = m_fragments[i];
-      const auto offset = (brush.bounds().center() - m_center) * m_explode;
       const auto color = QColor::fromHsv(int((i * 137) % 360), 160, 245);
       for (const auto* edge : brush.edges())
       {
-        const auto a = project(edge->firstVertex()->position() + offset - m_center);
-        const auto b = project(edge->secondVertex()->position() + offset - m_center);
+        const auto a = project(edge->firstVertex()->position() - m_center);
+        const auto b = project(edge->secondVertex()->position() - m_center);
         extent = std::max(
           {extent, std::abs(a.x()), std::abs(a.y()), std::abs(b.x()), std::abs(b.y())});
         lines.push_back({a, b, color});
@@ -107,6 +102,8 @@ FractureDialog::FractureDialog(
   , m_source{source}
   , m_worldBounds{worldBounds}
   , m_mapFormat{mapFormat}
+  , m_separation{new QSlider{Qt::Horizontal, this}}
+  , m_noCollide{new QCheckBox{tr("No collide (create func_wall fragments)"), this}}
   , m_count{new QSpinBox{this}}
   , m_seed{new QSpinBox{this}}
   , m_material{new QLineEdit{QString::fromStdString(material), this}}
@@ -134,16 +131,21 @@ FractureDialog::FractureDialog(
   auto* previewButtons = new QHBoxLayout{};
   previewButtons->addWidget(generate);
   previewButtons->addWidget(nextSeed);
-  auto* explode = new QSlider{Qt::Horizontal, this};
+  auto* explode = m_separation;
+  explode->setObjectName("fractureSeparation");
+  m_noCollide->setObjectName("fractureNoCollide");
+  m_noCollide->setToolTip(
+    tr("Creates one func_wall per fragment. Settle collisions remain enabled."));
   explode->setRange(0, 200);
-  explode->setValue(50);
-  explode->setAccessibleName(tr("Preview separation"));
+  explode->setValue(0);
+  explode->setAccessibleName(tr("Separation"));
   auto* layout = new QVBoxLayout{this};
   layout->addLayout(form);
   layout->addLayout(previewButtons);
   layout->addWidget(m_preview, 1);
-  layout->addWidget(new QLabel{tr("Separation (preview only)"), this});
+  layout->addWidget(new QLabel{tr("Separation (applied to the map)"), this});
   layout->addWidget(explode);
+  layout->addWidget(m_noCollide);
   m_status->setWordWrap(true);
   layout->addWidget(m_status);
   m_buttons->button(QDialogButtonBox::Ok)->setText(tr("Apply"));
@@ -158,7 +160,8 @@ FractureDialog::FractureDialog(
     generatePreview();
   });
   connect(explode, &QSlider::valueChanged, this, [this](const int value) {
-    m_preview->setExplode(double(value) / 100.0);
+    (void)value;
+    updateSeparation();
   });
   connect(m_buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
   connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -167,6 +170,7 @@ FractureDialog::FractureDialog(
 
 void FractureDialog::invalidatePreview()
 {
+  m_baseFragments.clear();
   m_fragments.clear();
   m_preview->update();
   m_buttons->button(QDialogButtonBox::Ok)->setEnabled(false);
@@ -184,11 +188,14 @@ void FractureDialog::generatePreview()
     m_status->setText(tr("Enter a valid cut material name."));
     return;
   }
+  const auto reference = m_source.findFace(material.toStdString()).value_or(0);
+  auto cutAttributes = m_source.face(reference).attributes();
+  cutAttributes.setMaterialName(material.toStdString());
   auto result = mdl::fractureBrush(
     m_source,
     m_worldBounds,
     m_mapFormat,
-    mdl::BrushFaceAttributes{material.toStdString()},
+    cutAttributes,
     size_t(m_count->value()),
     uint32_t(m_seed->value()));
   if (!result)
@@ -198,11 +205,55 @@ void FractureDialog::generatePreview()
            }));
     return;
   }
-  m_fragments = std::move(result).value();
+  m_baseFragments = std::move(result).value();
+  updateSeparation();
+}
+
+void FractureDialog::updateSeparation()
+{
+  m_fragments.clear();
+  m_buttons->button(QDialogButtonBox::Ok)->setEnabled(false);
+  if (m_baseFragments.empty())
+  {
+    return;
+  }
+  auto moved = m_baseFragments;
+  const auto amount = double(m_separation->value()) / 100.0;
+  if (amount != 0)
+  {
+    for (size_t i = 0; i < moved.size(); ++i)
+    {
+      const auto offset =
+        (m_baseFragments[i].bounds().center() - m_source.bounds().center()) * amount;
+      if (!moved[i].transform(m_worldBounds, vm::translation_matrix(offset), true))
+      {
+        m_status->setText(
+          tr("Separation exceeds world bounds or creates invalid geometry."));
+        m_preview->update();
+        return;
+      }
+      for (auto& face : moved[i].faces())
+      {
+        const auto original = m_baseFragments[i].findFace(face.boundary().normal);
+        if (original)
+        {
+          auto attributes = face.attributes();
+          attributes.setScale(m_baseFragments[i].face(*original).attributes().scale());
+          face.setAttributes(attributes);
+        }
+      }
+    }
+  }
+  m_fragments = std::move(moved);
   m_preview->update();
   m_status->setText(tr("%1 fragments ready. Apply replaces the brush; Undo restores it.")
                       .arg(m_fragments.size()));
   m_buttons->button(QDialogButtonBox::Ok)->setEnabled(true);
+}
+
+bool FractureDialog::createFuncWalls() const
+{
+  return m_noCollide->isChecked();
 }
 
 std::vector<mdl::Brush> FractureDialog::takeFragments()

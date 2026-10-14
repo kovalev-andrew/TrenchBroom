@@ -21,6 +21,7 @@
 #include "Matchers.h"
 #include "mdl/BrushBuilder.h"
 #include "mdl/BrushFace.h"
+#include "mdl/BrushPerforate.h"
 #include "mdl/BrushFracture.h"
 #include "mdl/BrushNode.h"
 #include "mdl/CatchConfig.h"
@@ -1439,6 +1440,86 @@ TEST_CASE("Map_Geometry")
     REQUIRE(paste(other, after) == PasteType::Node);
     REQUIRE(other.selection().brushes.size() == 8);
     CHECK(serializeSelectedNodes(other) == after);
+  }
+
+  SECTION("Fracture func_wall fragments remain brush-selected and undoable")
+  {
+    auto& map = fixture.create();
+    auto* original = createBrushNode(map);
+    auto* parent = map.editorContext().currentLayer();
+    REQUIRE(addNodes(map, {{parent, {original}}}).size() == 1);
+    selectNodes(map, {original});
+    const auto before = serializeSelectedNodes(map);
+    const auto fragments = fractureBrush(
+      original->brush(),
+      map.worldBounds(),
+      map.worldNode().mapFormat(),
+      BrushFaceAttributes{"inside"},
+      8,
+      17);
+    REQUIRE(fragments);
+    REQUIRE(replaceWithFracture(map, fragments.value(), true));
+    REQUIRE(map.selection().hasOnlyBrushes());
+    REQUIRE(map.selection().brushes.size() == 8);
+    for (const auto* brush : map.selection().brushes)
+    {
+      const auto* entity = dynamic_cast<const EntityNode*>(brush->parent());
+      REQUIRE(entity);
+      CHECK(entity->entity().classname() == "func_wall");
+      CHECK(entity->childCount() == 1);
+      CHECK(entity->parent() == parent);
+    }
+    const auto after = serializeSelectedNodes(map);
+    map.undoCommand();
+    CHECK(serializeSelectedNodes(map) == before);
+    map.redoCommand();
+    CHECK(serializeSelectedNodes(map) == after);
+  }
+
+  SECTION("Perforate selects plugs or remainder and supports undo and redo")
+  {
+    const auto keep = GENERATE(false, true);
+    auto& map = fixture.create();
+    auto* parent = map.editorContext().currentLayer();
+    auto* original =
+      new BrushNode{BrushBuilder{map.worldNode().mapFormat(), map.worldBounds()}
+                      .createCube(256, "stone")
+                      .value()};
+    REQUIRE(addNodes(map, {{parent, {original}}}).size() == 1);
+    const auto face = original->brush().findFace(vm::vec3d{0, 0, 1}).value();
+    selectBrushFaces(map, {{original, face}});
+    const auto childCount = parent->childCount();
+    auto perforation = perforateBrush(
+      original->brush(),
+      face,
+      map.worldBounds(),
+      map.worldNode().mapFormat(),
+      PerforateOptions{});
+    REQUIRE(perforation);
+    const auto remaining = perforation.value().remainder.size();
+    REQUIRE(replaceWithPerforation(map, std::move(perforation).value(), keep));
+    REQUIRE(map.selection().hasOnlyBrushes());
+    CHECK(map.selection().brushes.size() == (keep ? 4 : remaining));
+    CHECK(parent->childCount() == childCount - 1 + remaining + (keep ? 4 : 0));
+    for (const auto* brush : map.selection().brushes)
+    {
+      if (keep)
+      {
+        const auto* entity = dynamic_cast<const EntityNode*>(brush->parent());
+        REQUIRE(entity);
+        CHECK(entity->entity().classname() == "func_wall");
+        CHECK(entity->childCount() == 1);
+      }
+      else
+        CHECK(brush->parent() == parent);
+    }
+    const auto after = serializeSelectedNodes(map);
+    map.undoCommand();
+    CHECK(parent->childCount() == childCount);
+    REQUIRE(map.selection().brushFaces.size() == 1);
+    CHECK(map.selection().brushFaces.front().node() == original);
+    map.redoCommand();
+    CHECK(serializeSelectedNodes(map) == after);
   }
 
   SECTION("replaceWithFracture rejects invalid selection without edits")

@@ -94,8 +94,17 @@ TEST_CASE("BrushFracture")
 
   SECTION("Two symmetric sites produce equal halves and preserve exterior UVs")
   {
+    auto textured = cube;
+    for (size_t i = 0; i < textured.faceCount(); ++i)
+    {
+      auto attributes = textured.face(i).attributes();
+      attributes.setScale(vm::vec2f{0.25f + float(i) * 0.1f, -0.5f});
+      attributes.setOffset(vm::vec2f{13.0f, -27.0f});
+      attributes.setRotation(17.0f);
+      textured.face(i).setAttributes(attributes);
+    }
     const auto sites = std::vector<vm::vec3d>{{-32, 0, 0}, {32, 0, 0}};
-    const auto result = fractureBrush(cube, worldBounds, format, cut, sites);
+    const auto result = fractureBrush(textured, worldBounds, format, cut, sites);
     REQUIRE(result);
     const auto& fragments = result.value();
     REQUIRE(fragments.size() == 2);
@@ -109,7 +118,7 @@ TEST_CASE("BrushFracture")
       {
         if (const auto originalIndex = cube.findFace(face.boundary()))
         {
-          const auto& original = cube.face(*originalIndex);
+          const auto& original = textured.face(*originalIndex);
           CHECK(face.attributes() == original.attributes());
           CHECK(face.uAxis() == original.uAxis());
           CHECK(face.vAxis() == original.vAxis());

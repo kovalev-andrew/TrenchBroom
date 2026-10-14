@@ -42,6 +42,27 @@ TEST_CASE("BrushSettle")
       return sim;
     };
 
+  SECTION("Triangle patch surfaces catch falling brushes from either winding")
+  {
+    const auto reverse = GENERATE(false, true);
+    auto triangles = std::vector<SettleTriangle>{
+      {{{-1024, -1024, 0}, {1024, -1024, 0}, {1024, 1024, 0}}},
+      {{{1024, 1024, 0}, {-1024, 1024, 0}, {-1024, -1024, 0}}}};
+    if (reverse)
+      for (auto& triangle : triangles)
+        std::swap(triangle[0], triangle[2]);
+    auto created = BrushSettleSimulation::create({cube}, {}, bounds, options, triangles);
+    REQUIRE(created);
+    auto sim = std::move(created).value();
+    for (int i = 0; !sim->finished() && i < 1201; ++i)
+      sim->step();
+    REQUIRE(sim->sleeping());
+    const auto result = sim->result();
+    REQUIRE(result);
+    CHECK(result.value().front().bounds().min.z() >= -0.25);
+    CHECK(result.value().front().bounds().min.z() < 0.25);
+  }
+
   SECTION("Falls onto an existing floor and sleeps")
   {
     auto sim = run({cube}, {floor});

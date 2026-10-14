@@ -28,6 +28,7 @@
 #include "mdl/BrushVertexCommands.h"
 #include "mdl/EditorContext.h"
 #include "mdl/EntityNode.h"
+#include "mdl/BrushPerforate.h"
 #include "mdl/GameConfig.h"
 #include "mdl/GameInfo.h"
 #include "mdl/Grid.h"
@@ -801,32 +802,84 @@ bool csgIntersect(Map& map)
   return transaction.commit();
 }
 
-bool replaceWithFracture(Map& map, std::vector<Brush> fragments)
+namespace
 {
-  const auto& selection = map.selection();
-  if (
-    !selection.hasOnlyBrushes() || selection.brushes.size() != 1 || fragments.size() < 2)
+bool replaceWithPieces(
+  Map& map,
+  BrushNode* original,
+  std::vector<Brush> ordinary,
+  std::vector<Brush> walls,
+  const std::string& name)
+{
+  for (const auto* pieces : {&ordinary, &walls})
+    for (const auto& brush : *pieces)
+      if (
+        !brush.closed() || !brush.fullySpecified()
+        || !map.worldBounds().contains(brush.bounds()))
+        return false;
+  auto toAdd = std::map<Node*, std::vector<Node*>>{};
+  auto selected = std::vector<Node*>{};
+  auto* parent = original->parent();
+  auto* entityParent = dynamic_cast<EntityNode*>(parent) ? parent->parent() : parent;
+  for (auto& brush : ordinary)
   {
+    auto* node = new BrushNode{std::move(brush)};
+    toAdd[parent].push_back(node);
+    if (walls.empty())
+      selected.push_back(node);
+  }
+  for (auto& brush : walls)
+  {
+    auto* entity = new EntityNode{Entity{{{"classname", "func_wall"}}}};
+    auto* node = new BrushNode{std::move(brush)};
+    entity->addChild(node);
+    toAdd[entityParent].push_back(entity);
+    selected.push_back(node);
+  }
+  if (toAdd.empty())
     return false;
-  }
-  auto* original = selection.brushes.front();
-  auto nodes = std::vector<Node*>{};
-  nodes.reserve(fragments.size());
-  for (auto& fragment : fragments)
-  {
-    nodes.push_back(new BrushNode{std::move(fragment)});
-  }
-  auto transaction = Transaction{map, "Fracture Brush"};
+  auto transaction = Transaction{map, name};
   deselectAll(map);
-  const auto added = addNodes(map, {{original->parent(), nodes}});
-  if (added.empty())
+  if (addNodes(map, toAdd).empty())
   {
     transaction.cancel();
     return false;
   }
   removeNodes(map, {original});
-  selectNodes(map, added);
+  selectNodes(map, selected);
   return transaction.commit();
+}
+} // namespace
+
+bool replaceWithFracture(Map& map, std::vector<Brush> fragments, const bool funcWalls)
+{
+  const auto& selection = map.selection();
+  if (
+    !selection.hasOnlyBrushes() || selection.brushes.size() != 1 || fragments.size() < 2)
+    return false;
+  return funcWalls
+           ? replaceWithPieces(
+               map, selection.brushes.front(), {}, std::move(fragments), "Fracture Brush")
+           : replaceWithPieces(
+               map,
+               selection.brushes.front(),
+               std::move(fragments),
+               {},
+               "Fracture Brush");
+}
+
+bool replaceWithPerforation(Map& map, Perforation perforation, const bool keepPlugs)
+{
+  if (
+    map.selection().brushFaces.size() != 1 || perforation.remainder.empty()
+    || perforation.plugs.empty())
+    return false;
+  return replaceWithPieces(
+    map,
+    map.selection().brushFaces.front().node(),
+    std::move(perforation.remainder),
+    keepPlugs ? std::move(perforation.plugs) : std::vector<Brush>{},
+    "Perforate Brush");
 }
 
 bool applySettledBrushes(Map& map, std::vector<Brush> brushes)

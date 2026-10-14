@@ -1,4 +1,4 @@
-# reyondboom — Settle Brushes
+# ReyondBroom — Settle Brushes
 
 **English (primary)** · [Русский](SETTLE.ru.md) · [Overview](README.md)
 
@@ -7,8 +7,12 @@ included alongside Fracture in this branch, based on TrenchBroom v2026.2.
 
 **Simulate / Restart** starts an animated isometric wireframe preview. Visible,
 unselected brushes are static collision obstacles, including locked brushes.
-Hidden brushes, patches and point entities are ignored. There is no implicit
-ground: create a floor in the map. Up to 4096 visible obstacle brushes are supported.
+Visible Quake 3 patches also collide, using the editor's tessellated surface as
+a static triangle mesh (up to 262144 triangles). Hidden objects and point entities
+are ignored. There is no implicit ground: create a floor in the map. Up to 4096
+visible obstacle brushes are supported. Fracture's No collide flag only creates
+func_wall entities and does not disable any collisions here. Patches remain static
+and are not included among the selected falling objects.
 
 - **Friction** and **Bounce** control contact behavior (0–1).
 - **Initial kick** adds seeded horizontal/upward velocity and rotation. Set 0 to

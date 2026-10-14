@@ -26,17 +26,20 @@ class SettlePreview : public QWidget
   const std::vector<mdl::Brush>& m_source;
   const std::vector<mdl::Brush>& m_obstacles;
   const std::vector<vm::mat4x4d>& m_transforms;
+  const std::vector<mdl::SettleTriangle>& m_triangles;
 
 public:
   SettlePreview(
     const std::vector<mdl::Brush>& source,
     const std::vector<mdl::Brush>& obstacles,
     const std::vector<vm::mat4x4d>& transforms,
-    QWidget* parent)
+    QWidget* parent,
+    const std::vector<mdl::SettleTriangle>& triangles)
     : QWidget{parent}
     , m_source{source}
     , m_obstacles{obstacles}
     , m_transforms{transforms}
+    , m_triangles{triangles}
   {
     setMinimumSize(440, 320);
     setAccessibleName(tr("Settle animated wireframe preview"));
@@ -99,6 +102,13 @@ protected:
         painter.drawPolygon(polygon);
       }
     }
+    for (const auto& triangle : m_triangles)
+    {
+      auto polygon = QPolygonF{};
+      for (const auto& p : triangle)
+        polygon << screen(p);
+      painter.drawPolygon(polygon);
+    }
     painter.setBrush(Qt::NoBrush);
     for (size_t i = 0; i < m_source.size(); ++i)
     {
@@ -118,11 +128,13 @@ SettleDialog::SettleDialog(
   std::vector<mdl::Brush> source,
   std::vector<mdl::Brush> obstacles,
   const vm::bbox3d& bounds,
-  QWidget* parent)
+  QWidget* parent,
+  std::vector<mdl::SettleTriangle> patchTriangles)
   : QDialog{parent}
   , m_source{std::move(source)}
   , m_obstacles{std::move(obstacles)}
   , m_bounds{bounds}
+  , m_patchTriangles{std::move(patchTriangles)}
   , m_friction{new QDoubleSpinBox{this}}
   , m_bounce{new QDoubleSpinBox{this}}
   , m_kick{new QDoubleSpinBox{this}}
@@ -132,15 +144,16 @@ SettleDialog::SettleDialog(
   , m_pause{new QPushButton{tr("Pause"), this}}
   , m_buttons{new QDialogButtonBox{QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this}}
   , m_timer{new QTimer{this}}
-  , m_preview{new SettlePreview{m_source, m_obstacles, m_transforms, this}}
+  , m_preview{
+      new SettlePreview{m_source, m_obstacles, m_transforms, this, m_patchTriangles}}
 {
   setWindowTitle(tr("Settle Brushes"));
   resize(620, 700);
   auto* layout = new QVBoxLayout{this};
   auto* explanation = new QLabel{
     tr(
-      "Selected brushes fall and collide with visible, unselected brushes. Hidden "
-      "brushes, patches and point entities are ignored. No automatic floor is added."),
+      "Selected brushes collide with visible brushes and Quake 3 patches. Hidden "
+      "objects and point entities are ignored. No automatic floor is added."),
     this};
   explanation->setWordWrap(true);
   layout->addWidget(explanation);
@@ -221,8 +234,8 @@ void SettleDialog::start()
     m_kick->value(),
     m_duration->value(),
     uint32_t(m_seed->value())};
-  auto result =
-    mdl::BrushSettleSimulation::create(m_source, m_obstacles, m_bounds, options);
+  auto result = mdl::BrushSettleSimulation::create(
+    m_source, m_obstacles, m_bounds, options, m_patchTriangles);
   if (!result)
   {
     (void)(result | kdl::if_error([this](const auto& e) {

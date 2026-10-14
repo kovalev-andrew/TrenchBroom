@@ -20,6 +20,7 @@ target_sources(TbUiLibTest
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_EntityPropertyModel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_ExtrudeTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_FractureDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_PerforateDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_SettleDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_HandleDragTracker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tst_InputEvent.cpp

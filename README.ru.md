@@ -1,11 +1,14 @@
-# reyondboom
+# ReyondBroom
 
 [English (основной)](README.md) · **Русский**
 
-reyondboom — набор инструментов для создания и размещения обломков из брашей
+ReyondBroom — набор инструментов для создания и размещения обломков из брашей
 на основе TrenchBroom v2026.2. Разработка ведётся в
-[ветке reyondboom](https://github.com/reyond9079/TrenchBroom/tree/reyondboom).
+[ветке ReyondBroom](https://github.com/reyond9079/TrenchBroom/tree/ReyondBroom).
 
+- **[Perforate](PERFORATE.ru.md)** создаёт случайные сквозные отверстия с заданными
+  количеством, числом сторон, диапазоном размеров и промежутками. Можно оставить
+  и выделить браши-пробки как отдельные `func_wall`.
 - **[Fracture](FRACTURE.ru.md)** разделяет один браш на 2–128 выпуклых осколков
   Вороного. Есть seed, материал срезов, каркасный предпросмотр и отмена одним Undo.
 - **[Settle](SETTLE.ru.md)** рассчитывает падение и столкновения 1–128 выделенных
@@ -13,9 +16,9 @@ reyondboom — набор инструментов для создания и р
 
 ## Быстрый запуск
 
-Скачайте артефакт `reyondboom-Windows` из успешной
-[Windows-сборки](https://github.com/reyond9079/TrenchBroom/actions/workflows/fracture.yml?query=branch%3Areyondboom).
-Распакуйте артефакт и вложенный `reyondboom-Windows.zip` в отдельную папку,
+Скачайте артефакт `ReyondBroom-Windows` из успешной
+[Windows-сборки](https://github.com/reyond9079/TrenchBroom/actions/workflows/fracture.yml?query=branch%3AReyondBroom).
+Распакуйте артефакт и вложенный `ReyondBroom-Windows.zip` в отдельную папку,
 затем запустите `TrenchBroom.exe`. Исполняемый файл сохраняет название исходного редактора.
 
 Выделите браш → **Edit → CSG → Fracture…** → **Apply**. Сохраняя выделение

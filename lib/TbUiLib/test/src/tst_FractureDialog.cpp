@@ -3,6 +3,9 @@
  SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+#include <QCheckBox>
+#include <QSlider>
+#include "mdl/BrushFace.h"
 #include <QDialogButtonBox>
 #include <QLineEdit>
 #include <QPushButton>
@@ -38,6 +41,51 @@ TEST_CASE("FractureDialog")
   REQUIRE(buttons);
   auto* apply = buttons->button(QDialogButtonBox::Ok);
   REQUIRE(apply->isEnabled());
+
+  SECTION("Separation defaults to zero and moves the applied fragments")
+  {
+    auto* separation = dialog.findChild<QSlider*>("fractureSeparation");
+    REQUIRE(separation);
+    CHECK(separation->value() == 0);
+    const auto base = dialog.takeFragments();
+    separation->setValue(50);
+    REQUIRE(apply->isEnabled());
+    const auto moved = dialog.takeFragments();
+    REQUIRE(moved.size() == base.size());
+    for (size_t i = 0; i < base.size(); ++i)
+    {
+      const auto expected =
+        base[i].bounds().center()
+        + (base[i].bounds().center() - source.bounds().center()) * 0.5;
+      CHECK(vm::length(moved[i].bounds().center() - expected) < 0.001);
+    }
+    separation->setValue(0);
+    CHECK(dialog.takeFragments() == base);
+    CHECK_FALSE(dialog.createFuncWalls());
+    dialog.findChild<QCheckBox*>("fractureNoCollide")->setChecked(true);
+    CHECK(dialog.createFuncWalls());
+  }
+
+  SECTION("Nonunit texture scales survive fracture and separation")
+  {
+    auto scaled = source;
+    for (auto& face : scaled.faces())
+    {
+      auto attributes = face.attributes();
+      attributes.setScale(vm::vec2f{0.25f, -0.5f});
+      face.setAttributes(attributes);
+    }
+    auto scaledDialog = FractureDialog{scaled, bounds, format, "inside", nullptr};
+    for (const auto separation : {0, 50})
+    {
+      scaledDialog.findChild<QSlider*>("fractureSeparation")->setValue(separation);
+      const auto fragments = scaledDialog.takeFragments();
+      REQUIRE_FALSE(fragments.empty());
+      for (const auto& brush : fragments)
+        for (const auto& face : brush.faces())
+          CHECK(face.attributes().scale() == vm::vec2f{0.25f, -0.5f});
+    }
+  }
 
   SECTION("Changed parameters cannot apply an outdated preview")
   {

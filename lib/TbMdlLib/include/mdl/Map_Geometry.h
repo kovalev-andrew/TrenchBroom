@@ -34,6 +34,7 @@
 namespace tb::mdl
 {
 class Brush;
+struct Perforation;
 class Map;
 
 bool transformSelection(
@@ -79,7 +80,8 @@ bool csgIntersect(Map& map);
 bool csgHollow(Map& map);
 
 // Replaces exactly one selected brush, keeping its parent and selecting the pieces.
-bool replaceWithFracture(Map& map, std::vector<Brush> fragments);
+bool replaceWithFracture(Map& map, std::vector<Brush> fragments, bool funcWalls = false);
+bool replaceWithPerforation(Map& map, Perforation perforation, bool keepPlugs);
 
 // Updates brushes in selection order without replacing nodes or their metadata.
 bool applySettledBrushes(Map& map, std::vector<Brush> brushes);

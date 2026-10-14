@@ -9,6 +9,8 @@
 
 #include "mdl/Brush.h"
 
+class QCheckBox;
+class QSlider;
 class QDialogButtonBox;
 class QLabel;
 class QLineEdit;
@@ -25,6 +27,9 @@ private:
   vm::bbox3d m_worldBounds;
   mdl::MapFormat m_mapFormat;
   std::vector<mdl::Brush> m_fragments;
+  std::vector<mdl::Brush> m_baseFragments;
+  QSlider* m_separation;
+  QCheckBox* m_noCollide;
   QSpinBox* m_count;
   QSpinBox* m_seed;
   QLineEdit* m_material;
@@ -41,8 +46,10 @@ public:
     QWidget* parent);
 
   std::vector<mdl::Brush> takeFragments();
+  bool createFuncWalls() const;
 
 private:
+  void updateSeparation();
   void invalidatePreview();
   void generatePreview();
 };

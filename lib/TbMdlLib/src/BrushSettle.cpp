@@ -55,7 +55,8 @@ struct BrushSettleSimulation::Impl
   btDbvtBroadphase broadphase;
   btSequentialImpulseConstraintSolver solver;
   btDiscreteDynamicsWorld world{&dispatcher, &broadphase, &solver, &configuration};
-  std::vector<std::unique_ptr<btConvexHullShape>> shapes;
+  std::unique_ptr<btTriangleMesh> patchMesh;
+  std::vector<std::unique_ptr<btCollisionShape>> shapes;
   std::vector<std::unique_ptr<btRigidBody>> bodies;
   std::vector<Brush> brushes;
   std::vector<vm::vec3d> centers;
@@ -151,7 +152,8 @@ Result<std::unique_ptr<BrushSettleSimulation>> BrushSettleSimulation::create(
   std::vector<Brush> brushes,
   const std::vector<Brush>& obstacles,
   const vm::bbox3d& worldBounds,
-  const BrushSettleOptions& options)
+  const BrushSettleOptions& options,
+  const std::vector<SettleTriangle>& patchTriangles)
 {
   if (brushes.empty() || brushes.size() > MaxBodies || obstacles.size() > MaxObstacles)
   {
@@ -189,6 +191,38 @@ Result<std::unique_ptr<BrushSettleSimulation>> BrushSettleSimulation::create(
   for (const auto& obstacle : obstacles)
   {
     impl->addBody(obstacle, false);
+  }
+  if (patchTriangles.size() > 262144)
+  {
+    return Error{"Too many patch triangles. Hide unrelated patches before using Settle."};
+  }
+  if (!patchTriangles.empty())
+  {
+    impl->patchMesh = std::make_unique<btTriangleMesh>();
+    for (const auto& triangle : patchTriangles)
+    {
+      for (const auto& p : triangle)
+        if (!std::isfinite(p.x()) || !std::isfinite(p.y()) || !std::isfinite(p.z()))
+          return Error{"Invalid patch triangle."};
+      if (
+        vm::squared_length(
+          vm::cross(triangle[1] - triangle[0], triangle[2] - triangle[0]))
+        > 1e-12)
+        impl->patchMesh->addTriangle(
+          toPhysics(triangle[0]), toPhysics(triangle[1]), toPhysics(triangle[2]));
+    }
+    if (impl->patchMesh->getNumTriangles() > 0)
+    {
+      auto shape = std::make_unique<btBvhTriangleMeshShape>(impl->patchMesh.get(), true);
+      shape->setMargin(btScalar(0.02 * Scale));
+      auto info = btRigidBody::btRigidBodyConstructionInfo{0, nullptr, shape.get()};
+      info.m_friction = btScalar(options.friction);
+      info.m_restitution = btScalar(options.restitution);
+      auto body = std::make_unique<btRigidBody>(info);
+      impl->world.addRigidBody(body.get());
+      impl->shapes.push_back(std::move(shape));
+      impl->bodies.push_back(std::move(body));
+    }
   }
   if (impl->penetrating())
   {

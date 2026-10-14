@@ -15,6 +15,7 @@ target_sources(TbMdlLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushFaceReader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushFaceReference.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushFracture.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushPerforate.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushSettle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushNode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushRendererBrushCache.cpp

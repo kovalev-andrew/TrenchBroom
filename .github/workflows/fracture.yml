@@ -1,8 +1,8 @@
-name: reyondboom Windows build and tests
+name: ReyondBroom Windows build and tests
 
 on:
   push:
-    branches: [reyondboom]
+    branches: [ReyondBroom]
   workflow_dispatch:
 
 permissions:
@@ -41,10 +41,10 @@ jobs:
         run: cmake --build build --target TrenchBroom TbMdlLibTest TbUiLibTest --parallel 4
       - name: Geometry and map integration tests
         working-directory: build/lib/TbMdlLib/test
-        run: ./TbMdlLibTest.exe "BrushFracture,BrushSettle,Map_Geometry"
+        run: ./TbMdlLibTest.exe "BrushFracture,BrushPerforate,BrushSettle,Map_Geometry"
       - name: Preview dialog tests
         working-directory: build/lib/TbUiLib/test
-        run: ./TbUiLibTest.exe "FractureDialog,SettleDialog"
+        run: ./TbUiLibTest.exe "FractureDialog,PerforateDialog,SettleDialog"
       - name: Package portable editor
         shell: pwsh
         run: |
@@ -57,9 +57,9 @@ jobs:
           $bulletLicense = Get-ChildItem build -Filter copyright -Recurse | Where-Object { $_.FullName -match 'share[\\/]bullet3[\\/]copyright$' } | Select-Object -First 1
           if (-not $bulletLicense) { throw 'Bullet license missing' }
           Copy-Item $bulletLicense.FullName "$dir/Bullet-LICENSE.txt"
-          Compress-Archive -Path "$dir/*" -DestinationPath reyondboom-Windows.zip
+          Compress-Archive -Path "$dir/*" -DestinationPath ReyondBroom-Windows.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: reyondboom-Windows
-          path: reyondboom-Windows.zip
+          name: ReyondBroom-Windows
+          path: ReyondBroom-Windows.zip
           retention-days: 14

@@ -89,6 +89,7 @@
 #include "ui/FaceInspector.h"
 #include "ui/FaceTool.h"
 #include "ui/FractureDialog.h"
+#include "ui/PerforateDialog.h"
 #include "ui/SettleDialog.h"
 #include "ui/InfoPanel.h"
 #include "ui/Inspector.h"
@@ -1831,6 +1832,7 @@ void MapWindow::settleBrushes()
     source.push_back(node->brush());
   }
   auto obstacles = std::vector<mdl::Brush>{};
+  auto triangles = std::vector<mdl::SettleTriangle>{};
   const auto collect = [&](auto&& self, mdl::Node& node) -> void {
     if (auto* brush = dynamic_cast<mdl::BrushNode*>(&node))
     {
@@ -1842,12 +1844,41 @@ void MapWindow::settleBrushes()
       }
       return;
     }
+    if (auto* patch = dynamic_cast<mdl::PatchNode*>(&node))
+    {
+      if (map.editorContext().visible(*patch))
+      {
+        const auto& grid = patch->grid();
+        for (size_t row = 0; row + 1 < grid.pointRowCount && triangles.size() <= 262144;
+             ++row)
+          for (size_t col = 0;
+               col + 1 < grid.pointColumnCount && triangles.size() <= 262144;
+               ++col)
+          {
+            const auto a = grid.point(row, col).position;
+            const auto b = grid.point(row, col + 1).position;
+            const auto c = grid.point(row + 1, col + 1).position;
+            const auto d = grid.point(row + 1, col).position;
+            triangles.push_back({a, b, c});
+            triangles.push_back({c, d, a});
+          }
+      }
+      return;
+    }
     for (auto* child : node.children())
     {
       self(self, *child);
     }
   };
   collect(collect, map.worldNode());
+  if (triangles.size() > 262144)
+  {
+    QMessageBox::warning(
+      this,
+      tr("Settle Brushes"),
+      tr("Too many visible patch triangles. Hide unrelated patches."));
+    return;
+  }
   if (obstacles.size() > mdl::BrushSettleSimulation::MaxObstacles)
   {
     QMessageBox::warning(
@@ -1858,8 +1889,12 @@ void MapWindow::settleBrushes()
         "using Settle."));
     return;
   }
-  auto dialog =
-    SettleDialog{std::move(source), std::move(obstacles), map.worldBounds(), this};
+  auto dialog = SettleDialog{
+    std::move(source),
+    std::move(obstacles),
+    map.worldBounds(),
+    this,
+    std::move(triangles)};
   if (
     dialog.exec() == QDialog::Accepted
     && !mdl::applySettledBrushes(map, dialog.takeBrushes()))
@@ -1874,6 +1909,30 @@ bool MapWindow::canSettleBrushes() const
   const auto& selection = m_document->map().selection();
   return selection.hasOnlyBrushes() && !selection.brushes.empty()
          && selection.brushes.size() <= mdl::BrushSettleSimulation::MaxBodies
+         && !m_mapView->toolBox().anyModalToolActive();
+}
+
+void MapWindow::perforateBrush()
+{
+  if (!canPerforateBrush())
+    return;
+  auto& map = m_document->map();
+  const auto face = map.selection().brushFaces.front();
+  auto dialog = PerforateDialog{
+    face.node()->brush(),
+    face.faceIndex(),
+    map.worldBounds(),
+    map.worldNode().mapFormat(),
+    this};
+  if (
+    dialog.exec() == QDialog::Accepted
+    && !mdl::replaceWithPerforation(map, dialog.takePerforation(), dialog.keepPlugs()))
+    QMessageBox::warning(this, tr("Perforate Brush"), tr("Could not replace the brush."));
+}
+
+bool MapWindow::canPerforateBrush() const
+{
+  return m_document->map().selection().brushFaces.size() == 1
          && !m_mapView->toolBox().anyModalToolActive();
 }
 
@@ -1892,7 +1951,7 @@ void MapWindow::fractureBrush()
     this};
   if (
     dialog.exec() == QDialog::Accepted
-    && !mdl::replaceWithFracture(map, dialog.takeFragments()))
+    && !mdl::replaceWithFracture(map, dialog.takeFragments(), dialog.createFuncWalls()))
   {
     QMessageBox::warning(this, tr("Fracture Brush"), tr("Could not replace the brush."));
   }

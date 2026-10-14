@@ -38,7 +38,7 @@
 - For free functions, prefer one test case per file and one section per function.
 
 ## Documentation and language
-- The toolset and development branch are named `reyondboom`.
+- The toolset and development branch are named `ReyondBroom`.
 - Maintain English documentation first; English is the authoritative version.
 - Keep Russian translations in matching `*.ru.md` files and update them with the English originals.
 - Link English first and Russian second from documentation entry points.

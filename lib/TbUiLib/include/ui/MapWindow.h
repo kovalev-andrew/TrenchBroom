@@ -306,6 +306,9 @@ public:
   void settleBrushes();
   bool canSettleBrushes() const;
 
+  void perforateBrush();
+  bool canPerforateBrush() const;
+
   void fractureBrush();
   bool canFractureBrush() const;
 

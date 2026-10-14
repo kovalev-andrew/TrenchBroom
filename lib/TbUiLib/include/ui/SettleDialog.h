@@ -23,6 +23,7 @@ class SettleDialog : public QDialog
   std::vector<mdl::Brush> m_source;
   std::vector<mdl::Brush> m_obstacles;
   vm::bbox3d m_bounds;
+  std::vector<mdl::SettleTriangle> m_patchTriangles;
   std::unique_ptr<mdl::BrushSettleSimulation> m_simulation;
   std::vector<mdl::Brush> m_result;
   std::vector<vm::mat4x4d> m_transforms;
@@ -42,7 +43,8 @@ public:
     std::vector<mdl::Brush> source,
     std::vector<mdl::Brush> obstacles,
     const vm::bbox3d& bounds,
-    QWidget* parent);
+    QWidget* parent,
+    std::vector<mdl::SettleTriangle> patchTriangles = {});
   ~SettleDialog() override;
   std::vector<mdl::Brush> takeBrushes();
 

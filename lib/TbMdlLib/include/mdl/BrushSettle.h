@@ -6,11 +6,14 @@
 
 #include "mdl/Brush.h"
 
+#include <array>
 #include <cstdint>
 #include <memory>
 
 namespace tb::mdl
 {
+using SettleTriangle = std::array<vm::vec3d, 3>;
+
 struct BrushSettleOptions
 {
   double friction = 0.8;
@@ -34,7 +37,8 @@ public:
     std::vector<Brush> brushes,
     const std::vector<Brush>& obstacles,
     const vm::bbox3d& worldBounds,
-    const BrushSettleOptions& options);
+    const BrushSettleOptions& options,
+    const std::vector<SettleTriangle>& patchTriangles = {});
   ~BrushSettleSimulation();
   void step(); // Advances 1/60 second using four 1/240 second physics steps.
   bool finished() const;
