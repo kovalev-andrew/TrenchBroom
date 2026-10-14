@@ -1,4 +1,6 @@
-# reyondboom
+# ReyondBroom
+
+A custom modification of Trenchbroom.
 
 **English (primary)** · [Russian](README.ru.md)
 
