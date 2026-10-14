@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <path
+    d="M4.5 18.5C7 5.5 17.5 4 19.5 15.5"
+    fill="none"
+    stroke="#62f58e"
+    stroke-width="2.4"
+    stroke-linecap="round"/>
+  <path
+    d="M4.5 18.5 8 7.2M8 7.2 16.6 4.8M16.6 4.8 19.5 15.5"
+    fill="none"
+    stroke="#ff4fc3"
+    stroke-width="1.1"
+    stroke-linecap="round"
+    stroke-dasharray="2 2"/>
+  <path
+    d="M3.2 17.2h2.6v2.6H3.2zM6.7 5.9h2.6v2.6H6.7zM15.3 3.5h2.6v2.6h-2.6zM18.2 14.2h2.6v2.6h-2.6z"
+    fill="#202020"
+    stroke="#ffffff"
+    stroke-width=".8"/>
+  <path
+    d="M8.2 18.5h7.6M10.2 16h3.9"
+    fill="none"
+    stroke="#ffffff"
+    stroke-opacity=".7"
+    stroke-width="1.2"
+    stroke-linecap="round"/>
+</svg>

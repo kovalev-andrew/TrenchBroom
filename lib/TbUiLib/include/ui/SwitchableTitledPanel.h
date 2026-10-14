@@ -52,12 +52,16 @@ public:
     QWidget* parent = nullptr);
 
   QWidget* getPanel(size_t index) const;
+  void addTitleWidget(QWidget* widget);
 
   size_t currentIndex() const;
   void setCurrentIndex(size_t index);
 
   QByteArray saveState() const;
   bool restoreState(const QByteArray& state);
+
+signals:
+  void currentIndexChanged(size_t index);
 };
 
 } // namespace tb::ui

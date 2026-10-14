@@ -20,6 +20,7 @@
 #include "ui/FaceInspector.h"
 
 #include <QLabel>
+#include <QPushButton>
 #include <QVBoxLayout>
 
 #include "gl/Material.h"
@@ -30,6 +31,7 @@
 #include "mdl/Map.h"
 #include "mdl/Map_Brushes.h"
 #include "mdl/UpdateBrushFaceAttributes.h"
+#include "ui/BitmapButton.h"
 #include "ui/BorderLine.h"
 #include "ui/FaceAttribsEditor.h"
 #include "ui/MapDocument.h"
@@ -129,6 +131,59 @@ QWidget* FaceInspector::createMaterialBrowser(AppController& appController)
 
   auto* materialCollectionEditor = new MaterialCollectionEditor{m_document};
   m_materialBrowserInfo = createMaterialBrowserInfo();
+
+  auto* refreshTextureFoldersButton = createBitmapButton(
+    "Refresh.svg", tr("Refresh texture folders and rebuild compile WADs"));
+  refreshTextureFoldersButton->setVisible(panel->currentIndex() == 0u);
+  panel->addTitleWidget(refreshTextureFoldersButton);
+
+  auto* addTextureFolderButton = new QPushButton{tr("Add Texture Folder")};
+  addTextureFolderButton->setToolTip(
+    tr("Add a folder with PNG or JPG textures as an enabled material collection"));
+  addTextureFolderButton->setVisible(panel->currentIndex() == 1u);
+  panel->addTitleWidget(addTextureFolderButton);
+
+  auto* textureExportPaletteButton = new QPushButton{tr("Pallete")};
+  textureExportPaletteButton->setToolTip(
+    tr("Choose and preview the palette used when exporting texture folders to WAD"));
+  textureExportPaletteButton->setVisible(panel->currentIndex() == 1u);
+  panel->addTitleWidget(textureExportPaletteButton);
+
+  connect(
+    refreshTextureFoldersButton,
+    &QAbstractButton::clicked,
+    materialCollectionEditor,
+    &MaterialCollectionEditor::refreshTextureFolders);
+  connect(
+    addTextureFolderButton,
+    &QAbstractButton::clicked,
+    materialCollectionEditor,
+    &MaterialCollectionEditor::addTextureFolder);
+  connect(
+    textureExportPaletteButton,
+    &QAbstractButton::clicked,
+    materialCollectionEditor,
+    &MaterialCollectionEditor::configureTextureExportPalette);
+  connect(
+    materialCollectionEditor,
+    &MaterialCollectionEditor::showSettingsPanelRequested,
+    panel,
+    [=] { panel->setCurrentIndex(1u); });
+  connect(
+    panel,
+    &SwitchableTitledPanel::currentIndexChanged,
+    refreshTextureFoldersButton,
+    [=](const size_t index) { refreshTextureFoldersButton->setVisible(index == 0u); });
+  connect(
+    panel,
+    &SwitchableTitledPanel::currentIndexChanged,
+    addTextureFolderButton,
+    [=](const size_t index) { addTextureFolderButton->setVisible(index == 1u); });
+  connect(
+    panel,
+    &SwitchableTitledPanel::currentIndexChanged,
+    textureExportPaletteButton,
+    [=](const size_t index) { textureExportPaletteButton->setVisible(index == 1u); });
 
   auto* materialCollectionEditorLayout = new QVBoxLayout{};
   materialCollectionEditorLayout->setContentsMargins(0, 0, 0, 0);

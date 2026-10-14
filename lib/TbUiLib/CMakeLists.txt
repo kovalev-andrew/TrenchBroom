@@ -14,6 +14,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Animation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AppController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AppInfoPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ArrayTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AssembleBrushTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AssembleBrushToolController3D.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AutoSizeTableRows.cpp
@@ -54,6 +55,8 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ControlListBox.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CrashDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CrashReporter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/BezierBendTool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/BezierBendToolController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CreateBrushesToolBase.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CreateEntityTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CreateEntityToolController.cpp
@@ -77,6 +80,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityBrowserView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityDefinitionFileChooser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityInspector.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityListInspector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityPropertyEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityPropertyGrid.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EntityPropertyItemDelegate.cpp
@@ -109,6 +113,8 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/GameListBox.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/GamesPreferencePane.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/GestureTracker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/GeneratorTool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/GuideCapture.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/GetVersion.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/GlFunctions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/GlQt.cpp
@@ -147,6 +153,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MaterialBrowserView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MaterialCollectionEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MiniToolBarLayout.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ModelBrushImporter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ModEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MousePreferencePane.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MoveHandleDragTracker.cpp
@@ -157,6 +164,11 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ObjExportDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/OnePaneMapView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PickRequest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PolygonCutTool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PolygonCutToolController.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PrefabInspector.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PrefabTool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PrefabToolController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PopupButton.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PopupWindow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/PreferenceDialog.cpp
@@ -183,16 +195,22 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SweepToolController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SweepToolPage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SweepToolUtils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/RockGeneratorDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ScaleTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ScaleToolController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ScaleToolPage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SearchBox.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SelectionTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SetBrushFaceAttributesTool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SculptTool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SculptToolController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ShearTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ShearToolController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/KeyboardShortcutUtils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SubdivisionTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SignalDelayer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SymmetryTool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SymmetryToolController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SliderWithLabel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartChoiceEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SmartColorEditor.cpp
@@ -209,6 +227,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SystemPaths.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/TabBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/TabBook.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/TerrainGeneratorDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/TextOutputAdapter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ThreePaneMapView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/TitleBar.cpp
@@ -219,6 +238,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ToolChain.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ToolController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/TwoPaneMapView.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UnitySyncDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UVCameraTool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UVEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UVOffsetTool.cpp
@@ -257,6 +277,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/Animation.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/AppController.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/AppInfoPanel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ArrayTool.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/AssembleBrushTool.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/AssembleBrushToolController3D.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/AutoSizeTableRows.h
@@ -298,6 +319,8 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ControlListBox.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/CrashDialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/CrashReporter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/BezierBendTool.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/BezierBendToolController.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/CreateBrushesToolBase.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/CreateEntityTool.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/CreateEntityToolController.h
@@ -321,6 +344,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/EntityBrowserView.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/EntityDefinitionFileChooser.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/EntityInspector.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/EntityListInspector.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/EntityPropertyEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/EntityPropertyGrid.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/EntityPropertyItemDelegate.h
@@ -389,6 +413,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/MaterialBrowserView.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/MaterialCollectionEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/MiniToolBarLayout.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ModelBrushImporter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ModEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/MousePreferencePane.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/MoveHandleDragTracker.h
@@ -402,6 +427,11 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ObjExportDialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/OnePaneMapView.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PickRequest.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PolygonCutTool.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PolygonCutToolController.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PrefabInspector.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PrefabTool.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PrefabToolController.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PopupButton.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PopupWindow.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/PreferenceDialog.h
@@ -429,16 +459,21 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SweepToolController.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SweepToolPage.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SweepToolUtils.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/RockGeneratorDialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ScaleTool.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ScaleToolController.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ScaleToolPage.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SearchBox.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SelectionTool.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SetBrushFaceAttributesTool.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SculptTool.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SculptToolController.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ShearTool.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ShearToolController.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/KeyboardShortcutUtils.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SignalDelayer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SymmetryTool.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SymmetryToolController.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SliderWithLabel.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartChoiceEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SmartColorEditor.h
@@ -455,6 +490,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/SystemPaths.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/TabBar.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/TabBook.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/TerrainGeneratorDialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/TextOutputAdapter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ThreePaneMapView.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/TitleBar.h
@@ -465,6 +501,7 @@ target_sources(TbUiLib
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ToolChain.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/ToolController.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/TwoPaneMapView.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/UnitySyncDialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/UVCameraTool.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/UVEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/UVOffsetTool.h
@@ -494,6 +531,7 @@ target_link_libraries(TbUiLib
     CompilerConfig
     PrecompileQtHeaders
     PrecompileStdHeaders
+    assimp::assimp
     cpptrace::cpptrace
     ctre::ctre
     Qt6::Svg
@@ -513,6 +551,17 @@ target_link_libraries(TbUiLib
 )
 
 set_target_properties(TbUiLib PROPERTIES AUTOMOC TRUE)
+
+# Create the cmake script for generating the version information
+add_custom_target(TbUiLib_GenerateVersion ${CMAKE_COMMAND}
+  -D UTILS="${CMAKE_SOURCE_DIR}/cmake/Utils.cmake"
+  -D APP_BUILD_TYPE="$<CONFIG>"
+  -D APP_RELEASE_VERSION="${PROJECT_VERSION}"
+  -D SRC="${CMAKE_CURRENT_SOURCE_DIR}/include/ui/Version.h.in"
+  -D DST="${CMAKE_CURRENT_BINARY_DIR}/generated/ui/Version.h"
+  -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
+  -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateVersion.cmake")
+add_dependencies(TbUiLib TbUiLib_GenerateVersion)
 
 if(APPLE)
     # Silence macOS OpenGL deprecation warnings

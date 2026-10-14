@@ -35,6 +35,13 @@ namespace tb::ui
 namespace
 {
 
+constexpr auto EntityPayloadPrefix = "entity:";
+
+bool isEntityPayload(const std::string& payload)
+{
+  return payload.rfind(EntityPayloadPrefix, 0) == 0;
+}
+
 class CreateEntityDropTracker : public DropTracker
 {
 private:
@@ -91,6 +98,11 @@ const Tool& CreateEntityToolController::tool() const
 bool CreateEntityToolController::shouldAcceptDrop(
   const InputState&, const std::string& payload) const
 {
+  if (!isEntityPayload(payload))
+  {
+    return false;
+  }
+
   const auto parts = kdl::str_split(payload, ":");
   return parts.size() == 2 && parts[0] == "entity";
 }
@@ -98,8 +110,12 @@ bool CreateEntityToolController::shouldAcceptDrop(
 std::unique_ptr<DropTracker> CreateEntityToolController::acceptDrop(
   const InputState& inputState, const std::string& payload)
 {
+  if (!shouldAcceptDrop(inputState, payload))
+  {
+    return nullptr;
+  }
+
   const auto parts = kdl::str_split(payload, ":");
-  contract_assert(parts.size() == 2 && parts[0] == "entity");
 
   return m_tool.createEntity(parts[1]) ? createDropTracker(inputState) : nullptr;
 }

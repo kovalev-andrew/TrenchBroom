@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <path
+    d="M4.5 4.5h15v15h-15z"
+    fill="#7f7f7f"
+    fill-opacity=".25"
+    stroke="#7f7f7f"
+    stroke-width="1"/>
+  <path
+    d="M8 8h8v8H8z"
+    fill="#3a3a3a"
+    fill-opacity=".35"
+    stroke="#f8e63c"
+    stroke-width="1.4"
+    stroke-linejoin="round"/>
+  <path
+    d="M4.5 4.5 8 8M19.5 4.5 16 8M19.5 19.5 16 16M4.5 19.5 8 16"
+    fill="none"
+    stroke="#ff7f01"
+    stroke-width="1.7"
+    stroke-linecap="round"/>
+  <path
+    d="M4.5 4.5h15v15h-15z"
+    fill="none"
+    stroke="#ffffff"
+    stroke-opacity=".35"
+    stroke-width=".8"/>
+</svg>

@@ -24,11 +24,14 @@
 namespace tb::ui
 {
 class AppController;
+class EntityListInspector;
 class FaceInspector;
 class EntityInspector;
 class MapDocument;
 class MapInspector;
+class MapWindow;
 class MapViewBar;
+class PrefabInspector;
 class SyncHeightEventFilter;
 class TabBook;
 
@@ -36,7 +39,9 @@ enum class InspectorPage
 {
   Map = 0,
   Entity = 1,
-  Face = 2
+  Face = 2,
+  Prefabs = 3,
+  EntityList = 4
 };
 
 class Inspector : public QWidget
@@ -47,12 +52,17 @@ private:
   MapInspector* m_mapInspector = nullptr;
   EntityInspector* m_entityInspector = nullptr;
   FaceInspector* m_faceInspector = nullptr;
+  PrefabInspector* m_prefabInspector = nullptr;
+  EntityListInspector* m_entityListInspector = nullptr;
 
   SyncHeightEventFilter* m_syncTabBarEventFilter = nullptr;
 
 public:
   Inspector(
-    AppController& appController, MapDocument& document, QWidget* parent = nullptr);
+    AppController& appController,
+    MapDocument& document,
+    MapWindow& mapWindow,
+    QWidget* parent = nullptr);
   ~Inspector() override;
 
   void connectTopWidgets(MapViewBar* mapViewBar);

@@ -23,7 +23,7 @@ macro(GET_APP_VERSION_STR VERSION_YEAR VERSION_NUMBER VERSION_RC VERSION_STR)
 endmacro(GET_APP_VERSION_STR)
 
 macro(GET_APP_VERSION GIT_DESCRIBE VERSION_YEAR VERSION_NUMBER VERSION_RC)
-    STRING(REGEX MATCH "v([0-9][0-9][0-9][0-9])[.]([0-9]+)(-RC([0-9]+))?" GIT_DESCRIBE_MATCH "${${GIT_DESCRIBE}}")
+    STRING(REGEX MATCH "v([0-9]+)[.]([0-9]+)(-RC([0-9]+))?" GIT_DESCRIBE_MATCH "${${GIT_DESCRIBE}}")
 
     if(GIT_DESCRIBE_MATCH)
         set(${VERSION_YEAR} ${CMAKE_MATCH_1})
@@ -32,7 +32,7 @@ macro(GET_APP_VERSION GIT_DESCRIBE VERSION_YEAR VERSION_NUMBER VERSION_RC)
           set(${VERSION_RC} ${CMAKE_MATCH_4})
         endif()
     else()
-        # GIT_DESCRIBE is not a release tag following the "v0000.0" format.
+        # GIT_DESCRIBE is not a release tag following the "vMAJOR.MINOR" format.
         set(${VERSION_YEAR} "0")
         set(${VERSION_NUMBER} "0")
     endif()

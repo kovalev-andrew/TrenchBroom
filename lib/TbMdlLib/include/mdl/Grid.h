@@ -32,6 +32,8 @@
 #include "vm/vec.h"
 
 #include <array>
+#include <cmath>
+#include <limits>
 #include <optional>
 
 // FIXME: should this be moved to Model?
@@ -47,6 +49,7 @@ public:
 
 private:
   int m_size;
+  double m_rotation = 0.0;
   bool m_snap = true;
   bool m_visible = true;
 
@@ -63,6 +66,22 @@ public:
   void incSize();
   void decSize();
   double actualSize() const;
+
+  double rotation() const;
+  void setRotation(double rotation);
+
+  template <typename T, size_t S>
+  vm::vec<T, S> toGridSpace(const vm::vec<T, S>& p) const
+  {
+    return toGridSpaceXY(p);
+  }
+
+  template <typename T, size_t S>
+  vm::vec<T, S> fromGridSpace(const vm::vec<T, S>& p) const
+  {
+    return fromGridSpaceXY(p);
+  }
+
   /**
    * Snap increment in radians for angle snapping
    */
@@ -173,6 +192,115 @@ private:
     }
   }
 
+  template <typename T>
+  static SnapDir snapDirForDirection(const T direction)
+  {
+    return direction < T(0) ? SnapDir::Down
+                            : (direction > T(0) ? SnapDir::Up : SnapDir::None);
+  }
+
+  template <typename T>
+  std::array<T, 2> rotateCoords(const T x, const T y, const double angle) const
+  {
+    const auto c = std::cos(angle);
+    const auto s = std::sin(angle);
+    return {
+      static_cast<T>(c * static_cast<double>(x) - s * static_cast<double>(y)),
+      static_cast<T>(s * static_cast<double>(x) + c * static_cast<double>(y))};
+  }
+
+  template <typename T, size_t S>
+  vm::vec<T, S> transformGridAxes(
+    const vm::vec<T, S>& p,
+    const size_t axis0,
+    const size_t axis1,
+    const double angle) const
+  {
+    auto result = p;
+    const auto rotated = rotateCoords(p[axis0], p[axis1], angle);
+    result[axis0] = rotated[0];
+    result[axis1] = rotated[1];
+    return result;
+  }
+
+  template <typename T, size_t S>
+  vm::vec<T, S> toGridSpaceXY(const vm::vec<T, S>& p) const
+  {
+    if constexpr (S >= 2)
+    {
+      return transformGridAxes(p, 0, 1, m_rotation);
+    }
+    else
+    {
+      return p;
+    }
+  }
+
+  template <typename T, size_t S>
+  vm::vec<T, S> fromGridSpaceXY(const vm::vec<T, S>& p) const
+  {
+    if constexpr (S >= 2)
+    {
+      return transformGridAxes(p, 0, 1, -m_rotation);
+    }
+    else
+    {
+      return p;
+    }
+  }
+
+  template <typename T, size_t S>
+  vm::vec<T, S> snapLocal(
+    const vm::vec<T, S>& p, const SnapDir snapDir, const bool skip = false) const
+  {
+    auto result = vm::vec<T, S>{};
+    for (size_t i = 0; i < S; ++i)
+    {
+      result[i] = snap(p[i], snapDir, skip);
+    }
+    return result;
+  }
+
+  template <typename T, size_t S>
+  void snapGridAxes(
+    vm::vec<T, S>& result,
+    const vm::vec<T, S>& p,
+    const size_t axis0,
+    const size_t axis1,
+    const SnapDir snapDir0,
+    const SnapDir snapDir1,
+    const bool skip = false) const
+  {
+    auto gridCoords = rotateCoords(p[axis0], p[axis1], m_rotation);
+    gridCoords[0] = snap(gridCoords[0], snapDir0, skip);
+    gridCoords[1] = snap(gridCoords[1], snapDir1, skip);
+
+    const auto worldCoords = rotateCoords(gridCoords[0], gridCoords[1], -m_rotation);
+    result[axis0] = worldCoords[0];
+    result[axis1] = worldCoords[1];
+  }
+
+  template <typename T, size_t S>
+  void snapGridAxesTowards(
+    vm::vec<T, S>& result,
+    const vm::vec<T, S>& p,
+    const vm::vec<T, S>& direction,
+    const size_t axis0,
+    const size_t axis1,
+    const bool skip = false) const
+  {
+    const auto gridDirection =
+      rotateCoords(direction[axis0], direction[axis1], m_rotation);
+    snapGridAxes(
+      result,
+      p,
+      axis0,
+      axis1,
+      snapDirForDirection(gridDirection[0]),
+      snapDirForDirection(gridDirection[1]),
+      skip);
+  }
+
 public: // Snap vectors.
   /**
    * Snap each component to the nearest grid increment.
@@ -211,12 +339,7 @@ private:
       return p;
     }
 
-    auto result = vm::vec<T, S>{};
-    for (size_t i = 0; i < S; ++i)
-    {
-      result[i] = snap(p[i], snapDir, skip);
-    }
-    return result;
+    return fromGridSpaceXY(snapLocal(toGridSpaceXY(p), snapDir, skip));
   }
 
 public: // Snap towards an arbitrary direction.
@@ -229,14 +352,15 @@ public: // Snap towards an arbitrary direction.
       return p;
     }
 
-    auto result = vm::vec<T, S>{};
+    const auto gridPoint = toGridSpaceXY(p);
+    const auto gridDirection = toGridSpaceXY(d);
+    auto snappedGridPoint = vm::vec<T, S>{};
     for (size_t i = 0; i < S; ++i)
     {
-      result[i] = d[i] > T(0)   ? result[i] = snapUp(p[i], skip)
-                  : d[i] < T(0) ? snapDown(p[i], skip)
-                                : snap(p[i]);
+      snappedGridPoint[i] =
+        snap(gridPoint[i], snapDirForDirection(gridDirection[i]), skip);
     }
-    return result;
+    return fromGridSpaceXY(snappedGridPoint);
   }
 
 public: // Snapping on a plane.
@@ -267,15 +391,23 @@ public: // Snapping on a plane.
     const vm::vec<T, S>& d,
     const bool skip = false) const
   {
-
-    SnapDir snapDirs[S];
-    for (size_t i = 0; i < S; ++i)
+    auto result = vm::vec<T, 3>{};
+    switch (vm::find_abs_max_component(onPlane.normal))
     {
-      snapDirs[i] =
-        (d[i] < 0.0 ? SnapDir::Down : (d[i] > 0.0 ? SnapDir::Up : SnapDir::None));
+    case vm::axis::x:
+      snapGridAxesTowards(result, p, d, 1, 2, skip);
+      result[0] = onPlane.xAt(result.yz());
+      break;
+    case vm::axis::y:
+      snapGridAxesTowards(result, p, d, 0, 2, skip);
+      result[1] = onPlane.yAt(result.xz());
+      break;
+    case vm::axis::z:
+      snapGridAxesTowards(result, p, d, 0, 1, skip);
+      result[2] = onPlane.zAt(result.xy());
+      break;
     }
-
-    return snap(p, onPlane, snapDirs, skip);
+    return result;
   }
 
 private:
@@ -312,18 +444,15 @@ private:
     switch (vm::find_abs_max_component(onPlane.normal))
     {
     case vm::axis::x:
-      result[1] = snap(p.y(), snapDirs[1], skip);
-      result[2] = snap(p.z(), snapDirs[2], skip);
+      snapGridAxes(result, p, 1, 2, snapDirs[1], snapDirs[2], skip);
       result[0] = onPlane.xAt(result.yz());
       break;
     case vm::axis::y:
-      result[0] = snap(p.x(), snapDirs[0], skip);
-      result[2] = snap(p.z(), snapDirs[2], skip);
+      snapGridAxes(result, p, 0, 2, snapDirs[0], snapDirs[2], skip);
       result[1] = onPlane.yAt(result.xz());
       break;
     case vm::axis::z:
-      result[0] = snap(p.x(), snapDirs[0], skip);
-      result[1] = snap(p.y(), snapDirs[1], skip);
+      snapGridAxes(result, p, 0, 1, snapDirs[0], snapDirs[1], skip);
       result[2] = onPlane.zAt(result.xy());
       break;
     }
@@ -337,32 +466,37 @@ public:
   template <typename T>
   vm::vec<T, 3> snap(const vm::vec<T, 3>& p, const vm::line<T, 3> line) const
   {
+    const auto gridPoint = toGridSpaceXY(p);
+    const auto gridLine =
+      vm::line<T, 3>{toGridSpaceXY(line.point), toGridSpaceXY(line.direction)};
+
     // Project the point onto the line.
-    const auto pr = vm::project_point(line, p);
-    const auto prDist = vm::distance_to_projected_point(line, pr);
+    const auto pr = vm::project_point(gridLine, gridPoint);
+    const auto prDist = vm::distance_to_projected_point(gridLine, pr);
 
     auto result = pr;
     auto bestDiff = std::numeric_limits<T>::max();
     for (size_t i = 0; i < 3; ++i)
     {
-      if (line.direction[i] != 0.0)
+      if (gridLine.direction[i] != 0.0)
       {
         const auto v = std::array<T, 2>{
-          {snapDown(pr[i], false) - line.point[i], snapUp(pr[i], false) - line.point[i]}};
+          {snapDown(pr[i], false) - gridLine.point[i],
+           snapUp(pr[i], false) - gridLine.point[i]}};
         for (size_t j = 0; j < 2; ++j)
         {
-          const auto s = v[j] / line.direction[i];
+          const auto s = v[j] / gridLine.direction[i];
           const auto diff = vm::abs_difference(s, prDist);
           if (diff < bestDiff)
           {
-            result = vm::point_at_distance(line, s);
+            result = vm::point_at_distance(gridLine, s);
             bestDiff = diff;
           }
         }
       }
     }
 
-    return result;
+    return fromGridSpaceXY(result);
   }
 
   template <typename T>

@@ -23,6 +23,7 @@
 #include <QResizeEvent>
 #include <QStackedLayout>
 #include <QtSystemDetection>
+#include <QWidgetItem>
 
 #include "PreferenceManager.h"
 #include "Preferences.h"
@@ -32,6 +33,41 @@
 
 namespace tb::ui
 {
+namespace
+{
+// Hidden two-row tool pages must not reserve height for the active one-row page.
+class ToolPageLayout : public QStackedLayout
+{
+public:
+  QSize sizeHint() const override
+  {
+    auto result = QStackedLayout::sizeHint();
+    result.setHeight(
+      currentWidget() ? QWidgetItem{currentWidget()}.sizeHint().height() : 0);
+    return result;
+  }
+
+  QSize minimumSize() const override
+  {
+    auto result = QStackedLayout::minimumSize();
+    result.setHeight(
+      currentWidget() ? QWidgetItem{currentWidget()}.minimumSize().height() : 0);
+    return result;
+  }
+
+  bool hasHeightForWidth() const override
+  {
+    const auto* item = itemAt(currentIndex());
+    return item && item->hasHeightForWidth();
+  }
+
+  int heightForWidth(const int width) const override
+  {
+    const auto* item = itemAt(currentIndex());
+    return item ? item->heightForWidth(width) : -1;
+  }
+};
+} // namespace
 
 MapViewBar::MapViewBar(MapDocument& document, QWidget* parent)
   : ContainerBar(Sides::BottomSide, parent)
@@ -48,8 +84,12 @@ void MapViewBar::createGui(MapDocument& document)
 {
   setAttribute(Qt::WA_MacSmallSize);
 
-  m_toolBook = new QStackedLayout{};
+  m_toolBook = new ToolPageLayout{};
   m_toolBook->setContentsMargins(0, 0, 0, 0);
+  connect(m_toolBook, &QStackedLayout::currentChanged, this, [this](const int) {
+    m_toolBook->invalidate();
+    updateGeometry();
+  });
 
   m_viewEditor = new ViewPopupEditor{document};
 

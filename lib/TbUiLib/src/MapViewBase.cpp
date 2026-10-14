@@ -19,16 +19,33 @@
 
 #include "ui/MapViewBase.h"
 
+#include <QAbstractSpinBox>
 #include <QApplication>
 #include <QClipboard>
 #include <QDebug>
+#include <QDoubleSpinBox>
+#include <QEvent>
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QKeyEvent>
+#include <QKeySequence>
+#include <QLabel>
 #include <QMenu>
 #include <QMimeData>
+#include <QMouseEvent>
+#include <QRect>
+#include <QResizeEvent>
 #include <QShortcut>
+#include <QSignalBlocker>
 #include <QString>
+#include <QStyle>
+#include <QTimer>
+#include <QToolButton>
+#include <QVBoxLayout>
 #include <QtGlobal>
 
 #include "Logger.h"
+#include "Notifier.h"
 #include "PreferenceManager.h"
 #include "Preferences.h"
 #include "gl/Camera.h"
@@ -36,9 +53,12 @@
 #include "gl/FontManager.h"
 #include "gl/GlInterface.h"
 #include "gl/GlManager.h"
+#include "gl/PerspectiveCamera.h"
 #include "mdl/BrushFace.h"
+#include "mdl/BrushFaceHandle.h"
 #include "mdl/BrushNode.h"
 #include "mdl/EditorContext.h"
+#include "mdl/Entity.h"
 #include "mdl/EntityDefinition.h"
 #include "mdl/EntityDefinitionGroup.h"
 #include "mdl/EntityDefinitionManager.h"
@@ -62,10 +82,15 @@
 #include "mdl/Map_Selection.h"
 #include "mdl/Map_World.h"
 #include "mdl/ModelUtils.h"
+#include "mdl/Node.h"
+#include "mdl/NodeContents.h"
 #include "mdl/PatchNode.h"
 #include "mdl/PointTrace.h"
+#include "mdl/Selection.h"
 #include "mdl/Transaction.h"
 #include "mdl/UpdateBrushFaceAttributes.h"
+#include "mdl/NodeHandleManager.h"
+#include "mdl/NodeHandles.h"
 #include "mdl/WorldNode.h"
 #include "render/Compass.h"
 #include "render/MapRenderer.h"
@@ -93,14 +118,672 @@
 #include "kd/vector_utils.h"
 
 #include "vm/polygon.h"
+#include "vm/segment.h"
 #include "vm/util.h"
 
 #include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <optional>
 #include <ranges>
+#include <sstream>
+#include <string>
 #include <vector>
 
 namespace tb::ui
 {
+namespace
+{
+
+enum class TransformHudTarget
+{
+  Vertex,
+  Edge,
+  FaceHandle,
+  BrushFace,
+  Brush,
+};
+
+constexpr auto MaxPreviewQuakeLights = size_t{32};
+
+float renderTimeSeconds()
+{
+  using Clock = std::chrono::steady_clock;
+  static const auto StartTime = Clock::now();
+  return std::chrono::duration<float>{Clock::now() - StartTime}.count();
+}
+
+struct PreviewLightCandidate
+{
+  render::PreviewLight light;
+  double distanceToCameraSquared = 0.0;
+};
+
+std::vector<float> parseFloatList(const std::string& value)
+{
+  auto result = std::vector<float>{};
+  auto stream = std::istringstream{value};
+  auto number = float{};
+  while (stream >> number)
+  {
+    result.push_back(number);
+  }
+  return result;
+}
+
+float parseLightValue(const std::string* value, const float defaultValue)
+{
+  if (value == nullptr)
+  {
+    return defaultValue;
+  }
+
+  const auto values = parseFloatList(*value);
+  return values.empty() ? defaultValue : values.front();
+}
+
+vm::vec3f clampLightColor(const vm::vec3f& color)
+{
+  return vm::vec3f{
+    std::clamp(color.x(), 0.0f, 2.0f),
+    std::clamp(color.y(), 0.0f, 2.0f),
+    std::clamp(color.z(), 0.0f, 2.0f)};
+}
+
+vm::vec3f normalizeLightColor(vm::vec3f color)
+{
+  if (std::max({color.x(), color.y(), color.z()}) > 1.5f)
+  {
+    color = color / 255.0f;
+  }
+  return clampLightColor(color);
+}
+
+vm::vec3f parseLightColor(const std::string* value, const vm::vec3f& defaultValue)
+{
+  if (value == nullptr)
+  {
+    return defaultValue;
+  }
+
+  const auto values = parseFloatList(*value);
+  if (values.size() < 3u)
+  {
+    return defaultValue;
+  }
+
+  return normalizeLightColor(vm::vec3f{values[0], values[1], values[2]});
+}
+
+bool isLightEntity(const mdl::Entity& entity)
+{
+  const auto& classname = entity.classname();
+  return classname == "light" || classname.rfind("light_", 0) == 0;
+}
+
+bool isIntermissionPreviewEntity(const mdl::Entity& entity)
+{
+  return entity.classname() == "info_intermission";
+}
+
+vm::vec3f intermissionPreviewDirection(const mdl::Entity& entity)
+{
+  return vm::vec3f{vm::normalize(entity.rotation() * vm::vec3d{1, 0, 0})};
+}
+
+vm::vec3f intermissionPreviewUp(const mdl::Entity& entity)
+{
+  auto direction = intermissionPreviewDirection(entity);
+  auto up = vm::vec3f{vm::normalize(entity.rotation() * vm::vec3d{0, 0, 1})};
+  if (vm::squared_length(vm::cross(direction, up)) <= 0.000001f)
+  {
+    up = std::abs(direction.z()) < 0.95f ? vm::vec3f{0, 0, 1} : vm::vec3f{0, 1, 0};
+  }
+  return up;
+}
+
+bool isDoorButtonPreviewEntity(const mdl::Entity& entity)
+{
+  const auto& classname = entity.classname();
+  return classname.find("door") != std::string::npos
+         || classname.find("button") != std::string::npos
+         || classname.find("plat") != std::string::npos
+         || classname.find("lift") != std::string::npos
+         || classname.find("elevator") != std::string::npos || classname == "func_train"
+         || classname.find("train") != std::string::npos;
+}
+
+bool isTrainPreviewEntity(const mdl::Entity& entity)
+{
+  const auto& classname = entity.classname();
+  return classname == "func_train" || classname.find("train") != std::string::npos;
+}
+
+bool isLiftPreviewEntity(const mdl::Entity& entity)
+{
+  const auto& classname = entity.classname();
+  return classname.find("plat") != std::string::npos
+         || classname.find("lift") != std::string::npos
+         || classname.find("elevator") != std::string::npos;
+}
+
+double parseDoubleProperty(
+  const mdl::Entity& entity, const std::string& propertyKey, const double defaultValue)
+{
+  const auto* value = entity.property(propertyKey);
+  if (!value)
+  {
+    return defaultValue;
+  }
+
+  auto stream = std::istringstream{*value};
+  auto result = double{};
+  return stream >> result ? result : defaultValue;
+}
+
+vm::vec3d doorButtonPreviewDirection(const mdl::Entity& entity)
+{
+  auto angle =
+    parseDoubleProperty(entity, "angle", isLiftPreviewEntity(entity) ? -2.0 : 0.0);
+  if (const auto* mangle = entity.property("mangle"))
+  {
+    const auto values = parseFloatList(*mangle);
+    if (values.size() >= 2u)
+    {
+      angle = values[1];
+    }
+  }
+
+  if (angle == -1.0)
+  {
+    return vm::vec3d{0, 0, 1};
+  }
+  if (angle == -2.0)
+  {
+    return vm::vec3d{0, 0, -1};
+  }
+
+  constexpr auto Pi = 3.14159265358979323846;
+  const auto radians = angle * Pi / 180.0;
+  return vm::normalize(vm::vec3d{std::cos(radians), std::sin(radians), 0.0});
+}
+
+size_t dominantAxis(const vm::vec3d& direction)
+{
+  const auto absX = std::abs(direction.x());
+  const auto absY = std::abs(direction.y());
+  const auto absZ = std::abs(direction.z());
+  if (absX >= absY && absX >= absZ)
+  {
+    return 0u;
+  }
+  if (absY >= absZ)
+  {
+    return 1u;
+  }
+  return 2u;
+}
+
+double doorButtonPreviewDistance(const mdl::EntityNodeBase& entityNode)
+{
+  const auto& entity = entityNode.entity();
+  const auto& classname = entity.classname();
+  if (isLiftPreviewEntity(entity))
+  {
+    const auto explicitHeight = std::max(
+      {parseDoubleProperty(entity, "height", 0.0),
+       parseDoubleProperty(entity, "_height", 0.0),
+       parseDoubleProperty(entity, "distance", 0.0),
+       parseDoubleProperty(entity, "move_distance", 0.0)});
+    if (explicitHeight > 0.0)
+    {
+      return explicitHeight;
+    }
+  }
+
+  const auto direction = doorButtonPreviewDirection(entity);
+  const auto size = entityNode.logicalBounds().size();
+  const auto axis = dominantAxis(direction);
+  const auto extent = std::max(1.0, size[axis]);
+  const auto defaultLip = classname.find("button") != std::string::npos ? 4.0 : 8.0;
+  const auto lip = std::max(0.0, parseDoubleProperty(entity, "lip", defaultLip));
+  return std::max(1.0, extent - lip);
+}
+
+double doorButtonPreviewDurationSeconds(
+  const mdl::EntityNodeBase& entityNode, const double distance)
+{
+  const auto& entity = entityNode.entity();
+  const auto& classname = entity.classname();
+  const auto defaultSpeed = classname.find("button") != std::string::npos ? 40.0 : 100.0;
+  const auto speed = std::max(1.0, parseDoubleProperty(entity, "speed", defaultSpeed));
+  return std::clamp(distance / speed, 0.12, 8.0);
+}
+
+double doorButtonPreviewPingPongProgress(
+  const double elapsedSeconds, const double durationSeconds)
+{
+  const auto duration = std::max(0.001, durationSeconds);
+  const auto cycle = duration * 2.0;
+  const auto phase = std::fmod(std::max(0.0, elapsedSeconds), cycle);
+  const auto progress = phase <= duration ? phase / duration : (cycle - phase) / duration;
+  return std::clamp(progress, 0.0, 1.0);
+}
+
+struct TrainPreviewPath
+{
+  std::vector<vm::vec3d> points;
+  bool closed = false;
+};
+
+mdl::EntityNodeBase* findEntityNodeWithTargetname(
+  mdl::Node& node, const std::string& targetname)
+{
+  if (auto* entityNode = dynamic_cast<mdl::EntityNodeBase*>(&node))
+  {
+    if (
+      const auto* value =
+        entityNode->entity().property(mdl::EntityPropertyKeys::Targetname))
+    {
+      if (*value == targetname)
+      {
+        return entityNode;
+      }
+    }
+  }
+
+  for (auto* child : node.children())
+  {
+    if (auto* result = findEntityNodeWithTargetname(*child, targetname))
+    {
+      return result;
+    }
+  }
+
+  return nullptr;
+}
+
+vm::vec3d trainPreviewPathPoint(const mdl::EntityNodeBase& entityNode)
+{
+  if (const auto* origin = entityNode.entity().property(mdl::EntityPropertyKeys::Origin))
+  {
+    if (!origin->empty())
+    {
+      return entityNode.entity().origin();
+    }
+  }
+
+  return entityNode.logicalBounds().center();
+}
+
+TrainPreviewPath collectTrainPreviewPath(
+  mdl::Map& map, const mdl::EntityNodeBase& trainEntity)
+{
+  auto result = TrainPreviewPath{};
+  const auto* target = trainEntity.entity().property(mdl::EntityPropertyKeys::Target);
+  if (!target || target->empty())
+  {
+    return result;
+  }
+
+  auto targetname = *target;
+  auto visitedNodes = std::vector<mdl::EntityNodeBase*>{};
+  for (auto i = size_t{0}; i < 256u && !targetname.empty(); ++i)
+  {
+    auto* pathNode = findEntityNodeWithTargetname(map.worldNode(), targetname);
+    if (!pathNode)
+    {
+      break;
+    }
+
+    const auto visitedIt = std::ranges::find(visitedNodes, pathNode);
+    if (visitedIt != std::end(visitedNodes))
+    {
+      result.closed = pathNode == visitedNodes.front() && result.points.size() > 1u;
+      break;
+    }
+
+    visitedNodes.push_back(pathNode);
+    result.points.push_back(trainPreviewPathPoint(*pathNode));
+
+    const auto* nextTarget = pathNode->entity().property(mdl::EntityPropertyKeys::Target);
+    if (!nextTarget || nextTarget->empty())
+    {
+      break;
+    }
+    targetname = *nextTarget;
+  }
+
+  return result;
+}
+
+size_t trainPreviewSegmentCount(const TrainPreviewPath& path)
+{
+  if (path.points.size() < 2u)
+  {
+    return 0u;
+  }
+  return path.closed ? path.points.size() : path.points.size() - 1u;
+}
+
+double trainPreviewPathLength(const TrainPreviewPath& path)
+{
+  auto result = 0.0;
+  const auto segmentCount = trainPreviewSegmentCount(path);
+  for (auto i = size_t{0}; i < segmentCount; ++i)
+  {
+    const auto next = (i + 1u) % path.points.size();
+    result += vm::length(path.points[next] - path.points[i]);
+  }
+  return result;
+}
+
+vm::vec3d trainPreviewPathPointAtDistance(
+  const TrainPreviewPath& path, const double distance)
+{
+  if (path.points.empty())
+  {
+    return vm::vec3d{};
+  }
+
+  const auto totalLength = trainPreviewPathLength(path);
+  if (totalLength <= 0.0001)
+  {
+    return path.points.front();
+  }
+
+  auto remaining = path.closed ? std::fmod(std::max(0.0, distance), totalLength)
+                               : std::clamp(distance, 0.0, totalLength);
+
+  const auto segmentCount = trainPreviewSegmentCount(path);
+  for (auto i = size_t{0}; i < segmentCount; ++i)
+  {
+    const auto next = (i + 1u) % path.points.size();
+    const auto from = path.points[i];
+    const auto to = path.points[next];
+    const auto segmentLength = vm::length(to - from);
+    if (segmentLength <= 0.0001)
+    {
+      continue;
+    }
+
+    if (remaining <= segmentLength || i + 1u == segmentCount)
+    {
+      const auto progress = std::clamp(remaining / segmentLength, 0.0, 1.0);
+      return from + (to - from) * progress;
+    }
+
+    remaining -= segmentLength;
+  }
+
+  return path.closed ? path.points.front() : path.points.back();
+}
+
+vm::vec3d trainPreviewDelta(
+  mdl::Map& map,
+  const mdl::EntityNodeBase& trainEntity,
+  const vm::vec3d& trainMins,
+  const double elapsedSeconds)
+{
+  const auto path = collectTrainPreviewPath(map, trainEntity);
+  if (path.points.empty())
+  {
+    return vm::vec3d{};
+  }
+
+  const auto totalLength = trainPreviewPathLength(path);
+  if (path.points.size() < 2u || totalLength <= 0.0001)
+  {
+    return path.points.front() - trainMins;
+  }
+
+  const auto speed =
+    std::max(1.0, parseDoubleProperty(trainEntity.entity(), "speed", 100.0));
+  auto distance = std::max(0.0, elapsedSeconds) * speed;
+  if (!path.closed)
+  {
+    const auto cycle = totalLength * 2.0;
+    const auto phase = std::fmod(distance, cycle);
+    distance = phase <= totalLength ? phase : cycle - phase;
+  }
+
+  return trainPreviewPathPointAtDistance(path, distance) - trainMins;
+}
+
+void collectDoorButtonPreviewBrushes(
+  mdl::Node& node, std::vector<mdl::BrushNode*>& brushes)
+{
+  if (auto* brushNode = dynamic_cast<mdl::BrushNode*>(&node))
+  {
+    brushes.push_back(brushNode);
+    return;
+  }
+
+  for (auto* child : node.children())
+  {
+    collectDoorButtonPreviewBrushes(*child, brushes);
+  }
+}
+
+std::vector<mdl::BrushNode*> collectDoorButtonPreviewBrushes(
+  mdl::EntityNodeBase& entityNode)
+{
+  auto brushes = std::vector<mdl::BrushNode*>{};
+  collectDoorButtonPreviewBrushes(entityNode, brushes);
+  return kdl::vec_sort_and_remove_duplicates(std::move(brushes));
+}
+
+std::optional<render::PreviewLight> makePreviewLight(const mdl::EntityNode& entityNode)
+{
+  const auto& entity = entityNode.entity();
+  if (!isLightEntity(entity))
+  {
+    return std::nullopt;
+  }
+
+  auto color = parseLightColor(entity.property("_color"), vm::vec3f{1.0f, 0.92f, 0.78f});
+  color = parseLightColor(entity.property("color"), color);
+
+  auto intensity = parseLightValue(entity.property("light"), 300.0f);
+  if (const auto* light = entity.property("_light"))
+  {
+    const auto values = parseFloatList(*light);
+    if (values.size() >= 4u)
+    {
+      color = normalizeLightColor(vm::vec3f{values[0], values[1], values[2]});
+      intensity = values[3];
+    }
+    else if (!values.empty())
+    {
+      intensity = values.front();
+    }
+  }
+
+  intensity = std::clamp(intensity, 1.0f, 2500.0f);
+
+  return render::PreviewLight{
+    vm::vec3f{entity.origin()},
+    color,
+    std::clamp(intensity * 1.265f, 53.0f, 2253.0f),
+    std::clamp(intensity / 169.23f, 0.13f, 6.5f)};
+}
+
+void collectPreviewLights(
+  mdl::Node& node,
+  const vm::vec3f& cameraPosition,
+  std::vector<PreviewLightCandidate>& lights)
+{
+  if (auto* entityNode = dynamic_cast<mdl::EntityNode*>(&node))
+  {
+    if (const auto light = makePreviewLight(*entityNode))
+    {
+      const auto delta = vm::vec3d{light->position} - vm::vec3d{cameraPosition};
+      lights.push_back({*light, vm::squared_length(delta)});
+    }
+  }
+
+  for (auto* child : node.children())
+  {
+    collectPreviewLights(*child, cameraPosition, lights);
+  }
+}
+
+std::vector<render::PreviewLight> collectPreviewQuakeLights(
+  mdl::Map& map, const vm::vec3f& cameraPosition)
+{
+  auto candidates = std::vector<PreviewLightCandidate>{};
+  collectPreviewLights(map.worldNode(), cameraPosition, candidates);
+
+  std::sort(
+    std::begin(candidates), std::end(candidates), [](const auto& lhs, const auto& rhs) {
+      return lhs.distanceToCameraSquared < rhs.distanceToCameraSquared;
+    });
+
+  auto result = std::vector<render::PreviewLight>{};
+  result.reserve(std::min(candidates.size(), MaxPreviewQuakeLights));
+  for (size_t i = 0; i < candidates.size() && i < MaxPreviewQuakeLights; ++i)
+  {
+    result.push_back(candidates[i].light);
+  }
+  return result;
+}
+
+struct TransformHudInfo
+{
+  TransformHudTarget target;
+  QString label;
+  vm::vec3d position;
+};
+
+QString formatHudNumber(const double value)
+{
+  return QString::number(value, 'f', 1);
+}
+
+QString formatTransformHudText(const TransformHudInfo& info)
+{
+  return QString{"%1\nX %2  Y %3  Z %4"}
+    .arg(info.label)
+    .arg(formatHudNumber(info.position.x()))
+    .arg(formatHudNumber(info.position.y()))
+    .arg(formatHudNumber(info.position.z()));
+}
+
+bool transformSelectedBrushFaces(mdl::Map& map, const vm::mat4x4d& transform)
+{
+  const auto brushFaces = map.selection().brushFaces;
+  if (brushFaces.empty())
+  {
+    return false;
+  }
+
+  auto processedBrushes = std::vector<mdl::BrushNode*>{};
+  auto nodesToSwap = std::vector<std::pair<mdl::Node*, mdl::NodeContents>>{};
+
+  for (const auto& brushFace : brushFaces)
+  {
+    auto* brushNode = brushFace.node();
+    if (std::ranges::find(processedBrushes, brushNode) != std::end(processedBrushes))
+    {
+      continue;
+    }
+    processedBrushes.push_back(brushNode);
+
+    auto brush = brushNode->brush();
+    auto facesToMove = std::vector<vm::polygon3d>{};
+    for (const auto& otherFace : brushFaces)
+    {
+      if (otherFace.node() == brushNode)
+      {
+        facesToMove.push_back(brush.face(otherFace.faceIndex()).polygon());
+      }
+    }
+
+    if (!brush.canTransformFaces(map.worldBounds(), facesToMove, transform))
+    {
+      return false;
+    }
+
+    const auto result = brush.transformFaces(
+      map.worldBounds(), facesToMove, transform, map.editorContext().uvLock());
+    if (!result)
+    {
+      return false;
+    }
+
+    nodesToSwap.emplace_back(brushNode, mdl::NodeContents{std::move(brush)});
+  }
+
+  return updateNodeContents(map, "Move Brush Face", std::move(nodesToSwap));
+}
+
+std::optional<TransformHudInfo> transformHudInfo(const mdl::Map& map)
+{
+  const auto& selection = map.selection();
+  const auto selectedVertices =
+    map.nodeHandles().selectedHandleCount<mdl::VertexHandle>();
+  const auto selectedEdges = map.nodeHandles().selectedHandleCount<mdl::EdgeHandle>();
+  const auto selectedFaceHandles =
+    map.nodeHandles().selectedHandleCount<mdl::FaceHandle>();
+  const auto selectedBrushFaces = selection.brushFaces.size();
+  const auto noHandles =
+    selectedVertices == 0u && selectedEdges == 0u && selectedFaceHandles == 0u;
+
+  if (
+    selectedVertices == 1u && selectedEdges == 0u && selectedFaceHandles == 0u
+    && selectedBrushFaces == 0u)
+  {
+    return TransformHudInfo{
+      TransformHudTarget::Vertex,
+      QString{"Vertex"},
+      mdl::VertexHandle::getPositions(
+        map.nodeHandles().selectedHandles<mdl::VertexHandle>())
+        .front()};
+  }
+
+  if (
+    selectedEdges == 1u && selectedVertices == 0u && selectedFaceHandles == 0u
+    && selectedBrushFaces == 0u)
+  {
+    return TransformHudInfo{
+      TransformHudTarget::Edge,
+      QString{"Edge"},
+      mdl::EdgeHandle::getPositions(map.nodeHandles().selectedHandles<mdl::EdgeHandle>())
+        .front()
+        .center()};
+  }
+
+  if (selectedFaceHandles == 1u && selectedVertices == 0u && selectedEdges == 0u)
+  {
+    return TransformHudInfo{
+      TransformHudTarget::FaceHandle,
+      QString{"Face"},
+      mdl::FaceHandle::getPositions(map.nodeHandles().selectedHandles<mdl::FaceHandle>())
+        .front()
+        .center()};
+  }
+
+  if (selectedBrushFaces == 1u && noHandles)
+  {
+    return TransformHudInfo{
+      TransformHudTarget::BrushFace,
+      QString{"Face"},
+      selection.brushFaces.front().face().center()};
+  }
+
+  if (selection.brushes.size() == 1u && selectedBrushFaces == 0u && noHandles)
+  {
+    return TransformHudInfo{
+      TransformHudTarget::Brush,
+      QString{"Brush"},
+      selection.brushes.front()->logicalBounds().center()};
+  }
+
+  return std::nullopt;
+}
+
+} // namespace
+
 const int MapViewBase::DefaultCameraAnimationDuration = 250;
 
 MapViewBase::MapViewBase(
@@ -117,6 +800,10 @@ MapViewBase::MapViewBase(
   connectObservers();
 
   setAcceptDrops(true);
+  createTransformHud();
+  createIntermissionPreviewFrame();
+  createDoorButtonPreviewButton();
+  createPreviewSkyTimer();
 }
 
 void MapViewBase::setCompass(std::unique_ptr<render::Compass> compass)
@@ -131,6 +818,8 @@ void MapViewBase::mapViewBaseVirtualInit()
 
 MapViewBase::~MapViewBase()
 {
+  stopDoorButtonPreview(true);
+
   // Deleting m_compass will access the VBO so we need to be current
   // see: http://doc.qt.io/qt-5/qopenglwidget.html#resource-initialization-and-cleanup
   makeCurrent();
@@ -203,9 +892,818 @@ void MapViewBase::createActionsAndUpdatePicking()
   updatePickResult();
 }
 
+void MapViewBase::createTransformHud()
+{
+  m_transformHud = new QFrame{this};
+  m_transformHud->setObjectName("transformHud");
+  m_transformHud->setAttribute(Qt::WA_StyledBackground);
+  m_transformHud->setAutoFillBackground(false);
+  m_transformHud->setCursor(Qt::PointingHandCursor);
+  m_transformHud->setStyleSheet(
+    "QFrame#transformHud {"
+    "  background: rgba(18, 22, 26, 165);"
+    "  border: 1px solid rgba(255, 255, 255, 70);"
+    "  border-radius: 6px;"
+    "}"
+    "QLabel {"
+    "  color: rgba(255, 255, 255, 230);"
+    "  font-size: 11px;"
+    "}");
+
+  auto* layout = new QVBoxLayout{m_transformHud};
+  layout->setContentsMargins(10, 7, 10, 7);
+  layout->setSpacing(0);
+
+  m_transformHudText = new QLabel{m_transformHud};
+  m_transformHudText->setTextFormat(Qt::PlainText);
+  m_transformHudText->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+  layout->addWidget(m_transformHudText);
+
+  m_transformHud->installEventFilter(this);
+  m_transformHudText->installEventFilter(this);
+
+  m_transformHud->hide();
+}
+
+void MapViewBase::createIntermissionPreviewFrame()
+{
+  m_intermissionPreviewFrame = new QFrame{this};
+  m_intermissionPreviewFrame->setObjectName("intermissionPreviewFrame");
+  m_intermissionPreviewFrame->setAttribute(Qt::WA_StyledBackground);
+  m_intermissionPreviewFrame->setAttribute(Qt::WA_TransparentForMouseEvents);
+  m_intermissionPreviewFrame->setAutoFillBackground(false);
+  m_intermissionPreviewFrame->setStyleSheet(
+    "QFrame#intermissionPreviewFrame {"
+    "  background: transparent;"
+    "  border: 1px solid rgba(255, 255, 255, 115);"
+    "  border-radius: 4px;"
+    "}");
+  m_intermissionPreviewFrame->hide();
+}
+
+void MapViewBase::createTransformHudEditor()
+{
+  m_transformHudEditor = new QFrame{this, Qt::Popup | Qt::FramelessWindowHint};
+  m_transformHudEditor->setObjectName("transformHudEditor");
+  m_transformHudEditor->setAttribute(Qt::WA_StyledBackground);
+  m_transformHudEditor->setAutoFillBackground(false);
+  m_transformHudEditor->setStyleSheet(
+    "QFrame#transformHudEditor {"
+    "  background: rgba(18, 22, 26, 225);"
+    "  border: 1px solid rgba(255, 255, 255, 90);"
+    "  border-radius: 6px;"
+    "}"
+    "QLabel {"
+    "  color: rgba(255, 255, 255, 230);"
+    "  font-size: 11px;"
+    "}"
+    "QDoubleSpinBox {"
+    "  color: rgba(255, 255, 255, 235);"
+    "  background: rgba(255, 255, 255, 22);"
+    "  border: 1px solid rgba(255, 255, 255, 70);"
+    "  border-radius: 4px;"
+    "  padding: 3px 5px;"
+    "  selection-background-color: rgba(80, 155, 255, 180);"
+    "}");
+
+  auto* layout = new QHBoxLayout{m_transformHudEditor};
+  layout->setContentsMargins(8, 6, 8, 6);
+  layout->setSpacing(6);
+
+  const auto makeSpinBox = [&](const QString& label) {
+    auto* axisLabel = new QLabel{label, m_transformHudEditor};
+    auto* spinBox = new QDoubleSpinBox{m_transformHudEditor};
+    spinBox->setDecimals(3);
+    spinBox->setRange(-1048576.0, 1048576.0);
+    spinBox->setSingleStep(1.0);
+    spinBox->setAccelerated(true);
+    spinBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    spinBox->setFixedWidth(92);
+
+    layout->addWidget(axisLabel);
+    layout->addWidget(spinBox);
+
+    connect(
+      spinBox,
+      qOverload<double>(&QDoubleSpinBox::valueChanged),
+      this,
+      [this](const double) { applyTransformHudEditorValues(); });
+
+    return spinBox;
+  };
+
+  m_transformHudXSpin = makeSpinBox("X");
+  m_transformHudYSpin = makeSpinBox("Y");
+  m_transformHudZSpin = makeSpinBox("Z");
+
+  m_transformHudEditor->hide();
+}
+
+void MapViewBase::updateTransformHud()
+{
+  if (!m_transformHud || !m_transformHudText)
+  {
+    return;
+  }
+
+  if (m_toolBox.symmetryRelinkInProgress())
+  {
+    hideTransformHudEditor();
+    if (m_intermissionPreviewFrame)
+    {
+      m_intermissionPreviewFrame->hide();
+    }
+    if (m_doorButtonPreviewButton)
+    {
+      m_doorButtonPreviewButton->hide();
+    }
+
+    const auto text = QString{"LOADING..."};
+    if (m_transformHudText->text() != text)
+    {
+      m_transformHudText->setText(text);
+      m_transformHud->adjustSize();
+    }
+    if (m_transformHudText->alignment() != (Qt::AlignCenter | Qt::AlignVCenter))
+    {
+      m_transformHudText->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
+      m_transformHud->adjustSize();
+    }
+
+    positionTransformHud();
+    m_transformHud->show();
+    m_transformHud->raise();
+    return;
+  }
+
+  if (m_transformHudText->alignment() != (Qt::AlignLeft | Qt::AlignVCenter))
+  {
+    m_transformHudText->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+  }
+
+  const auto info = transformHudInfo(m_document.map());
+  if (!info)
+  {
+    hideTransformHudEditor();
+    m_transformHud->hide();
+    updateIntermissionPreviewFrame();
+    updateDoorButtonPreviewButton();
+    return;
+  }
+
+  const auto text = formatTransformHudText(*info);
+  if (m_transformHudText->text() != text)
+  {
+    m_transformHudText->setText(text);
+    m_transformHud->adjustSize();
+  }
+
+  positionTransformHud();
+  m_transformHud->show();
+  m_transformHud->raise();
+  updateTransformHudEditor();
+  updateIntermissionPreviewFrame();
+  updateDoorButtonPreviewButton();
+}
+
+void MapViewBase::positionTransformHud()
+{
+  if (!m_transformHud || !m_transformHudText)
+  {
+    return;
+  }
+
+  m_transformHud->adjustSize();
+
+  const auto margin = 12;
+  const auto x = m_toolBox.symmetryRelinkInProgress()
+                   ? std::max(0, (width() - m_transformHud->width()) / 2)
+                   : std::max(margin, width() - m_transformHud->width() - margin);
+  const auto y = m_toolBox.symmetryRelinkInProgress()
+                   ? std::max(0, (height() - m_transformHud->height()) / 2)
+                   : std::max(margin, height() - m_transformHud->height() - margin);
+  m_transformHud->move(x, y);
+
+  positionTransformHudEditor();
+  positionIntermissionPreviewFrame();
+  positionDoorButtonPreviewButton();
+}
+
+void MapViewBase::updateIntermissionPreviewFrame()
+{
+  if (!m_intermissionPreviewFrame)
+  {
+    return;
+  }
+
+  if (!selectedIntermissionEntity())
+  {
+    m_intermissionPreviewFrame->hide();
+    return;
+  }
+
+  positionIntermissionPreviewFrame();
+  m_intermissionPreviewFrame->show();
+  m_intermissionPreviewFrame->raise();
+}
+
+void MapViewBase::positionIntermissionPreviewFrame()
+{
+  if (!m_intermissionPreviewFrame)
+  {
+    return;
+  }
+
+  m_intermissionPreviewFrame->setGeometry(intermissionPreviewRect());
+}
+
+QRect MapViewBase::intermissionPreviewRect() const
+{
+  constexpr auto margin = 12;
+  constexpr auto spacing = 6;
+
+  const auto previewWidth = std::clamp(width() / 4, 240, 360);
+  const auto previewHeight = std::max(135, previewWidth * 9 / 16);
+  const auto x = std::max(margin, width() - previewWidth - margin);
+
+  auto y = std::max(margin, height() - previewHeight - margin);
+  if (
+    m_transformHud && m_transformHud->isVisible()
+    && !m_toolBox.symmetryRelinkInProgress())
+  {
+    y = m_transformHud->y() - previewHeight - spacing;
+    if (y < margin)
+    {
+      y = m_transformHud->y() + m_transformHud->height() + spacing;
+    }
+  }
+
+  return QRect{x, std::max(margin, y), previewWidth, previewHeight};
+}
+
+mdl::EntityNode* MapViewBase::selectedIntermissionEntity() const
+{
+  const auto& selection = m_document.map().selection();
+  if (
+    selection.entities.size() != 1u || selection.hasBrushes() || selection.hasGroups()
+    || selection.hasPatches() || selection.hasAnyBrushFaces())
+  {
+    return nullptr;
+  }
+
+  auto* entityNode = selection.entities.front();
+  return entityNode && isIntermissionPreviewEntity(entityNode->entity()) ? entityNode
+                                                                         : nullptr;
+}
+
+void MapViewBase::positionTransformHudEditor()
+{
+  if (!m_transformHud || !m_transformHudEditor || !m_transformHudEditor->isVisible())
+  {
+    return;
+  }
+
+  m_transformHudEditor->adjustSize();
+
+  const auto editorWidth = m_transformHudEditor->width();
+  const auto editorHeight = m_transformHudEditor->height();
+  const auto localX = std::max(0, m_transformHud->width() - editorWidth);
+  auto globalTopLeft = m_transformHud->mapToGlobal(QPoint{localX, -editorHeight - 6});
+  if (globalTopLeft.y() < 0)
+  {
+    globalTopLeft =
+      m_transformHud->mapToGlobal(QPoint{localX, m_transformHud->height() + 6});
+  }
+  m_transformHudEditor->move(globalTopLeft);
+}
+
+void MapViewBase::showTransformHudEditor()
+{
+  if (m_toolBox.symmetryRelinkInProgress() || !transformHudInfo(m_document.map()))
+  {
+    return;
+  }
+
+  if (!m_transformHudEditor)
+  {
+    createTransformHudEditor();
+  }
+
+  updateTransformHudEditor();
+  m_transformHudEditor->show();
+  m_transformHudEditor->raise();
+  positionTransformHudEditor();
+
+  if (m_transformHudXSpin)
+  {
+    m_transformHudXSpin->setFocus(Qt::MouseFocusReason);
+    m_transformHudXSpin->selectAll();
+  }
+}
+
+void MapViewBase::hideTransformHudEditor()
+{
+  if (m_transformHudEditor)
+  {
+    m_transformHudEditor->hide();
+  }
+}
+
+void MapViewBase::updateTransformHudEditor()
+{
+  if (!m_transformHudEditor)
+  {
+    return;
+  }
+
+  const auto info = transformHudInfo(m_document.map());
+  if (!info)
+  {
+    hideTransformHudEditor();
+    return;
+  }
+
+  const auto step = std::max(1.0, double(m_document.map().grid().actualSize()));
+  m_updatingTransformHudEditor = true;
+  const auto blockX = QSignalBlocker{m_transformHudXSpin};
+  const auto blockY = QSignalBlocker{m_transformHudYSpin};
+  const auto blockZ = QSignalBlocker{m_transformHudZSpin};
+
+  m_transformHudXSpin->setSingleStep(step);
+  m_transformHudYSpin->setSingleStep(step);
+  m_transformHudZSpin->setSingleStep(step);
+  m_transformHudXSpin->setValue(info->position.x());
+  m_transformHudYSpin->setValue(info->position.y());
+  m_transformHudZSpin->setValue(info->position.z());
+  m_updatingTransformHudEditor = false;
+}
+
+void MapViewBase::applyTransformHudEditorValues()
+{
+  if (m_updatingTransformHudEditor || !m_transformHudEditor)
+  {
+    return;
+  }
+
+  const auto info = transformHudInfo(m_document.map());
+  if (!info)
+  {
+    hideTransformHudEditor();
+    return;
+  }
+
+  const auto target = vm::vec3d{
+    m_transformHudXSpin->value(),
+    m_transformHudYSpin->value(),
+    m_transformHudZSpin->value()};
+  const auto delta = target - info->position;
+  if (vm::is_zero(delta, 0.001))
+  {
+    return;
+  }
+
+  if (!moveTransformHudSelection(delta))
+  {
+    QApplication::beep();
+    updateTransformHudEditor();
+    return;
+  }
+
+  updateTransformHud();
+  update();
+}
+
+bool MapViewBase::moveTransformHudSelection(const vm::vec3d& delta)
+{
+  auto& map = m_document.map();
+  const auto info = transformHudInfo(map);
+  if (!info)
+  {
+    return false;
+  }
+
+  const auto transform = vm::translation_matrix(delta);
+  switch (info->target)
+  {
+  case TransformHudTarget::Vertex:
+    if (m_toolBox.vertexToolActive())
+    {
+      m_toolBox.moveNodeHandles(delta);
+      return true;
+    }
+    return transformVertices(
+             map,
+             mdl::VertexHandle::getPositions(
+               map.nodeHandles().selectedHandles<mdl::VertexHandle>()),
+             transform)
+      .success;
+  case TransformHudTarget::Edge:
+    if (m_toolBox.edgeToolActive())
+    {
+      m_toolBox.moveNodeHandles(delta);
+      return true;
+    }
+    return transformEdges(
+      map,
+      mdl::EdgeHandle::getPositions(map.nodeHandles().selectedHandles<mdl::EdgeHandle>()),
+      transform);
+  case TransformHudTarget::FaceHandle:
+    if (m_toolBox.faceToolActive())
+    {
+      m_toolBox.moveNodeHandles(delta);
+      return true;
+    }
+    return transformFaces(
+      map,
+      mdl::FaceHandle::getPositions(map.nodeHandles().selectedHandles<mdl::FaceHandle>()),
+      transform);
+  case TransformHudTarget::BrushFace:
+    return transformSelectedBrushFaces(map, transform);
+  case TransformHudTarget::Brush:
+    return translateSelection(map, delta);
+  }
+
+  return false;
+}
+
+void MapViewBase::createDoorButtonPreviewButton()
+{
+  m_doorButtonPreviewButton = new QToolButton{this};
+  m_doorButtonPreviewButton->setObjectName("doorButtonPreviewButton");
+  m_doorButtonPreviewButton->setCheckable(true);
+  m_doorButtonPreviewButton->setCursor(Qt::PointingHandCursor);
+  m_doorButtonPreviewButton->setFixedSize(34, 28);
+  m_doorButtonPreviewButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+  m_doorButtonPreviewButton->setToolTip(
+    tr("Play door/button/lift/train animation preview"));
+  m_doorButtonPreviewButton->setStyleSheet(
+    "QToolButton#doorButtonPreviewButton {"
+    "  background: rgba(18, 22, 26, 190);"
+    "  border: 1px solid rgba(255, 255, 255, 85);"
+    "  border-radius: 6px;"
+    "  color: rgba(255, 255, 255, 235);"
+    "}"
+    "QToolButton#doorButtonPreviewButton:hover {"
+    "  background: rgba(35, 42, 48, 220);"
+    "}"
+    "QToolButton#doorButtonPreviewButton:checked {"
+    "  background: rgba(38, 176, 74, 230);"
+    "  border: 1px solid rgba(90, 240, 125, 230);"
+    "}");
+  connect(
+    m_doorButtonPreviewButton,
+    &QToolButton::clicked,
+    this,
+    &MapViewBase::toggleDoorButtonPreview);
+  m_doorButtonPreviewButton->hide();
+
+  m_doorButtonPreviewTimer = new QTimer{this};
+  m_doorButtonPreviewTimer->setInterval(16);
+  connect(
+    m_doorButtonPreviewTimer,
+    &QTimer::timeout,
+    this,
+    &MapViewBase::tickDoorButtonPreview);
+}
+
+void MapViewBase::updateDoorButtonPreviewButton()
+{
+  if (!m_doorButtonPreviewButton)
+  {
+    return;
+  }
+
+  const auto canPreview =
+    !m_toolBox.symmetryRelinkInProgress() && !selectedDoorButtonPreviewEntities().empty();
+  if (!canPreview)
+  {
+    if (m_doorButtonPreviewActive)
+    {
+      stopDoorButtonPreview(true);
+    }
+    m_doorButtonPreviewButton->hide();
+    return;
+  }
+
+  setDoorButtonPreviewButtonActive(m_doorButtonPreviewActive);
+  positionDoorButtonPreviewButton();
+  m_doorButtonPreviewButton->show();
+  m_doorButtonPreviewButton->raise();
+}
+
+void MapViewBase::positionDoorButtonPreviewButton()
+{
+  if (!m_doorButtonPreviewButton || !m_doorButtonPreviewButton->isVisible())
+  {
+    return;
+  }
+
+  constexpr auto margin = 12;
+  constexpr auto spacing = 6;
+  auto x = std::max(margin, width() - m_doorButtonPreviewButton->width() - margin);
+  auto y = std::max(margin, height() - m_doorButtonPreviewButton->height() - margin);
+
+  if (
+    m_transformHud && m_transformHud->isVisible()
+    && !m_toolBox.symmetryRelinkInProgress())
+  {
+    x = std::max(
+      margin,
+      m_transformHud->x() + m_transformHud->width() - m_doorButtonPreviewButton->width());
+    y = m_transformHud->y() - m_doorButtonPreviewButton->height() - spacing;
+    if (y < margin)
+    {
+      y = m_transformHud->y() + m_transformHud->height() + spacing;
+    }
+  }
+
+  m_doorButtonPreviewButton->move(x, y);
+}
+
+void MapViewBase::setDoorButtonPreviewButtonActive(const bool active)
+{
+  if (!m_doorButtonPreviewButton)
+  {
+    return;
+  }
+
+  const auto blocker = QSignalBlocker{m_doorButtonPreviewButton};
+  m_doorButtonPreviewButton->setChecked(active);
+  m_doorButtonPreviewButton->setIcon(
+    style()->standardIcon(active ? QStyle::SP_MediaStop : QStyle::SP_MediaPlay));
+  m_doorButtonPreviewButton->setToolTip(
+    active ? tr("Stop door/button/lift/train animation preview")
+           : tr("Play door/button/lift/train animation preview"));
+}
+
+void MapViewBase::toggleDoorButtonPreview()
+{
+  if (m_doorButtonPreviewActive)
+  {
+    stopDoorButtonPreview(true);
+  }
+  else
+  {
+    startDoorButtonPreview();
+  }
+}
+
+void MapViewBase::startDoorButtonPreview()
+{
+  stopDoorButtonPreview(true);
+
+  const auto entities = selectedDoorButtonPreviewEntities();
+  if (entities.empty())
+  {
+    updateDoorButtonPreviewButton();
+    return;
+  }
+
+  m_doorButtonPreviewEntries.clear();
+  for (auto* entityNode : entities)
+  {
+    auto brushes = collectDoorButtonPreviewBrushes(*entityNode);
+    if (brushes.empty())
+    {
+      continue;
+    }
+
+    auto entry = DoorButtonPreviewEntry{};
+    entry.entity = entityNode;
+    entry.direction = doorButtonPreviewDirection(entityNode->entity());
+    entry.distance = doorButtonPreviewDistance(*entityNode);
+    entry.durationSeconds = doorButtonPreviewDurationSeconds(*entityNode, entry.distance);
+    entry.brushes.reserve(brushes.size());
+    for (auto* brushNode : brushes)
+    {
+      entry.brushes.push_back(DoorButtonPreviewBrushState{brushNode, brushNode->brush()});
+    }
+    m_doorButtonPreviewEntries.push_back(std::move(entry));
+  }
+
+  if (m_doorButtonPreviewEntries.empty())
+  {
+    updateDoorButtonPreviewButton();
+    return;
+  }
+
+  m_doorButtonPreviewActive = true;
+  m_doorButtonPreviewStartTime = std::chrono::steady_clock::now();
+  setDoorButtonPreviewButtonActive(true);
+  applyDoorButtonPreview(0.0);
+  m_doorButtonPreviewTimer->start();
+  update();
+}
+
+void MapViewBase::stopDoorButtonPreview(const bool restore)
+{
+  const auto hadPreview =
+    m_doorButtonPreviewActive || !m_doorButtonPreviewEntries.empty();
+  m_doorButtonPreviewActive = false;
+  if (m_doorButtonPreviewTimer)
+  {
+    m_doorButtonPreviewTimer->stop();
+  }
+
+  if (restore && !m_doorButtonPreviewEntries.empty())
+  {
+    restoreDoorButtonPreview();
+  }
+  m_doorButtonPreviewEntries.clear();
+  setDoorButtonPreviewButtonActive(false);
+
+  if (hadPreview)
+  {
+    updateTransformHud();
+    update();
+  }
+}
+
+void MapViewBase::tickDoorButtonPreview()
+{
+  if (!m_doorButtonPreviewActive)
+  {
+    return;
+  }
+  if (!doorButtonPreviewSelectionMatches())
+  {
+    stopDoorButtonPreview(true);
+    return;
+  }
+
+  const auto elapsed = std::chrono::duration<double>(
+                         std::chrono::steady_clock::now() - m_doorButtonPreviewStartTime)
+                         .count();
+  applyDoorButtonPreview(elapsed);
+  update();
+}
+
+void MapViewBase::applyDoorButtonPreview(const double elapsedSeconds)
+{
+  if (m_doorButtonPreviewEntries.empty())
+  {
+    return;
+  }
+
+  auto& map = m_document.map();
+  auto changedNodes = std::vector<mdl::Node*>{};
+  for (const auto& entry : m_doorButtonPreviewEntries)
+  {
+    for (const auto& brushState : entry.brushes)
+    {
+      changedNodes.push_back(brushState.node);
+    }
+  }
+  changedNodes = kdl::vec_sort_and_remove_duplicates(std::move(changedNodes));
+
+  auto notifyNodes = NotifyBeforeAndAfter{
+    map.nodesWillChangeNotifier, map.nodesDidChangeNotifier, changedNodes};
+  const auto lockMaterials = map.editorContext().alignmentLock();
+  for (auto& entry : m_doorButtonPreviewEntries)
+  {
+    auto delta = vm::vec3d{};
+    if (isTrainPreviewEntity(entry.entity->entity()))
+    {
+      auto sourceBounds = vm::bbox3d::builder{};
+      for (const auto& brushState : entry.brushes)
+      {
+        sourceBounds.add(brushState.brush.bounds());
+      }
+      delta =
+        trainPreviewDelta(map, *entry.entity, sourceBounds.bounds().min, elapsedSeconds);
+    }
+    else
+    {
+      entry.direction = doorButtonPreviewDirection(entry.entity->entity());
+      entry.distance = doorButtonPreviewDistance(*entry.entity);
+      entry.durationSeconds =
+        doorButtonPreviewDurationSeconds(*entry.entity, entry.distance);
+
+      const auto progress =
+        doorButtonPreviewPingPongProgress(elapsedSeconds, entry.durationSeconds);
+      delta = entry.direction * (entry.distance * progress);
+    }
+    const auto transformation = vm::translation_matrix(delta);
+
+    for (const auto& brushState : entry.brushes)
+    {
+      auto brush = brushState.brush;
+      if (brush.transform(map.worldBounds(), transformation, lockMaterials))
+      {
+        brushState.node->setBrushForPreview(std::move(brush));
+      }
+      else
+      {
+        brushState.node->setBrushForPreview(brushState.brush);
+      }
+    }
+  }
+}
+
+void MapViewBase::restoreDoorButtonPreview()
+{
+  auto& map = m_document.map();
+  auto changedNodes = std::vector<mdl::Node*>{};
+  for (const auto& entry : m_doorButtonPreviewEntries)
+  {
+    for (const auto& brushState : entry.brushes)
+    {
+      changedNodes.push_back(brushState.node);
+    }
+  }
+  changedNodes = kdl::vec_sort_and_remove_duplicates(std::move(changedNodes));
+  if (changedNodes.empty())
+  {
+    return;
+  }
+
+  auto notifyNodes = NotifyBeforeAndAfter{
+    map.nodesWillChangeNotifier, map.nodesDidChangeNotifier, changedNodes};
+  for (const auto& entry : m_doorButtonPreviewEntries)
+  {
+    for (const auto& brushState : entry.brushes)
+    {
+      brushState.node->setBrushForPreview(brushState.brush);
+    }
+  }
+}
+
+std::vector<mdl::EntityNodeBase*> MapViewBase::selectedDoorButtonPreviewEntities() const
+{
+  auto& map = m_document.map();
+  const auto& selection = map.selection();
+  if (!selection.hasAny())
+  {
+    return {};
+  }
+
+  auto result = std::vector<mdl::EntityNodeBase*>{};
+  for (auto* entityNode : selection.allEntities())
+  {
+    if (!entityNode || entityNode == &map.worldNode())
+    {
+      return {};
+    }
+    if (!isDoorButtonPreviewEntity(entityNode->entity()))
+    {
+      return {};
+    }
+    if (collectDoorButtonPreviewBrushes(*entityNode).empty())
+    {
+      return {};
+    }
+    result.push_back(entityNode);
+  }
+
+  return kdl::vec_sort_and_remove_duplicates(std::move(result));
+}
+
+bool MapViewBase::doorButtonPreviewSelectionMatches() const
+{
+  auto currentEntities = selectedDoorButtonPreviewEntities();
+  auto previewEntities = std::vector<mdl::EntityNodeBase*>{};
+  previewEntities.reserve(m_doorButtonPreviewEntries.size());
+  for (const auto& entry : m_doorButtonPreviewEntries)
+  {
+    previewEntities.push_back(entry.entity);
+  }
+  previewEntities = kdl::vec_sort_and_remove_duplicates(std::move(previewEntities));
+  return currentEntities == previewEntities;
+}
+
+void MapViewBase::createPreviewSkyTimer()
+{
+  m_previewSkyTimer = new QTimer{this};
+  m_previewSkyTimer->setInterval(33);
+  connect(m_previewSkyTimer, &QTimer::timeout, this, [this]() { update(); });
+  updatePreviewSkyTimer();
+}
+
+void MapViewBase::updatePreviewSkyTimer()
+{
+  if (!m_previewSkyTimer)
+  {
+    return;
+  }
+
+  if (pref(Preferences::PreviewQuakeLighting))
+  {
+    if (!m_previewSkyTimer->isActive())
+    {
+      m_previewSkyTimer->start();
+    }
+  }
+  else
+  {
+    m_previewSkyTimer->stop();
+  }
+}
+
 void MapViewBase::documentWasLoaded()
 {
+  stopDoorButtonPreview(false);
   createActionsAndUpdatePicking();
+  updateTransformHud();
   update();
 }
 
@@ -213,13 +1711,19 @@ void MapViewBase::documentDidChange()
 {
   updatePickResult();
   updateActionStates();
+  updateTransformHud();
   update();
 }
 
 void MapViewBase::selectionDidChange(const mdl::SelectionChange&)
 {
+  if (m_doorButtonPreviewActive && !doorButtonPreviewSelectionMatches())
+  {
+    stopDoorButtonPreview(true);
+  }
   updatePickResult();
   updateActionStates();
+  updateTransformHud();
   update();
 }
 
@@ -227,6 +1731,7 @@ void MapViewBase::toolChanged(Tool&)
 {
   updatePickResult();
   updateActionStates();
+  updateTransformHud();
   update();
 }
 
@@ -281,6 +1786,10 @@ void MapViewBase::preferenceDidChange(const std::filesystem::path& path)
   if (path == Preferences::RendererFontSize.path)
   {
     fontManager().clearCache();
+  }
+  if (path == Preferences::PreviewQuakeLighting.path)
+  {
+    updatePreviewSkyTimer();
   }
 
   updateActionBindings();
@@ -498,6 +2007,7 @@ void MapViewBase::flip(const vm::direction direction)
     // Instead, snap to 1/2 the grid size.
     // (see: https://github.com/TrenchBroom/TrenchBroom/issues/1495 )
     auto halfGrid = mdl::Grid{map.grid().size()};
+    halfGrid.setRotation(map.grid().rotation());
     halfGrid.decSize();
 
     const auto center = halfGrid.referencePoint(*map.selectionBounds());
@@ -639,6 +2149,16 @@ void MapViewBase::performSweep()
   m_toolBox.performSweep();
 }
 
+void MapViewBase::performPolygonCut()
+{
+  m_toolBox.performPolygonCut();
+}
+
+void MapViewBase::performPolygonSpawn()
+{
+  m_toolBox.performPolygonSpawn();
+}
+
 void MapViewBase::resetCameraZoom()
 {
   camera().setZoom(1.0f);
@@ -646,6 +2166,12 @@ void MapViewBase::resetCameraZoom()
 
 void MapViewBase::cancel()
 {
+  if (m_toolBox.parameterToolActive())
+  {
+    m_toolBox.deactivateCurrentTool();
+    return;
+  }
+
   if (!ToolBoxConnector::cancel())
   {
     auto& map = m_document.map();
@@ -879,6 +2405,11 @@ void MapViewBase::toggleShadeFaces()
   togglePref(Preferences::ShadeFaces);
 }
 
+void MapViewBase::togglePreviewQuakeLighting()
+{
+  togglePref(Preferences::PreviewQuakeLighting);
+}
+
 void MapViewBase::toggleShowFog()
 {
   togglePref(Preferences::ShowFog);
@@ -909,6 +2440,26 @@ void MapViewBase::hideAllEntityLinks()
   setPref(Preferences::FaceRenderMode, Preferences::EntityLinkModeNone);
 }
 
+bool MapViewBase::eventFilter(QObject* watched, QEvent* event)
+{
+  if (
+    (watched == m_transformHud || watched == m_transformHudText)
+    && event->type() == QEvent::MouseButtonPress)
+  {
+    auto* mouseEvent = static_cast<QMouseEvent*>(event);
+    if (
+      mouseEvent->button() == Qt::LeftButton && m_transformHud
+      && m_transformHud->isVisible() && !m_toolBox.symmetryRelinkInProgress())
+    {
+      showTransformHudEditor();
+      mouseEvent->accept();
+      return true;
+    }
+  }
+
+  return RenderView::eventFilter(watched, event);
+}
+
 bool MapViewBase::event(QEvent* event)
 {
   if (event->type() == QEvent::WindowDeactivate)
@@ -936,14 +2487,36 @@ void MapViewBase::focusOutEvent(QFocusEvent* event)
   RenderView::focusOutEvent(event);
 }
 
+void MapViewBase::keyPressEvent(QKeyEvent* event)
+{
+  if (event->matches(QKeySequence::Undo) && m_toolBox.undoActiveToolStep())
+  {
+    event->accept();
+    updateTransformHud();
+    update();
+    return;
+  }
+
+  RenderView::keyPressEvent(event);
+}
+
+void MapViewBase::resizeEvent(QResizeEvent* event)
+{
+  RenderView::resizeEvent(event);
+  positionTransformHud();
+}
+
 ActionContext::Type MapViewBase::actionContext() const
 {
   const auto& map = m_document.map();
 
   const auto viewContext = viewActionContext();
-  const auto toolContext =
-    m_toolBox.assembleBrushToolActive()  ? ActionContext::AssembleBrushTool
-    : m_toolBox.clipToolActive()         ? ActionContext::ClipTool
+  auto toolContext =
+    m_toolBox.assembleBrushToolActive() ? ActionContext::AssembleBrushTool
+    : m_toolBox.clipToolActive()        ? ActionContext::ClipTool
+    : m_toolBox.polygonCutToolActive() || m_toolBox.polygonSpawnToolActive()
+      ? ActionContext::PolygonCutTool
+    : m_toolBox.bezierBendToolActive()   ? ActionContext::BezierBendTool
     : m_toolBox.anyVertexToolActive()    ? ActionContext::AnyVertexTool
     : m_toolBox.controlPointToolActive() ? ActionContext::ControlPointTool
     : m_toolBox.rotateToolActive()       ? ActionContext::RotateTool
@@ -956,6 +2529,26 @@ ActionContext::Type MapViewBase::actionContext() const
     : map.selection().hasNodes()      ? ActionContext::NodeSelection
     : map.selection().hasBrushFaces() ? ActionContext::FaceSelection
                                       : ActionContext::NoSelection;
+  if (m_toolBox.polygonCutToolActive())
+  {
+    toolContext |= ActionContext::PolygonCutMode;
+  }
+  if (m_toolBox.polygonSpawnToolActive())
+  {
+    toolContext |= ActionContext::PolygonSpawnMode;
+  }
+  if (m_toolBox.bevelToolActive())
+  {
+    toolContext |= ActionContext::BevelMode;
+  }
+  if (m_toolBox.insetToolActive())
+  {
+    toolContext |= ActionContext::InsetMode;
+  }
+  if (m_toolBox.spinToolActive())
+  {
+    toolContext |= ActionContext::SpinMode;
+  }
   return viewContext | toolContext | selectionContext;
 }
 
@@ -1014,6 +2607,7 @@ bool MapViewBase::shouldRenderFocusIndicator() const
 void MapViewBase::renderContents(gl::Gl& gl)
 {
   preRender();
+  updateTransformHud();
 
   const auto& fontPath = pref(Preferences::RendererFontPath);
   const auto fontSize = static_cast<size_t>(pref(Preferences::RendererFontSize));
@@ -1024,6 +2618,7 @@ void MapViewBase::renderContents(gl::Gl& gl)
 
   auto renderContext =
     render::RenderContext{gl, renderMode(), camera(), fontManager(), shaderManager()};
+  renderContext.setTimeSeconds(renderTimeSeconds());
   renderContext.setFilterMode(
     pref(Preferences::TextureMinFilter), pref(Preferences::TextureMagFilter));
   renderContext.setShowMaterials(
@@ -1032,6 +2627,11 @@ void MapViewBase::renderContents(gl::Gl& gl)
     pref(Preferences::FaceRenderMode) != Preferences::FaceRenderModeSkip);
   renderContext.setShowEdges(pref(Preferences::ShowEdges));
   renderContext.setShadeFaces(pref(Preferences::ShadeFaces));
+  renderContext.setPreviewLighting(
+    pref(Preferences::PreviewQuakeLighting),
+    pref(Preferences::PreviewQuakeLighting)
+      ? collectPreviewQuakeLights(m_document.map(), camera().position())
+      : std::vector<render::PreviewLight>{});
   renderContext.setShowPointEntities(pref(Preferences::ShowPointEntities));
   renderContext.setShowPointEntityModels(pref(Preferences::ShowPointEntityModels));
   renderContext.setShowEntityClassnames(pref(Preferences::ShowEntityClassnames));
@@ -1064,6 +2664,83 @@ void MapViewBase::renderContents(gl::Gl& gl)
   renderFPS(renderContext, renderBatch);
 
   renderBatch.render(renderContext);
+  renderIntermissionPreview(gl);
+}
+
+void MapViewBase::renderIntermissionPreview(gl::Gl& gl)
+{
+  auto* entityNode = selectedIntermissionEntity();
+  if (
+    !entityNode || !m_intermissionPreviewFrame
+    || !m_intermissionPreviewFrame->isVisible())
+  {
+    return;
+  }
+
+  const auto rect = intermissionPreviewRect();
+  if (rect.width() <= 0 || rect.height() <= 0)
+  {
+    return;
+  }
+
+  const auto r = devicePixelRatioF();
+  const auto viewport = gl::Camera::Viewport{
+    rect.x(), height() - rect.y() - rect.height(), rect.width(), rect.height()};
+
+  auto previewCamera = gl::PerspectiveCamera{
+    pref(Preferences::CameraFov),
+    camera().nearPlane(),
+    camera().farPlane(),
+    viewport,
+    vm::vec3f{entityNode->entity().origin()},
+    intermissionPreviewDirection(entityNode->entity()),
+    intermissionPreviewUp(entityNode->entity())};
+
+  auto renderContext = render::RenderContext{
+    gl, render::RenderMode::Render3D, previewCamera, fontManager(), shaderManager()};
+  renderContext.setTimeSeconds(renderTimeSeconds());
+  renderContext.setFilterMode(
+    pref(Preferences::TextureMinFilter), pref(Preferences::TextureMagFilter));
+  renderContext.setShowMaterials(
+    pref(Preferences::FaceRenderMode) == Preferences::FaceRenderModeTextured);
+  renderContext.setShowFaces(
+    pref(Preferences::FaceRenderMode) != Preferences::FaceRenderModeSkip);
+  renderContext.setShowEdges(pref(Preferences::ShowEdges));
+  renderContext.setShadeFaces(pref(Preferences::ShadeFaces));
+  renderContext.setPreviewLighting(
+    pref(Preferences::PreviewQuakeLighting),
+    pref(Preferences::PreviewQuakeLighting)
+      ? collectPreviewQuakeLights(m_document.map(), previewCamera.position())
+      : std::vector<render::PreviewLight>{});
+  renderContext.setShowPointEntities(false);
+  renderContext.setShowPointEntityModels(false);
+  renderContext.setShowEntityClassnames(false);
+  renderContext.setShowGroupBounds(false);
+  renderContext.setShowBrushEntityBounds(false);
+  renderContext.setShowPointEntityBounds(false);
+  renderContext.setShowFog(pref(Preferences::ShowFog));
+  renderContext.setShowGrid(false);
+  renderContext.setGridSize(m_document.map().grid().actualSize());
+  renderContext.setDpiScale(static_cast<float>(window()->devicePixelRatioF()));
+  renderContext.setHideSelection();
+
+  gl.pushAttrib(
+    GL_VIEWPORT_BIT | GL_ENABLE_BIT | GL_SCISSOR_BIT | GL_COLOR_BUFFER_BIT
+    | GL_DEPTH_BUFFER_BIT);
+  setupGL(renderContext);
+  gl.enable(GL_SCISSOR_TEST);
+  gl.scissor(
+    static_cast<GLint>(std::round(double(viewport.x) * r)),
+    static_cast<GLint>(std::round(double(viewport.y) * r)),
+    static_cast<GLsizei>(std::round(double(viewport.width) * r)),
+    static_cast<GLsizei>(std::round(double(viewport.height) * r)));
+  gl.clearColor(0.02f, 0.023f, 0.026f, 1.0f);
+  gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  auto renderBatch = render::RenderBatch{vboManager()};
+  m_document.mapRenderer().render(renderContext, renderBatch);
+  renderBatch.render(renderContext);
+  gl.popAttrib();
 }
 
 void MapViewBase::preRender() {}
@@ -1288,8 +2965,9 @@ void MapViewBase::showPopupMenuLater()
   }
 
   const auto moveSelectionToItems = moveSelectionTo->actions();
-  moveSelectionTo->setEnabled(std::ranges::any_of(
-    moveSelectionToItems, [](QAction* action) { return action->isEnabled(); }));
+  moveSelectionTo->setEnabled(
+    std::ranges::any_of(
+      moveSelectionToItems, [](QAction* action) { return action->isEnabled(); }));
 
   if (selectedObjectLayers.size() == 1u)
   {
@@ -1341,13 +3019,14 @@ void MapViewBase::showPopupMenuLater()
       menu.addAction(tr("Make Structural"), this, &MapViewBase::makeStructural);
     moveToWorldAction->setEnabled(canMakeStructural());
 
-    const auto isEntity = newBrushParent->accept(kdl::overload(
-      [](const mdl::WorldNode&) { return false; },
-      [](const mdl::LayerNode&) { return false; },
-      [](const mdl::GroupNode&) { return false; },
-      [](const mdl::EntityNode&) { return true; },
-      [](const mdl::BrushNode&) { return false; },
-      [](const mdl::PatchNode&) { return false; }));
+    const auto isEntity = newBrushParent->accept(
+      kdl::overload(
+        [](const mdl::WorldNode&) { return false; },
+        [](const mdl::LayerNode&) { return false; },
+        [](const mdl::GroupNode&) { return false; },
+        [](const mdl::EntityNode&) { return true; },
+        [](const mdl::BrushNode&) { return false; },
+        [](const mdl::PatchNode&) { return false; }));
 
     if (isEntity)
     {

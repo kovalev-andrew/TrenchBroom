@@ -149,6 +149,7 @@ private:
   void createToolsMenu();
   void createViewMenu();
   void createRunMenu();
+  void createUnityMenu();
   void createDebugMenu();
   void createHelpMenu();
 

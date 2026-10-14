@@ -75,7 +75,9 @@ bool removeVertices(
 bool snapVertices(Map& map, double snapTo);
 
 bool csgConvexMerge(Map& map);
+bool convertTriangulatedBrushes(Map& map);
 bool csgSubtract(Map& map);
+bool csgSubtract2(Map& map);
 bool csgIntersect(Map& map);
 bool csgHollow(Map& map);
 

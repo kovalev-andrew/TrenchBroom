@@ -26,6 +26,7 @@ void TestGl::clear(GLbitfield) {}
 void TestGl::clearColor(GLfloat, GLfloat, GLfloat, GLfloat) {}
 
 void TestGl::viewport(GLint, GLint, GLsizei, GLsizei) {}
+void TestGl::scissor(GLint, GLint, GLsizei, GLsizei) {}
 
 void TestGl::matrixMode(GLenum) {}
 void TestGl::loadMatrixd(const GLdouble*) {}

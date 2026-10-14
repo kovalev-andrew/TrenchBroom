@@ -50,6 +50,12 @@ private:
 
 public:
   explicit MaterialCollectionEditor(MapDocument& document, QWidget* parent = nullptr);
+  void addTextureFolder();
+  void refreshTextureFolders();
+  bool configureTextureExportPalette();
+
+signals:
+  void showSettingsPanelRequested();
 
 private:
   void addSelectedMaterialCollections();

@@ -24,13 +24,13 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "TrenchBroom"
-            VALUE "FileDescription", "TrenchBroom Level Editor"
-            VALUE "FileVersion", VERSION_WIN_RC
+            VALUE "CompanyName", "ReyondBroom"
+            VALUE "FileDescription", "ReyondBroom Level Editor"
+            VALUE "FileVersion", VERSION_STR
             VALUE "InternalName", "TrenchBroom.exe"
             VALUE "LegalCopyright", "Copyright (C) 2010"
             VALUE "OriginalFilename", "TrenchBroom.exe"
-            VALUE "ProductName", "TrenchBroom"
+            VALUE "ProductName", "ReyondBroom"
             VALUE "ProductVersion", VERSION_STR
         END
     END

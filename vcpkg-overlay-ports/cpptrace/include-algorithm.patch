@@ -1,0 +1,12 @@
+diff --git a/src/utils/string_view.hpp b/src/utils/string_view.hpp
+index 8c63393..579537f 100644
+--- a/src/utils/string_view.hpp
++++ b/src/utils/string_view.hpp
+@@ -1,6 +1,7 @@
+ #ifndef STRING_VIEW_HPP
+ #define STRING_VIEW_HPP
+ 
++#include <algorithm>
+ #include <cstddef>
+ #include <cstring>
+ #include <iterator>

@@ -20,26 +20,39 @@
 #pragma once
 
 #include "NotifierConnection.h"
+#include "mdl/Brush.h"
 #include "ui/ActionContext.h"
 #include "ui/CameraLinkHelper.h"
 #include "ui/MapView.h"
 #include "ui/RenderView.h"
 #include "ui/ToolBoxConnector.h"
 
+#include <chrono>
 #include <filesystem>
 #include <utility>
 #include <vector>
 
+class QAction;
+class QDoubleSpinBox;
+class QEvent;
+class QFrame;
+class QKeyEvent;
+class QLabel;
 class QMenu;
+class QObject;
+class QRect;
+class QResizeEvent;
 class QShortcut;
 class QString;
-class QAction;
+class QTimer;
+class QToolButton;
 
 namespace tb
 {
 namespace gl
 {
 class Camera;
+class Gl;
 }
 
 namespace mdl
@@ -47,6 +60,9 @@ namespace mdl
 class GroupNode;
 class Map;
 class Node;
+class BrushNode;
+class EntityNode;
+class EntityNodeBase;
 class Selection;
 class SmartTag;
 
@@ -104,6 +120,36 @@ private:
   bool m_isCurrent = false;
 
   SignalDelayer* m_updateActionStatesSignalDelayer = nullptr;
+  QFrame* m_transformHud = nullptr;
+  QLabel* m_transformHudText = nullptr;
+  QFrame* m_transformHudEditor = nullptr;
+  QDoubleSpinBox* m_transformHudXSpin = nullptr;
+  QDoubleSpinBox* m_transformHudYSpin = nullptr;
+  QDoubleSpinBox* m_transformHudZSpin = nullptr;
+  bool m_updatingTransformHudEditor = false;
+  QFrame* m_intermissionPreviewFrame = nullptr;
+
+  struct DoorButtonPreviewBrushState
+  {
+    mdl::BrushNode* node = nullptr;
+    mdl::Brush brush;
+  };
+
+  struct DoorButtonPreviewEntry
+  {
+    mdl::EntityNodeBase* entity = nullptr;
+    std::vector<DoorButtonPreviewBrushState> brushes;
+    vm::vec3d direction = vm::vec3d{1, 0, 0};
+    double distance = 0.0;
+    double durationSeconds = 0.25;
+  };
+
+  QToolButton* m_doorButtonPreviewButton = nullptr;
+  QTimer* m_doorButtonPreviewTimer = nullptr;
+  QTimer* m_previewSkyTimer = nullptr;
+  std::vector<DoorButtonPreviewEntry> m_doorButtonPreviewEntries;
+  std::chrono::steady_clock::time_point m_doorButtonPreviewStartTime{};
+  bool m_doorButtonPreviewActive = false;
 
   NotifierConnection m_notifierConnection;
 
@@ -142,6 +188,36 @@ private:
   void connectObservers();
 
   void createActionsAndUpdatePicking();
+  void createTransformHud();
+  void createTransformHudEditor();
+  void updateTransformHud();
+  void positionTransformHud();
+  void positionTransformHudEditor();
+  void showTransformHudEditor();
+  void hideTransformHudEditor();
+  void updateTransformHudEditor();
+  void applyTransformHudEditorValues();
+  bool moveTransformHudSelection(const vm::vec3d& delta);
+  void createIntermissionPreviewFrame();
+  void updateIntermissionPreviewFrame();
+  void positionIntermissionPreviewFrame();
+  QRect intermissionPreviewRect() const;
+  mdl::EntityNode* selectedIntermissionEntity() const;
+  void renderIntermissionPreview(gl::Gl& gl);
+  void createDoorButtonPreviewButton();
+  void updateDoorButtonPreviewButton();
+  void positionDoorButtonPreviewButton();
+  void setDoorButtonPreviewButtonActive(bool active);
+  void toggleDoorButtonPreview();
+  void startDoorButtonPreview();
+  void stopDoorButtonPreview(bool restore);
+  void tickDoorButtonPreview();
+  void applyDoorButtonPreview(double elapsedSeconds);
+  void restoreDoorButtonPreview();
+  std::vector<mdl::EntityNodeBase*> selectedDoorButtonPreviewEntities() const;
+  bool doorButtonPreviewSelectionMatches() const;
+  void createPreviewSkyTimer();
+  void updatePreviewSkyTimer();
 
   void documentWasLoaded();
   void documentDidChange();
@@ -214,6 +290,8 @@ public: // tool mode actions
 
   void toggleClipSide();
   void performClip();
+  void performPolygonCut();
+  void performPolygonSpawn();
 
   void performSweep();
 
@@ -291,6 +369,7 @@ public: // view filters
   void hideMaterials();
   void hideFaces();
   void toggleShadeFaces();
+  void togglePreviewQuakeLighting();
   void toggleShowFog();
   void toggleShowEdges();
   void showAllEntityLinks();
@@ -298,9 +377,12 @@ public: // view filters
   void showDirectlySelectedEntityLinks();
   void hideAllEntityLinks();
 
+  bool eventFilter(QObject* watched, QEvent* event) override;
   bool event(QEvent* event) override;
   void focusInEvent(QFocusEvent* event) override;
   void focusOutEvent(QFocusEvent* event) override;
+  void keyPressEvent(QKeyEvent* event) override;
+  void resizeEvent(QResizeEvent* event) override;
 
 public:
   ActionContext::Type actionContext() const;

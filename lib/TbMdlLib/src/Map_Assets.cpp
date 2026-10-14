@@ -126,16 +126,27 @@ void setEnabledMaterialCollections(
   const auto pushSelection = PushSelection{map};
   deselectAll(map);
 
+  const auto uniqueEnabledMaterialCollections =
+    kdl::vec_sort_and_remove_duplicates(enabledMaterialCollections);
   const auto enabledMaterialCollectionStr = kdl::str_join(
-    kdl::vec_sort_and_remove_duplicates(enabledMaterialCollections)
-      | std::views::transform([](const auto& path) { return path.string(); })
-      | kdl::ranges::to<std::vector>(),
+    uniqueEnabledMaterialCollections | std::views::transform([](const auto& path) {
+      return path.string();
+    }) | kdl::ranges::to<std::vector>(),
     ";");
 
   auto success = setEntityProperty(
     map, EntityPropertyKeys::TbEnabledMaterialCollections, enabledMaterialCollectionStr);
 
-  if (disabledMaterialCollections(map).empty())
+  const auto knownMaterialCollections = kdl::vec_sort_and_remove_duplicates(
+    map.materialManager().collections()
+    | std::views::transform([](const auto& collection) { return collection.path(); })
+    | kdl::ranges::to<std::vector>());
+
+  if (
+    kdl::set_difference(knownMaterialCollections, uniqueEnabledMaterialCollections)
+      .empty()
+    && kdl::set_difference(uniqueEnabledMaterialCollections, knownMaterialCollections)
+         .empty())
   {
     success = removeEntityProperty(map, EntityPropertyKeys::TbEnabledMaterialCollections);
   }

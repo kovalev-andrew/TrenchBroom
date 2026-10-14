@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <path
+    d="M5 18c1.2-5.7 4.2-9.2 8.3-10.4"
+    fill="none"
+    stroke="#f8e63c"
+    stroke-width="2"
+    stroke-linecap="round"/>
+  <path
+    d="M8.1 16.1l3.7 1.1M10.4 11.8l3.5 1.9M14 8.6l2.8 2.6"
+    fill="none"
+    stroke="#ffffff"
+    stroke-opacity=".65"
+    stroke-width="1.2"
+    stroke-linecap="round"/>
+  <path
+    d="M4.5 17.5h4.2v3H4.5z"
+    fill="#3a3a3a"
+    fill-opacity=".35"
+    stroke="#7f7f7f"
+    stroke-width="1"/>
+  <path
+    d="M15.8 5.6h3.7v3.7h-3.7z"
+    fill="#ff4fc3"
+    fill-opacity=".45"
+    stroke="#ff4fc3"
+    stroke-width="1.2"/>
+  <path
+    d="M17.65 3.4v8.1M13.6 7.45h8.1"
+    fill="none"
+    stroke="#ff4fc3"
+    stroke-width="1.1"
+    stroke-linecap="round"/>
+  <path
+    d="M5 18c1.2-5.7 4.2-9.2 8.3-10.4"
+    fill="none"
+    stroke="#ff7f01"
+    stroke-width=".8"
+    stroke-linecap="round"
+    stroke-dasharray="1.6 2.2"/>
+</svg>

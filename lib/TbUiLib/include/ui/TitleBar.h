@@ -40,6 +40,8 @@ public:
     bool boldTitle = true);
   explicit TitleBar(
     const QString& title, int hMargin = 0, int vMargin = 0, bool boldTitle = true);
+
+  void addWidget(QWidget* widget);
 };
 
 } // namespace tb::ui

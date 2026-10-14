@@ -20,22 +20,35 @@
 #include "ui/MapWindow.h"
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QChildEvent>
 #include <QClipboard>
 #include <QComboBox>
+#include <QDialogButtonBox>
+#include <QDoubleSpinBox>
 #include <QFileDialog>
+#include <QFormLayout>
+#include <QGroupBox>
+#include <QHBoxLayout>
 #include <QInputDialog>
+#include <QKeyEvent>
 #include <QLabel>
+#include <QLineEdit>
+#include <QListWidget>
 #include <QMessageBox>
 #include <QMimeData>
 #include <QPushButton>
 #include <QSettings>
+#include <QSignalBlocker>
+#include <QSlider>
+#include <QSplitter>
 #include <QStatusBar>
 #include <QString>
 #include <QStringList>
 #include <QTableWidget>
 #include <QTimer>
 #include <QToolBar>
+#include <QToolButton>
 #include <QVBoxLayout>
 #include <QtGlobal>
 
@@ -44,16 +57,22 @@
 #include "gl/GlManager.h"
 #include "gl/ResourceManager.h"
 #include "mdl/Autosaver.h"
+#include "mdl/BrushBuilder.h"
 #include "mdl/BrushFace.h"
 #include "mdl/BrushNode.h"
 #include "mdl/EditorContext.h"
 #include "mdl/Entity.h"
+#include "mdl/EntityDefinition.h"
+#include "mdl/EntityDefinitionManager.h"
+#include "mdl/EntityDefinitionUtils.h"
 #include "mdl/EntityNode.h"
 #include "mdl/EntityNodeBase.h"
 #include "mdl/EnvironmentConfig.h"
+#include "mdl/EntityProperties.h"
 #include "mdl/ExportOptions.h"
 #include "mdl/GameInfo.h"
 #include "mdl/Grid.h"
+#include "mdl/Group.h"
 #include "mdl/GroupNode.h"
 #include "mdl/LayerNode.h"
 #include "mdl/Map.h"
@@ -72,6 +91,8 @@
 #include "mdl/Node.h"
 #include "mdl/PasteType.h"
 #include "mdl/PatchNode.h"
+#include "mdl/NodeHandleManager.h"
+#include "mdl/NodeHandles.h"
 #include "mdl/VisualEffect.h"
 #include "mdl/WorldNode.h"
 #include "ui/Action.h"
@@ -86,11 +107,13 @@
 #include "ui/Console.h"
 #include "ui/CrashReporter.h"
 #include "ui/EdgeTool.h"
+#include "ui/EntityBrowser.h"
 #include "ui/FaceInspector.h"
 #include "ui/FaceTool.h"
 #include "ui/FractureDialog.h"
 #include "ui/PerforateDialog.h"
 #include "ui/SettleDialog.h"
+#include "ui/GuideCapture.h"
 #include "ui/InfoPanel.h"
 #include "ui/Inspector.h"
 #include "ui/LaunchGameEngineDialog.h"
@@ -99,6 +122,7 @@
 #include "ui/MapViewBase.h"
 #include "ui/MapViewToolBox.h"
 #include "ui/MapWindowManager.h"
+#include "ui/ModelBrushImporter.h"
 #include "ui/ObjExportDialog.h"
 #include "ui/QPathUtils.h"
 #include "ui/QStringUtils.h"
@@ -107,10 +131,14 @@
 #include "ui/RecentDocuments.h"
 #include "ui/RenderView.h"
 #include "ui/ReplaceMaterialDialog.h"
+#include "ui/RockGeneratorDialog.h"
 #include "ui/SignalDelayer.h"
 #include "ui/Splitter.h"
 #include "ui/SwitchableMapViewContainer.h"
+#include "ui/TerrainGeneratorDialog.h"
+#include "ui/UnitySyncDialog.h"
 #include "ui/VertexTool.h"
+#include "ui/ViewConstants.h"
 #include "ui/ViewUtils.h"
 #include "ui/WadUtils.h"
 #include "ui/WidgetState.h"
@@ -131,10 +159,19 @@
 #include <fmt/std.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
+#include <cmath>
+#include <filesystem>
+#include <iomanip>
 #include <iterator>
+#include <map>
+#include <ranges>
+#include <set>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -164,6 +201,841 @@ QString lastCompilationProfileSettingsKey(const std::string& gameName)
 {
   return QString::fromLatin1("Compilation/LastProfile/%1")
     .arg(QString::fromStdString(gameName));
+}
+
+constexpr auto SpawnMasterDestinationKey = "_tb_spawn_master_destination";
+constexpr auto SpawnMasterClassnameKey = "_tb_spawn_master_classname";
+constexpr auto SpawnMasterTeleportTargetKey = "_tb_spawn_master_teleport_target";
+constexpr auto SpawnMasterGroupKey = "_tb_spawn_master_group";
+constexpr auto SpawnMasterClosetGroupName = "SpawnMasterCloset";
+
+std::string entityPropertyOrEmpty(
+  const mdl::EntityNodeBase& entityNode, const std::string& key)
+{
+  if (const auto* value = entityNode.entity().property(key))
+  {
+    return *value;
+  }
+  return "";
+}
+
+std::string entityPropertyOrEmpty(const mdl::Entity& entity, const std::string& key)
+{
+  if (const auto* value = entity.property(key))
+  {
+    return *value;
+  }
+  return "";
+}
+
+bool isSpawnMasterSourceEntity(const mdl::EntityNodeBase& entityNode)
+{
+  const auto& classname = entityNode.entity().classname();
+  if (classname == mdl::EntityPropertyValues::WorldspawnClassname)
+  {
+    return false;
+  }
+
+  return classname.starts_with("trigger_") || classname == "func_button"
+         || classname.find("button") != std::string::npos;
+}
+
+mdl::EntityNodeBase* selectedSpawnMasterSource(mdl::Map& map)
+{
+  auto sourceEntities = map.selection().allEntities();
+  sourceEntities.erase(
+    std::remove_if(
+      std::begin(sourceEntities),
+      std::end(sourceEntities),
+      [](const auto* entityNode) { return !isSpawnMasterSourceEntity(*entityNode); }),
+    std::end(sourceEntities));
+
+  sourceEntities = kdl::vec_sort_and_remove_duplicates(std::move(sourceEntities));
+  return sourceEntities.size() == 1u ? sourceEntities.front() : nullptr;
+}
+
+void collectTargetnames(const mdl::Node& node, std::set<std::string>& targetnames)
+{
+  node.accept(
+    kdl::overload(
+      [&](auto&& thisLambda, const mdl::WorldNode& worldNode) {
+        worldNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::LayerNode& layerNode) {
+        layerNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::GroupNode& groupNode) {
+        groupNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::EntityNode& entityNode) {
+        if (
+          const auto* targetname =
+            entityNode.entity().property(mdl::EntityPropertyKeys::Targetname))
+        {
+          if (!targetname->empty())
+          {
+            targetnames.insert(*targetname);
+          }
+        }
+        entityNode.visitChildren(thisLambda);
+      },
+      [](const mdl::BrushNode&) {},
+      [](const mdl::PatchNode&) {}));
+}
+
+std::vector<std::string> collectTargetnames(const mdl::Map& map)
+{
+  auto targetnames = std::set<std::string>{};
+  collectTargetnames(map.worldNode(), targetnames);
+  return targetnames | std::views::all | kdl::ranges::to<std::vector>();
+}
+
+void collectGroupNames(const mdl::Node& node, std::set<std::string>& groupNames)
+{
+  node.accept(
+    kdl::overload(
+      [&](auto&& thisLambda, const mdl::WorldNode& worldNode) {
+        worldNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::LayerNode& layerNode) {
+        layerNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::GroupNode& groupNode) {
+        groupNames.insert(groupNode.group().name());
+        groupNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::EntityNode& entityNode) {
+        entityNode.visitChildren(thisLambda);
+      },
+      [](const mdl::BrushNode&) {},
+      [](const mdl::PatchNode&) {}));
+}
+
+std::string nextSpawnMasterName(
+  std::set<std::string>& usedNames, const std::string& prefix)
+{
+  for (auto index = 1; index < 1000000; ++index)
+  {
+    auto stream = std::ostringstream{};
+    stream << prefix << "_" << std::setw(3) << std::setfill('0') << index;
+    auto name = stream.str();
+    if (!usedNames.contains(name))
+    {
+      usedNames.insert(name);
+      return name;
+    }
+  }
+
+  return prefix;
+}
+
+std::set<std::string> collectUsedTargetnames(const mdl::Map& map)
+{
+  auto usedNames = std::set<std::string>{};
+  collectTargetnames(map.worldNode(), usedNames);
+  return usedNames;
+}
+
+std::string defaultSpawnMasterClassname(const mdl::Map& map)
+{
+  const auto& definitionManager = map.entityDefinitionManager();
+  const auto& definitions = definitionManager.definitions(
+    mdl::EntityDefinitionType::Point, mdl::EntityDefinitionSortOrder::Name);
+
+  const auto monsterIt = std::ranges::find_if(definitions, [](const auto* definition) {
+    return definition && definition->name.starts_with("monster_");
+  });
+  if (monsterIt != std::end(definitions))
+  {
+    return (*monsterIt)->name;
+  }
+
+  const auto itemIt = std::ranges::find_if(definitions, [](const auto* definition) {
+    return definition && definition->name.starts_with("item_");
+  });
+  if (itemIt != std::end(definitions))
+  {
+    return (*itemIt)->name;
+  }
+
+  return definitions.empty() ? "" : definitions.front()->name;
+}
+
+class SpawnMasterDialog : public QDialog
+{
+private:
+  std::vector<std::string> m_targetnames;
+  std::string m_selectedTargetname;
+  std::string m_selectedClassname;
+
+  QLineEdit* m_targetSearch = nullptr;
+  QListWidget* m_targetList = nullptr;
+  QLabel* m_selectedEntityLabel = nullptr;
+  QDialogButtonBox* m_buttonBox = nullptr;
+
+public:
+  SpawnMasterDialog(
+    AppController& appController,
+    MapDocument& document,
+    std::vector<std::string> targetnames,
+    std::string initialTargetname,
+    std::string initialClassname,
+    QWidget* parent)
+    : QDialog{parent}
+    , m_targetnames{std::move(targetnames)}
+    , m_selectedTargetname{std::move(initialTargetname)}
+    , m_selectedClassname{std::move(initialClassname)}
+  {
+    setWindowTitle(tr("Spawn Master"));
+    resize(780, 520);
+
+    if (m_selectedTargetname.empty() && !m_targetnames.empty())
+    {
+      m_selectedTargetname = m_targetnames.front();
+    }
+    if (m_selectedClassname.empty())
+    {
+      m_selectedClassname = defaultSpawnMasterClassname(document.map());
+    }
+
+    m_targetSearch = new QLineEdit{};
+    m_targetSearch->setPlaceholderText(tr("Search targetname"));
+
+    m_targetList = new QListWidget{};
+    m_targetList->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    auto* targetPanel = new QWidget{};
+    auto* targetLayout = new QVBoxLayout{};
+    targetLayout->setContentsMargins(0, 0, 0, 0);
+    targetLayout->setSpacing(LayoutConstants::NarrowVMargin);
+    targetLayout->addWidget(new QLabel{tr("Destination targetname")}, 0);
+    targetLayout->addWidget(m_targetSearch, 0);
+    targetLayout->addWidget(m_targetList, 1);
+    targetPanel->setLayout(targetLayout);
+
+    auto* entityBrowser = new EntityBrowser{appController, document};
+    entityBrowser->setSelectedEntityDefinition(m_selectedClassname);
+    m_selectedEntityLabel = new QLabel{};
+    m_selectedEntityLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+
+    auto* entityPanel = new QWidget{};
+    auto* entityLayout = new QVBoxLayout{};
+    entityLayout->setContentsMargins(0, 0, 0, 0);
+    entityLayout->setSpacing(LayoutConstants::NarrowVMargin);
+    entityLayout->addWidget(new QLabel{tr("Spawn entity")}, 0);
+    entityLayout->addWidget(m_selectedEntityLabel, 0);
+    entityLayout->addWidget(entityBrowser, 1);
+    entityPanel->setLayout(entityLayout);
+
+    auto* splitter = new QSplitter{Qt::Horizontal};
+    splitter->addWidget(targetPanel);
+    splitter->addWidget(entityPanel);
+    splitter->setStretchFactor(0, 0);
+    splitter->setStretchFactor(1, 1);
+
+    m_buttonBox = new QDialogButtonBox{QDialogButtonBox::Ok | QDialogButtonBox::Cancel};
+
+    auto* outerLayout = new QVBoxLayout{};
+    outerLayout->addWidget(splitter, 1);
+    outerLayout->addWidget(m_buttonBox, 0);
+    setLayout(outerLayout);
+
+    connect(
+      m_targetSearch, &QLineEdit::textChanged, this, [this] { reloadTargetList(); });
+    connect(m_targetList, &QListWidget::itemSelectionChanged, this, [this] {
+      if (auto* item = m_targetList->currentItem())
+      {
+        m_selectedTargetname = item->data(Qt::UserRole).toString().toStdString();
+      }
+      updateUi();
+    });
+    connect(
+      entityBrowser,
+      &EntityBrowser::entityDefinitionSelected,
+      this,
+      [this](const QString& classname) {
+        m_selectedClassname = classname.toStdString();
+        updateUi();
+      });
+    connect(m_buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    connect(m_buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+    reloadTargetList();
+    updateUi();
+  }
+
+  const std::string& selectedTargetname() const { return m_selectedTargetname; }
+  const std::string& selectedClassname() const { return m_selectedClassname; }
+
+private:
+  void reloadTargetList()
+  {
+    const auto filter = m_targetSearch->text();
+    const auto previousSelection = m_selectedTargetname;
+
+    m_targetList->clear();
+    for (const auto& targetname : m_targetnames)
+    {
+      const auto text = QString::fromStdString(targetname);
+      if (filter.isEmpty() || text.contains(filter, Qt::CaseInsensitive))
+      {
+        auto* item = new QListWidgetItem{text};
+        item->setData(Qt::UserRole, text);
+        m_targetList->addItem(item);
+        if (targetname == previousSelection)
+        {
+          item->setSelected(true);
+          m_targetList->setCurrentItem(item);
+        }
+      }
+    }
+
+    if (!m_targetList->currentItem() && m_targetList->count() > 0)
+    {
+      m_targetList->setCurrentRow(0);
+    }
+    updateUi();
+  }
+
+  void updateUi()
+  {
+    m_selectedEntityLabel->setText(
+      m_selectedClassname.empty()
+        ? tr("No entity selected")
+        : tr("Selected: %1").arg(QString::fromStdString(m_selectedClassname)));
+
+    if (auto* okButton = m_buttonBox->button(QDialogButtonBox::Ok))
+    {
+      okButton->setEnabled(!m_selectedTargetname.empty() && !m_selectedClassname.empty());
+    }
+  }
+};
+
+void collectOccupiedBounds(const mdl::Node& node, std::vector<vm::bbox3d>& bounds)
+{
+  node.accept(
+    kdl::overload(
+      [&](auto&& thisLambda, const mdl::WorldNode& worldNode) {
+        worldNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::LayerNode& layerNode) {
+        layerNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::GroupNode& groupNode) {
+        groupNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::EntityNode& entityNode) {
+        if (entityNode.hasChildren())
+        {
+          entityNode.visitChildren(thisLambda);
+        }
+        else
+        {
+          bounds.push_back(entityNode.logicalBounds());
+        }
+      },
+      [&](const mdl::BrushNode& brushNode) {
+        bounds.push_back(brushNode.logicalBounds());
+      },
+      [](const mdl::PatchNode&) {}));
+}
+
+bool overlapsOccupiedBounds(
+  const vm::bbox3d& candidateBounds, const std::vector<vm::bbox3d>& occupiedBounds)
+{
+  return std::ranges::any_of(occupiedBounds, [&](const auto& bounds) {
+    return candidateBounds.intersects(bounds);
+  });
+}
+
+vm::bbox3d findClosetBounds(const mdl::Map& map, const mdl::EntityNodeBase& source)
+{
+  auto occupiedBounds = std::vector<vm::bbox3d>{};
+  collectOccupiedBounds(map.worldNode(), occupiedBounds);
+
+  const auto closetSize = vm::vec3d{256.0, 256.0, 176.0};
+  const auto baseCenter = source.logicalBounds().center() + vm::vec3d{0.0, 0.0, -1000.0};
+  const auto offsets = std::array{
+    vm::vec3d{0.0, 0.0, 0.0},
+    vm::vec3d{320.0, 0.0, 0.0},
+    vm::vec3d{-320.0, 0.0, 0.0},
+    vm::vec3d{0.0, 320.0, 0.0},
+    vm::vec3d{0.0, -320.0, 0.0},
+    vm::vec3d{320.0, 320.0, 0.0},
+    vm::vec3d{-320.0, 320.0, 0.0},
+    vm::vec3d{320.0, -320.0, 0.0},
+    vm::vec3d{-320.0, -320.0, 0.0},
+    vm::vec3d{640.0, 0.0, 0.0},
+    vm::vec3d{-640.0, 0.0, 0.0},
+    vm::vec3d{0.0, 640.0, 0.0},
+    vm::vec3d{0.0, -640.0, 0.0},
+  };
+
+  auto fallback =
+    vm::bbox3d{baseCenter - closetSize / 2.0, baseCenter + closetSize / 2.0};
+
+  for (const auto& offset : offsets)
+  {
+    const auto center = baseCenter + offset;
+    const auto candidateBounds =
+      vm::bbox3d{center - closetSize / 2.0, center + closetSize / 2.0};
+    if (
+      map.worldBounds().contains(candidateBounds)
+      && !overlapsOccupiedBounds(candidateBounds, occupiedBounds))
+    {
+      return candidateBounds;
+    }
+  }
+
+  return fallback;
+}
+
+mdl::GroupNode* findGroupByName(mdl::Node& node, const std::string& groupName)
+{
+  if (groupName.empty())
+  {
+    return nullptr;
+  }
+
+  auto* result = static_cast<mdl::GroupNode*>(nullptr);
+  node.accept(
+    kdl::overload(
+      [&](auto&& thisLambda, mdl::WorldNode& worldNode) {
+        worldNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, mdl::LayerNode& layerNode) {
+        layerNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, mdl::GroupNode& groupNode) {
+        if (!result && groupNode.group().name() == groupName)
+        {
+          result = &groupNode;
+          return;
+        }
+        groupNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, mdl::EntityNode& entityNode) {
+        entityNode.visitChildren(thisLambda);
+      },
+      [](mdl::BrushNode&) {},
+      [](mdl::PatchNode&) {}));
+
+  return result;
+}
+
+bool addCuboidBrush(
+  mdl::GroupNode& groupNode,
+  const mdl::BrushBuilder& builder,
+  const vm::bbox3d& bounds,
+  const std::string& materialName)
+{
+  auto brushResult = builder.createCuboid(bounds, materialName);
+  if (brushResult.is_error())
+  {
+    return false;
+  }
+
+  groupNode.addChild(new mdl::BrushNode{std::move(brushResult).value()});
+  return true;
+}
+
+struct SpawnMasterEntry
+{
+  std::string destinationTargetname;
+  std::string spawnClassname;
+  std::string teleportTargetname;
+  const mdl::EntityDefinition* spawnDefinition = nullptr;
+};
+
+bool isConfiguredSpawnMasterEntity(const mdl::Entity& entity)
+{
+  return !entityPropertyOrEmpty(entity, SpawnMasterDestinationKey).empty()
+         && !entityPropertyOrEmpty(entity, SpawnMasterClassnameKey).empty()
+         && !entityPropertyOrEmpty(entity, SpawnMasterTeleportTargetKey).empty();
+}
+
+void collectConfiguredSpawnMasterSources(
+  mdl::Node& node, std::vector<mdl::EntityNodeBase*>& sources)
+{
+  node.accept(
+    kdl::overload(
+      [&](auto&& thisLambda, mdl::WorldNode& worldNode) {
+        worldNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, mdl::LayerNode& layerNode) {
+        layerNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, mdl::GroupNode& groupNode) {
+        groupNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, mdl::EntityNode& entityNode) {
+        if (
+          isSpawnMasterSourceEntity(entityNode)
+          && isConfiguredSpawnMasterEntity(entityNode.entity()))
+        {
+          sources.push_back(&entityNode);
+        }
+        entityNode.visitChildren(thisLambda);
+      },
+      [](mdl::BrushNode&) {},
+      [](mdl::PatchNode&) {}));
+}
+
+bool makeSpawnMasterEntry(
+  const mdl::Map& map, const mdl::Entity& entity, SpawnMasterEntry& entry)
+{
+  auto destinationTargetname = entityPropertyOrEmpty(entity, SpawnMasterDestinationKey);
+  auto spawnClassname = entityPropertyOrEmpty(entity, SpawnMasterClassnameKey);
+  auto teleportTargetname = entityPropertyOrEmpty(entity, SpawnMasterTeleportTargetKey);
+  if (
+    destinationTargetname.empty() || spawnClassname.empty() || teleportTargetname.empty())
+  {
+    return false;
+  }
+
+  const auto* spawnDefinition = map.entityDefinitionManager().definition(spawnClassname);
+  if (!spawnDefinition || !spawnDefinition->pointEntityDefinition)
+  {
+    return false;
+  }
+
+  entry = SpawnMasterEntry{
+    std::move(destinationTargetname),
+    std::move(spawnClassname),
+    std::move(teleportTargetname),
+    spawnDefinition};
+  return true;
+}
+
+std::vector<SpawnMasterEntry> collectSpawnMasterEntries(
+  mdl::Map& map, const mdl::EntityNodeBase& editedSource, const mdl::Entity& editedEntity)
+{
+  auto sourceNodes = std::vector<mdl::EntityNodeBase*>{};
+  collectConfiguredSpawnMasterSources(map.worldNode(), sourceNodes);
+
+  auto entries = std::vector<SpawnMasterEntry>{};
+  auto usedTeleportTargetnames = std::set<std::string>{};
+  auto editedSourceWasCollected = false;
+
+  const auto addEntity = [&](const mdl::Entity& entity) {
+    auto entry = SpawnMasterEntry{};
+    if (
+      makeSpawnMasterEntry(map, entity, entry)
+      && usedTeleportTargetnames.insert(entry.teleportTargetname).second)
+    {
+      entries.push_back(std::move(entry));
+    }
+  };
+
+  for (auto* sourceNode : sourceNodes)
+  {
+    if (sourceNode == &editedSource)
+    {
+      editedSourceWasCollected = true;
+      addEntity(editedEntity);
+    }
+    else
+    {
+      addEntity(sourceNode->entity());
+    }
+  }
+
+  if (!editedSourceWasCollected)
+  {
+    addEntity(editedEntity);
+  }
+
+  return entries;
+}
+
+std::set<std::string> collectSpawnMasterGroupNames(mdl::Map& map)
+{
+  auto sourceNodes = std::vector<mdl::EntityNodeBase*>{};
+  collectConfiguredSpawnMasterSources(map.worldNode(), sourceNodes);
+
+  auto groupNames = std::set<std::string>{SpawnMasterClosetGroupName};
+  for (const auto* sourceNode : sourceNodes)
+  {
+    auto groupName = entityPropertyOrEmpty(*sourceNode, SpawnMasterGroupKey);
+    if (!groupName.empty())
+    {
+      groupNames.insert(std::move(groupName));
+    }
+  }
+  return groupNames;
+}
+
+bool isLegacySpawnMasterGroupName(const std::string& groupName)
+{
+  constexpr auto LegacyPrefix = std::string_view{"SpawnMaster_"};
+  if (!groupName.starts_with(LegacyPrefix))
+  {
+    return false;
+  }
+
+  const auto suffix = std::string_view{groupName}.substr(LegacyPrefix.size());
+  return !suffix.empty() && std::ranges::all_of(suffix, [](const char c) {
+    return c >= '0' && c <= '9';
+  });
+}
+
+vm::bbox3d findSpawnMasterClosetSeedBounds(
+  mdl::Map& map,
+  const mdl::EntityNodeBase& source,
+  const std::set<std::string>& groupNames)
+{
+  if (auto* group = findGroupByName(map.worldNode(), SpawnMasterClosetGroupName))
+  {
+    if (!group->isAncestorOf(source))
+    {
+      return group->logicalBounds();
+    }
+  }
+
+  for (const auto& groupName : groupNames)
+  {
+    if (groupName == SpawnMasterClosetGroupName)
+    {
+      continue;
+    }
+
+    if (auto* group = findGroupByName(map.worldNode(), groupName))
+    {
+      if (!group->isAncestorOf(source))
+      {
+        return group->logicalBounds();
+      }
+    }
+  }
+
+  return findClosetBounds(map, source);
+}
+
+vm::bbox3d entityDefinitionBounds(const mdl::EntityDefinition& spawnDefinition)
+{
+  if (spawnDefinition.pointEntityDefinition)
+  {
+    return vm::bbox3d{spawnDefinition.pointEntityDefinition->bounds};
+  }
+  return vm::bbox3d{-16.0, 16.0};
+}
+
+std::unique_ptr<mdl::GroupNode> createSpawnMasterCloset(
+  mdl::Map& map,
+  const std::vector<SpawnMasterEntry>& entries,
+  const std::string& groupName,
+  const vm::bbox3d& seedBounds)
+{
+  if (entries.empty())
+  {
+    return nullptr;
+  }
+
+  auto groupNode = std::make_unique<mdl::GroupNode>(mdl::Group{groupName});
+  const auto builder = mdl::BrushBuilder{map.worldNode().mapFormat(), map.worldBounds()};
+  const auto wallMaterial =
+    map.currentMaterialName().empty() ? "skip" : map.currentMaterialName();
+  const auto triggerMaterial = "trigger";
+
+  const auto wall = 16.0;
+  const auto cellGap = 32.0;
+  auto maxEntitySize = vm::vec3d{32.0, 32.0, 64.0};
+  for (const auto& entry : entries)
+  {
+    const auto size = entityDefinitionBounds(*entry.spawnDefinition).size();
+    maxEntitySize[0] = std::max(maxEntitySize[0], size[0]);
+    maxEntitySize[1] = std::max(maxEntitySize[1], size[1]);
+    maxEntitySize[2] = std::max(maxEntitySize[2], size[2]);
+  }
+
+  const auto cellSize = vm::vec3d{
+    std::max(224.0, maxEntitySize[0] + 64.0),
+    std::max(224.0, maxEntitySize[1] + 64.0),
+    std::max(144.0, maxEntitySize[2] + 48.0)};
+  const auto columnCount = std::max<size_t>(
+    1u, static_cast<size_t>(std::ceil(std::sqrt(double(entries.size())))));
+  const auto rowCount = (entries.size() + columnCount - 1u) / columnCount;
+  const auto innerSize = vm::vec3d{
+    double(columnCount) * cellSize[0] + double(columnCount - 1u) * cellGap,
+    double(rowCount) * cellSize[1] + double(rowCount - 1u) * cellGap,
+    cellSize[2]};
+  const auto closetBounds =
+    vm::bbox3d{seedBounds.min, seedBounds.min + innerSize + vm::vec3d{wall * 2.0}};
+  const auto innerMin = closetBounds.min + vm::vec3d{wall, wall, wall};
+  const auto innerMax = closetBounds.max - vm::vec3d{wall, wall, wall};
+
+  const auto floor = vm::bbox3d{
+    closetBounds.min,
+    vm::vec3d{closetBounds.max.x(), closetBounds.max.y(), innerMin.z()}};
+  const auto ceiling = vm::bbox3d{
+    vm::vec3d{closetBounds.min.x(), closetBounds.min.y(), innerMax.z()},
+    closetBounds.max};
+  const auto leftWall = vm::bbox3d{
+    vm::vec3d{closetBounds.min.x(), closetBounds.min.y(), innerMin.z()},
+    vm::vec3d{innerMin.x(), closetBounds.max.y(), innerMax.z()}};
+  const auto rightWall = vm::bbox3d{
+    vm::vec3d{innerMax.x(), closetBounds.min.y(), innerMin.z()},
+    vm::vec3d{closetBounds.max.x(), closetBounds.max.y(), innerMax.z()}};
+  const auto frontWall = vm::bbox3d{
+    vm::vec3d{innerMin.x(), closetBounds.min.y(), innerMin.z()},
+    vm::vec3d{innerMax.x(), innerMin.y(), innerMax.z()}};
+  const auto backWall = vm::bbox3d{
+    vm::vec3d{innerMin.x(), innerMax.y(), innerMin.z()},
+    vm::vec3d{innerMax.x(), closetBounds.max.y(), innerMax.z()}};
+
+  for (const auto& brushBounds :
+       {floor, ceiling, leftWall, rightWall, frontWall, backWall})
+  {
+    if (!addCuboidBrush(*groupNode, builder, brushBounds, wallMaterial))
+    {
+      return nullptr;
+    }
+  }
+
+  for (size_t i = 0; i < entries.size(); ++i)
+  {
+    const auto& entry = entries[i];
+    const auto column = i % columnCount;
+    const auto row = i / columnCount;
+    const auto cellMin = innerMin
+                         + vm::vec3d{
+                           double(column) * (cellSize[0] + cellGap),
+                           double(row) * (cellSize[1] + cellGap),
+                           0.0};
+    const auto cellMax = cellMin + cellSize;
+    const auto cellBounds = vm::bbox3d{cellMin, cellMax};
+
+    auto teleportEntity = mdl::Entity{{
+      {mdl::EntityPropertyKeys::Classname, "trigger_teleport"},
+      {mdl::EntityPropertyKeys::Targetname, entry.teleportTargetname},
+      {mdl::EntityPropertyKeys::Target, entry.destinationTargetname},
+    }};
+    auto* teleportNode = new mdl::EntityNode{std::move(teleportEntity)};
+    auto teleportBrushResult = builder.createCuboid(cellBounds, triggerMaterial);
+    if (teleportBrushResult.is_error())
+    {
+      delete teleportNode;
+      return nullptr;
+    }
+    teleportNode->addChild(new mdl::BrushNode{std::move(teleportBrushResult).value()});
+    groupNode->addChild(teleportNode);
+
+    auto spawnEntity =
+      mdl::Entity{{{mdl::EntityPropertyKeys::Classname, entry.spawnClassname}}};
+    if (map.worldNode().entityPropertyConfig().setDefaultProperties)
+    {
+      mdl::setDefaultProperties(
+        *entry.spawnDefinition, spawnEntity, mdl::SetDefaultPropertyMode::SetAll);
+    }
+
+    const auto definitionBounds = entityDefinitionBounds(*entry.spawnDefinition);
+    const auto cellCenter = cellBounds.center();
+    const auto entityOrigin = vm::vec3d{
+      cellCenter.x() - definitionBounds.center().x(),
+      cellCenter.y() - definitionBounds.center().y(),
+      cellMin.z() - definitionBounds.min.z()};
+    spawnEntity.setOrigin(entityOrigin);
+    groupNode->addChild(new mdl::EntityNode{std::move(spawnEntity)});
+  }
+
+
+  return groupNode;
+}
+
+bool configureSpawnMaster(
+  mdl::Map& map,
+  mdl::EntityNodeBase& source,
+  const std::string& destinationTargetname,
+  const std::string& spawnClassname)
+{
+  const auto* spawnDefinition = map.entityDefinitionManager().definition(spawnClassname);
+  if (!spawnDefinition || !spawnDefinition->pointEntityDefinition)
+  {
+    return false;
+  }
+
+  auto usedTargetnames = collectUsedTargetnames(map);
+  auto teleportTargetname = entityPropertyOrEmpty(source, SpawnMasterTeleportTargetKey);
+  if (teleportTargetname.empty())
+  {
+    teleportTargetname = nextSpawnMasterName(usedTargetnames, "sm_teleport");
+  }
+
+  auto usedGroupNames = std::set<std::string>{};
+  collectGroupNames(map.worldNode(), usedGroupNames);
+
+  auto groupName = entityPropertyOrEmpty(source, SpawnMasterGroupKey);
+  if (groupName.empty())
+  {
+    groupName = nextSpawnMasterName(usedGroupNames, "SpawnMaster");
+  }
+
+  auto sourceEntity = source.entity();
+  sourceEntity.addOrUpdateProperty(mdl::EntityPropertyKeys::Target, teleportTargetname);
+  sourceEntity.addOrUpdateProperty(SpawnMasterDestinationKey, destinationTargetname);
+  sourceEntity.addOrUpdateProperty(SpawnMasterClassnameKey, spawnClassname);
+  sourceEntity.addOrUpdateProperty(SpawnMasterTeleportTargetKey, teleportTargetname);
+  sourceEntity.addOrUpdateProperty(SpawnMasterGroupKey, SpawnMasterClosetGroupName);
+
+  auto* parent = mdl::parentForNodes(map, {&source});
+  auto groupNamesToRemove = collectSpawnMasterGroupNames(map);
+  groupNamesToRemove.insert(groupName);
+  groupNamesToRemove.insert(SpawnMasterClosetGroupName);
+  for (const auto& usedGroupName : usedGroupNames)
+  {
+    if (isLegacySpawnMasterGroupName(usedGroupName))
+    {
+      groupNamesToRemove.insert(usedGroupName);
+    }
+  }
+
+  const auto closetSeedBounds =
+    findSpawnMasterClosetSeedBounds(map, source, groupNamesToRemove);
+  auto spawnEntries = collectSpawnMasterEntries(map, source, sourceEntity);
+  auto closet = createSpawnMasterCloset(
+    map, spawnEntries, SpawnMasterClosetGroupName, closetSeedBounds);
+  if (!closet)
+  {
+    return false;
+  }
+
+  auto transaction = mdl::Transaction{map, "Spawn Master"};
+
+  auto groupsToRemove = std::vector<mdl::Node*>{};
+  for (const auto& groupNameToRemove : groupNamesToRemove)
+  {
+    if (auto* group = findGroupByName(map.worldNode(), groupNameToRemove))
+    {
+      if (
+        !group->isAncestorOf(source)
+        && std::ranges::find(groupsToRemove, group) == std::end(groupsToRemove))
+      {
+        groupsToRemove.push_back(group);
+      }
+    }
+  }
+
+  if (!groupsToRemove.empty())
+  {
+    mdl::removeNodes(map, groupsToRemove);
+  }
+
+  if (!mdl::updateNodeContents(
+        map,
+        "Configure Spawn Master",
+        {{&source, mdl::NodeContents{std::move(sourceEntity)}}}))
+  {
+    transaction.cancel();
+    return false;
+  }
+
+  if (mdl::addNodes(map, {{parent, {closet.release()}}}).empty())
+  {
+    transaction.cancel();
+    return false;
+  }
+
+  return transaction.commit();
 }
 
 } // namespace
@@ -297,8 +1169,8 @@ QAction* MapWindow::findAction(const std::filesystem::path& path)
   if (const auto iAction = actionsMap.find(path); iAction != std::end(actionsMap))
   {
     const auto& action = iAction->second;
-    if (const auto iQAction = m_actionMap.find(&action);
-        iQAction != std::end(m_actionMap))
+    if (
+      const auto iQAction = m_actionMap.find(&action); iQAction != std::end(m_actionMap))
     {
       return iQAction->second;
     }
@@ -310,7 +1182,7 @@ void MapWindow::updateTitle()
 {
   const auto& map = m_document->map();
   setWindowModified(map.modified());
-  setWindowTitle(tr("%1[*] - TrenchBroom").arg(pathAsQString(map.filename())));
+  setWindowTitle(tr("%1[*] - Ultimate Trench Broom").arg(pathAsQString(map.filename())));
   setWindowFilePath(pathAsQPath(map.path()));
 }
 
@@ -380,7 +1252,7 @@ void MapWindow::updateUndoRedoActions()
     else
     {
       m_undoAction->setText("Undo");
-      m_undoAction->setEnabled(false);
+      m_undoAction->setEnabled(canUndo());
     }
   }
   if (m_redoAction)
@@ -422,7 +1294,7 @@ void MapWindow::updateRecentDocumentsMenu()
 void MapWindow::createGui()
 {
   setWindowIconTB(this);
-  setWindowTitle("TrenchBroom");
+  setWindowTitle("Ultimate Trench Broom");
 
   m_hSplitter = new Splitter{Qt::Horizontal, DrawKnob::No};
   m_hSplitter->setChildrenCollapsible(false);
@@ -442,7 +1314,7 @@ void MapWindow::createGui()
   // SwitchableMapViewContainer should have constructed a MapViewBase
   contract_assert(m_currentMapView);
 
-  m_inspector = new Inspector{m_appController, document()};
+  m_inspector = new Inspector{m_appController, document(), *this};
   m_inspector->setObjectName("Inspector");
 
   m_mapView->connectTopWidgets(m_inspector);
@@ -506,6 +1378,64 @@ void MapWindow::createToolBar()
       tbAction.execute(context);
     });
 
+  static constexpr const char* CustomToolActions[] = {
+    "Menu/Edit/Tools/Polygon Cut Tool",
+    "Menu/Edit/Tools/Polygon Spawn Tool",
+    "Menu/Edit/Tools/Generate Terrain",
+    "Menu/Edit/Tools/Generate Rock",
+    "Menu/Edit/Tools/Grid Rotation",
+    "Menu/View/Preview Quake Lighting",
+    "Menu/Edit/Tools/Symmetry Tool",
+    "Menu/Edit/Tools/Bevel Tool",
+    "Menu/Edit/Tools/Inset Tool",
+    "Menu/Edit/Tools/Spin Tool",
+    "Menu/Edit/Tools/Sculpt Tool",
+    "Menu/Edit/Tools/Array Tool",
+    "Menu/Edit/Tools/Subdivision Tool",
+    "Menu/Edit/Tools/Bezier Bend Tool",
+    "Menu/Edit/Tools/Spawn Master",
+  };
+
+  for (const auto* actionPath : CustomToolActions)
+  {
+    if (auto* action = findAction(actionPath))
+    {
+      m_toolBar->removeAction(action);
+    }
+  }
+
+  m_autoSnapVerticesToInteger =
+    QSettings{}.value("MapWindow/AutoSnapVerticesToInteger", false).toBool();
+  m_autoSnapVerticesToIntegerButton = new QToolButton{};
+  m_autoSnapVerticesToIntegerButton->setObjectName("MapWindow_AutoSnapVerticesToInteger");
+  m_autoSnapVerticesToIntegerButton->setText(tr("Snap Int"));
+  m_autoSnapVerticesToIntegerButton->setToolTip(
+    tr("Automatically snap selected brush vertices to integer coordinates after edits"));
+  m_autoSnapVerticesToIntegerButton->setCheckable(true);
+  m_autoSnapVerticesToIntegerButton->setAutoRaise(true);
+  m_autoSnapVerticesToIntegerButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+  m_autoSnapVerticesToIntegerButton->setStyleSheet(
+    "QToolButton:checked { background-color: palette(highlight); color: "
+    "palette(highlighted-text); }");
+  m_autoSnapVerticesToIntegerButton->setChecked(m_autoSnapVerticesToInteger);
+  connect(
+    m_autoSnapVerticesToIntegerButton,
+    &QToolButton::toggled,
+    this,
+    [this](const bool checked) {
+      m_autoSnapVerticesToInteger = checked;
+      QSettings{}.setValue("MapWindow/AutoSnapVerticesToInteger", checked);
+      statusBar()->showMessage(
+        checked ? tr("Auto snap vertices to integer enabled")
+                : tr("Auto snap vertices to integer disabled"),
+        3000);
+      if (checked)
+      {
+        applyAutoSnapVerticesToInteger();
+      }
+    });
+
+  m_toolBar->addWidget(m_autoSnapVerticesToIntegerButton);
   m_gridChoice = new QComboBox{};
   m_gridChoice->setObjectName("MapWindow_GridChoice");
   for (int i = mdl::Grid::MinSize; i <= mdl::Grid::MaxSize; ++i)
@@ -516,6 +1446,15 @@ void MapWindow::createToolBar()
   }
 
   m_toolBar->addWidget(m_gridChoice);
+  m_toolBar->addSeparator();
+
+  for (const auto* actionPath : CustomToolActions)
+  {
+    if (auto* action = findAction(actionPath))
+    {
+      m_toolBar->addAction(action);
+    }
+  }
 }
 
 void MapWindow::updateToolBarWidgets()
@@ -524,13 +1463,37 @@ void MapWindow::updateToolBarWidgets()
   const auto& grid = map.grid();
   const auto sizeIndex = grid.size() - mdl::Grid::MinSize;
   m_gridChoice->setCurrentIndex(sizeIndex);
+  if (m_autoSnapVerticesToIntegerButton != nullptr)
+  {
+    const auto blocker = QSignalBlocker{m_autoSnapVerticesToIntegerButton};
+    m_autoSnapVerticesToIntegerButton->setChecked(m_autoSnapVerticesToInteger);
+  }
+}
+
+void MapWindow::applyAutoSnapVerticesToInteger()
+{
+  if (!m_autoSnapVerticesToInteger || m_applyingAutoSnapVerticesToInteger)
+  {
+    return;
+  }
+
+  auto& map = m_document->map();
+  if (map.hasOpenTransaction() || map.selection().allBrushes().empty())
+  {
+    return;
+  }
+
+  m_applyingAutoSnapVerticesToInteger = true;
+  snapVertices(map, 1.0);
+  m_applyingAutoSnapVerticesToInteger = false;
 }
 
 void MapWindow::createStatusBar()
 {
   m_statusBarLabel = new QLabel{};
+
   statusBar()->addWidget(m_statusBarLabel, 1);
-  statusBar()->addWidget(m_appController.updater().createUpdateIndicator());
+  statusBar()->addPermanentWidget(m_appController.updater().createUpdateIndicator());
 }
 
 namespace
@@ -676,10 +1639,10 @@ QString describeSelection(const mdl::Map& map)
   // now, turn `tokens` into a comma-separated string
   if (!tokens.empty())
   {
-    pipeSeparatedSections << QObject::tr("%1%2 selected")
-                               .arg(QString::fromStdString(
-                                 kdl::str_join(tokens, ", ", ", and ", " and ")))
-                               .arg(layersDescription);
+    pipeSeparatedSections
+      << QObject::tr("%1%2 selected")
+           .arg(QString::fromStdString(kdl::str_join(tokens, ", ", ", and ", " and ")))
+           .arg(layersDescription);
   }
 
   // count hidden objects
@@ -688,39 +1651,40 @@ QString describeSelection(const mdl::Map& map)
   size_t hiddenBrushes = 0u;
   size_t hiddenPatches = 0u;
 
-  map.worldNode().accept(kdl::overload(
-    [](auto&& thisLambda, const mdl::WorldNode& worldNode) {
-      worldNode.visitChildren(thisLambda);
-    },
-    [](auto&& thisLambda, const mdl::LayerNode& layerNode) {
-      layerNode.visitChildren(thisLambda);
-    },
-    [&](auto&& thisLambda, const mdl::GroupNode& groupNode) {
-      if (!editorContext.visible(groupNode))
-      {
-        ++hiddenGroups;
-      }
-      groupNode.visitChildren(thisLambda);
-    },
-    [&](auto&& thisLambda, const mdl::EntityNode& entityNode) {
-      if (!editorContext.visible(entityNode))
-      {
-        ++hiddenEntities;
-      }
-      entityNode.visitChildren(thisLambda);
-    },
-    [&](const mdl::BrushNode& brushNode) {
-      if (!editorContext.visible(brushNode))
-      {
-        ++hiddenBrushes;
-      }
-    },
-    [&](const mdl::PatchNode& patchNode) {
-      if (!editorContext.visible(patchNode))
-      {
-        ++hiddenPatches;
-      }
-    }));
+  map.worldNode().accept(
+    kdl::overload(
+      [](auto&& thisLambda, const mdl::WorldNode& worldNode) {
+        worldNode.visitChildren(thisLambda);
+      },
+      [](auto&& thisLambda, const mdl::LayerNode& layerNode) {
+        layerNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::GroupNode& groupNode) {
+        if (!editorContext.visible(groupNode))
+        {
+          ++hiddenGroups;
+        }
+        groupNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, const mdl::EntityNode& entityNode) {
+        if (!editorContext.visible(entityNode))
+        {
+          ++hiddenEntities;
+        }
+        entityNode.visitChildren(thisLambda);
+      },
+      [&](const mdl::BrushNode& brushNode) {
+        if (!editorContext.visible(brushNode))
+        {
+          ++hiddenBrushes;
+        }
+      },
+      [&](const mdl::PatchNode& patchNode) {
+        if (!editorContext.visible(patchNode))
+        {
+          ++hiddenPatches;
+        }
+      }));
 
   // print hidden objects
   if (hiddenGroups > 0 || hiddenEntities > 0 || hiddenBrushes > 0)
@@ -745,8 +1709,10 @@ QString describeSelection(const mdl::Map& map)
     }
 
     pipeSeparatedSections << QObject::tr("%1 hidden")
-                               .arg(QString::fromStdString(kdl::str_join(
-                                 hiddenDescriptors, ", ", ", and ", " and ")));
+                               .arg(
+                                 QString::fromStdString(
+                                   kdl::str_join(
+                                     hiddenDescriptors, ", ", ", and ", " and ")));
   }
 
   return QString::fromLatin1("   ")
@@ -845,7 +1811,8 @@ void MapWindow::mapModificationStateDidChange()
   updateTitleDelayed();
 }
 
-void MapWindow::transactionDone(const std::string&, const bool, const bool)
+void MapWindow::transactionDone(
+  const std::string& name, const bool, const bool isModification)
 {
   QTimer::singleShot(0, this, [this]() {
     // FIXME: Delaying this with QTimer::singleShot is a hack to work around the lack of
@@ -857,6 +1824,13 @@ void MapWindow::transactionDone(const std::string&, const bool, const bool)
     // updateUndoRedoActions(), so this QTimer::singleShot is needed for now.
     updateUndoRedoActions();
   });
+
+  if (
+    isModification && name != "Snap Brush Vertices"
+    && !m_applyingAutoSnapVerticesToInteger)
+  {
+    QTimer::singleShot(0, this, [this]() { applyAutoSnapVerticesToInteger(); });
+  }
 }
 
 void MapWindow::transactionUndone(const std::string&, const bool, const bool)
@@ -1083,6 +2057,22 @@ bool MapWindow::exportDocumentAsObj()
   return true;
 }
 
+void MapWindow::showGuideScreenshotDialog()
+{
+  ui::showGuideScreenshotDialog(*this);
+}
+
+void MapWindow::showUnitySyncDialog()
+{
+  if (!m_unitySyncDialog)
+  {
+    m_unitySyncDialog = new UnitySyncDialog{this};
+  }
+
+  m_unitySyncDialog->updateDefaultPath();
+  showModelessDialog(m_unitySyncDialog);
+}
+
 bool MapWindow::exportDocumentAsMap()
 {
   const auto& map = m_document->map();
@@ -1114,9 +2104,10 @@ bool MapWindow::exportDocument(const mdl::ExportOptions& options)
     QMessageBox::critical(
       this,
       "",
-      tr("You can't overwrite the current document.\nPlease choose a different file name "
-         "to export "
-         "to."));
+      tr(
+        "You can't overwrite the current document.\nPlease choose a different file name "
+        "to export "
+        "to."));
     return false;
   }
 
@@ -1145,7 +2136,7 @@ bool MapWindow::confirmOrDiscardChanges()
 
   const auto result = QMessageBox::question(
     this,
-    "TrenchBroom",
+    "Ultimate Trench Broom",
     tr("%1 has been modified. Do you want to save the changes?")
       .arg(pathAsQString(map.filename())),
     QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
@@ -1169,7 +2160,7 @@ bool MapWindow::confirmRevertDocument()
   }
 
   auto messageBox = QMessageBox{this};
-  messageBox.setWindowTitle("TrenchBroom");
+  messageBox.setWindowTitle("Ultimate Trench Broom");
   messageBox.setIcon(QMessageBox::Question);
   messageBox.setText(tr("Revert %1 to %2?")
                        .arg(pathAsQString(map.filename()))
@@ -1298,7 +2289,15 @@ void MapWindow::closeDocument()
 
 void MapWindow::undo()
 {
-  if (canUndo() && !m_mapView->cancelMouseDrag() && !m_inspector->cancelMouseDrag())
+  if (m_mapView->mapViewToolBox().undoActiveToolStep())
+  {
+    updateActionStateDelayed();
+    return;
+  }
+
+  if (
+    m_document->map().canUndoCommand() && !m_mapView->cancelMouseDrag()
+    && !m_inspector->cancelMouseDrag())
   {
     m_document->map().undoCommand();
   }
@@ -1314,7 +2313,13 @@ void MapWindow::redo()
 
 bool MapWindow::canUndo() const
 {
-  return m_document->map().canUndoCommand();
+  return m_document->map().canUndoCommand()
+         || m_mapView->mapViewToolBox().polygonCutToolActive()
+         || m_mapView->mapViewToolBox().polygonSpawnToolActive()
+         || m_mapView->mapViewToolBox().spinToolActive()
+         || m_mapView->mapViewToolBox().bezierBendToolActive()
+         || m_mapView->mapViewToolBox().sculptToolActive()
+         || m_mapView->mapViewToolBox().arrayToolActive();
 }
 
 bool MapWindow::canRedo() const
@@ -1750,6 +2755,595 @@ bool MapWindow::canMoveSelectedObjects() const
   return map.selection().hasNodes() && !m_mapView->toolBox().anyModalToolActive();
 }
 
+bool MapWindow::anyModalToolActive() const
+{
+  return m_mapView->anyModalToolActive();
+}
+
+void MapWindow::toggleAssembleBrushTool()
+{
+  if (canToggleAssembleBrushTool())
+  {
+    m_mapView->toggleAssembleBrushTool();
+  }
+}
+
+bool MapWindow::canToggleAssembleBrushTool() const
+{
+  return m_mapView->canToggleAssembleBrushTool();
+}
+
+bool MapWindow::assembleBrushToolActive() const
+{
+  return m_mapView->assembleBrushToolActive();
+}
+
+void MapWindow::toggleClipTool()
+{
+  if (canToggleClipTool())
+  {
+    m_mapView->toggleClipTool();
+  }
+}
+
+bool MapWindow::canToggleClipTool() const
+{
+  return m_mapView->canToggleClipTool();
+}
+
+bool MapWindow::clipToolActive() const
+{
+  return m_mapView->clipToolActive();
+}
+
+void MapWindow::togglePolygonCutTool()
+{
+  if (canTogglePolygonCutTool())
+  {
+    m_mapView->togglePolygonCutTool();
+  }
+}
+
+bool MapWindow::canTogglePolygonCutTool() const
+{
+  return m_mapView->canTogglePolygonCutTool();
+}
+
+bool MapWindow::polygonCutToolActive() const
+{
+  return m_mapView->polygonCutToolActive();
+}
+
+void MapWindow::togglePolygonSpawnTool()
+{
+  if (canTogglePolygonSpawnTool())
+  {
+    m_mapView->togglePolygonSpawnTool();
+  }
+}
+
+bool MapWindow::canTogglePolygonSpawnTool() const
+{
+  return m_mapView->canTogglePolygonSpawnTool();
+}
+
+bool MapWindow::polygonSpawnToolActive() const
+{
+  return m_mapView->polygonSpawnToolActive();
+}
+
+void MapWindow::showTerrainGeneratorDialog()
+{
+  if (canShowTerrainGeneratorDialog())
+  {
+    m_mapView->mapViewToolBox().toggleGeneratorTool(GeneratorTool::Kind::Terrain);
+    updateActionStateDelayed();
+  }
+}
+
+bool MapWindow::canShowTerrainGeneratorDialog() const
+{
+  return m_mapView->mapViewToolBox().canToggleGeneratorTool(GeneratorTool::Kind::Terrain);
+}
+
+bool MapWindow::terrainGeneratorActive() const
+{
+  return m_mapView->mapViewToolBox().generatorToolActive(GeneratorTool::Kind::Terrain);
+}
+
+void MapWindow::showRockGeneratorDialog()
+{
+  if (canShowRockGeneratorDialog())
+  {
+    m_mapView->mapViewToolBox().toggleGeneratorTool(GeneratorTool::Kind::Rock);
+    updateActionStateDelayed();
+  }
+}
+
+bool MapWindow::canShowRockGeneratorDialog() const
+{
+  return m_mapView->mapViewToolBox().canToggleGeneratorTool(GeneratorTool::Kind::Rock);
+}
+
+bool MapWindow::rockGeneratorActive() const
+{
+  return m_mapView->mapViewToolBox().generatorToolActive(GeneratorTool::Kind::Rock);
+}
+
+void MapWindow::showSpawnMasterDialog()
+{
+  if (!canShowSpawnMasterDialog())
+  {
+    return;
+  }
+
+  auto& map = m_document->map();
+  auto* source = selectedSpawnMasterSource(map);
+  if (!source)
+  {
+    return;
+  }
+
+  auto targetnames = collectTargetnames(map);
+  if (targetnames.empty())
+  {
+    QMessageBox::warning(
+      this,
+      tr("Spawn Master"),
+      tr(
+        "No existing targetname was found in the map. Create an "
+        "info_teleport_destination or another target first."));
+    return;
+  }
+
+  auto dialog = SpawnMasterDialog{
+    m_appController,
+    *m_document,
+    std::move(targetnames),
+    entityPropertyOrEmpty(*source, SpawnMasterDestinationKey),
+    entityPropertyOrEmpty(*source, SpawnMasterClassnameKey),
+    this};
+
+  if (dialog.exec() == QDialog::Accepted)
+  {
+    if (!configureSpawnMaster(
+          map, *source, dialog.selectedTargetname(), dialog.selectedClassname()))
+    {
+      QMessageBox::warning(
+        this,
+        tr("Spawn Master"),
+        tr("Could not create a valid monster closet for this setup."));
+    }
+    updateActionStateDelayed();
+  }
+}
+
+bool MapWindow::canShowSpawnMasterDialog() const
+{
+  auto& map = const_cast<mdl::Map&>(m_document->map());
+  return selectedSpawnMasterSource(map) != nullptr && !m_mapView->anyModalToolActive();
+}
+
+void MapWindow::importModelAsBrushes()
+{
+  if (!canImportModelAsBrushes())
+  {
+    return;
+  }
+
+  const auto filePath = QFileDialog::getOpenFileName(
+    this,
+    tr("Import Model as Brushes"),
+    QString{},
+    tr("3D Models (*.obj *.fbx);;Wavefront OBJ (*.obj);;FBX (*.fbx);;All Files (*)"));
+  if (filePath.isEmpty())
+  {
+    return;
+  }
+
+#ifdef _WIN32
+  const auto path = std::filesystem::path{filePath.toStdWString()};
+#else
+  const auto path = std::filesystem::path{filePath.toStdString()};
+#endif
+
+  auto importResult = tb::ui::importModelAsBrushes(*m_document, path);
+  if (!importResult)
+  {
+    const auto error = std::get<tb::Error>(importResult.error());
+    QMessageBox::warning(
+      this, tr("Import Model as Brushes"), QString::fromStdString(error.msg));
+    return;
+  }
+
+  const auto stats = std::move(importResult).value();
+  auto message = stats.usedSimplifiedImport
+                   ? tr("Imported %1 simplified brush(es) from %2 face(s), voxel grid %3")
+                       .arg(stats.brushCount)
+                       .arg(stats.sourceFaceCount)
+                       .arg(stats.simplifiedResolution)
+                   : tr("Imported %1 brush(es) from %2 face(s), skipped %3 face(s)")
+                       .arg(stats.brushCount)
+                       .arg(stats.sourceFaceCount)
+                       .arg(stats.skippedFaceCount);
+  if (stats.importScale != 1.0)
+  {
+    message += tr(", auto scale x%1").arg(stats.importScale, 0, 'f', 2);
+  }
+  statusBar()->showMessage(message, 5000);
+  updateActionStateDelayed();
+}
+
+bool MapWindow::canImportModelAsBrushes() const
+{
+  return !m_mapView->anyModalToolActive();
+}
+
+void MapWindow::convertTriangulatedBrushes()
+{
+  if (!canConvertTriangulatedBrushes())
+  {
+    return;
+  }
+
+  if (mdl::convertTriangulatedBrushes(m_document->map()))
+  {
+    statusBar()->showMessage(tr("Converted triangulated brushes"), 5000);
+  }
+  else
+  {
+    statusBar()->showMessage(tr("Could not convert triangulated brushes"), 5000);
+  }
+  updateActionStateDelayed();
+}
+
+bool MapWindow::canConvertTriangulatedBrushes() const
+{
+  const auto& map = m_document->map();
+  return (!map.selection().allBrushes().empty() || !map.selection().brushFaces.empty()
+          || map.nodeHandles().anyHandleSelected<mdl::VertexHandle>()
+          || map.nodeHandles().anyHandleSelected<mdl::EdgeHandle>()
+          || map.nodeHandles().anyHandleSelected<mdl::FaceHandle>())
+         && !m_mapView->anyModalToolActive();
+}
+
+void MapWindow::showGridRotationDialog()
+{
+  if (!canShowGridRotationDialog())
+  {
+    return;
+  }
+
+  m_mapView->mapViewToolBox().toggleGeneratorTool(GeneratorTool::Kind::GridRotation);
+  updateActionStateDelayed();
+}
+
+bool MapWindow::canShowGridRotationDialog() const
+{
+  return true;
+}
+
+bool MapWindow::gridRotationActive() const
+{
+  return m_mapView->mapViewToolBox().generatorToolActive(
+    GeneratorTool::Kind::GridRotation);
+}
+
+void MapWindow::toggleRotateTool()
+{
+  if (canToggleRotateTool())
+  {
+    m_mapView->toggleRotateTool();
+  }
+}
+
+bool MapWindow::canToggleRotateTool() const
+{
+  return m_mapView->canToggleRotateTool();
+}
+
+bool MapWindow::rotateToolActive() const
+{
+  return m_mapView->rotateToolActive();
+}
+
+void MapWindow::toggleScaleTool()
+{
+  if (canToggleScaleTool())
+  {
+    m_mapView->toggleScaleTool();
+  }
+}
+
+bool MapWindow::canToggleScaleTool() const
+{
+  return m_mapView->canToggleScaleTool();
+}
+
+bool MapWindow::scaleToolActive() const
+{
+  return m_mapView->scaleToolActive();
+}
+
+void MapWindow::toggleShearTool()
+{
+  if (canToggleShearTool())
+  {
+    m_mapView->toggleShearTool();
+  }
+}
+
+bool MapWindow::canToggleShearTool() const
+{
+  return m_mapView->canToggleShearTool();
+}
+
+bool MapWindow::shearToolActive() const
+{
+  return m_mapView->shearToolActive();
+}
+
+void MapWindow::toggleSymmetryTool()
+{
+  if (canToggleSymmetryTool())
+  {
+    m_mapView->toggleSymmetryTool();
+  }
+}
+
+bool MapWindow::canToggleSymmetryTool() const
+{
+  return m_mapView->canToggleSymmetryTool();
+}
+
+bool MapWindow::symmetryToolActive() const
+{
+  return m_mapView->symmetryToolActive();
+}
+
+bool MapWindow::symmetryToolPanelSelected() const
+{
+  return m_mapView->symmetryToolPanelSelected();
+}
+
+bool MapWindow::symmetryModifierActive() const
+{
+  return m_mapView->symmetryModifierActive();
+}
+
+bool MapWindow::anyVertexToolActive() const
+{
+  return m_mapView->anyVertexToolActive();
+}
+
+void MapWindow::toggleVertexTool()
+{
+  if (canToggleVertexTool())
+  {
+    m_mapView->toggleVertexTool();
+  }
+}
+
+bool MapWindow::canToggleVertexTool() const
+{
+  return m_mapView->canToggleVertexTools();
+}
+
+bool MapWindow::vertexToolActive() const
+{
+  return m_mapView->vertexToolActive();
+}
+
+void MapWindow::toggleEdgeTool()
+{
+  if (canToggleEdgeTool())
+  {
+    m_mapView->toggleEdgeTool();
+  }
+}
+
+bool MapWindow::canToggleEdgeTool() const
+{
+  return m_mapView->canToggleVertexTools();
+}
+
+bool MapWindow::edgeToolActive() const
+{
+  return m_mapView->edgeToolActive();
+}
+
+void MapWindow::toggleBevelTool()
+{
+  if (canToggleBevelTool())
+  {
+    m_mapView->toggleBevelTool();
+  }
+}
+
+bool MapWindow::canToggleBevelTool() const
+{
+  return m_mapView->canToggleBevelTool();
+}
+
+bool MapWindow::bevelToolActive() const
+{
+  return m_mapView->bevelToolActive();
+}
+
+void MapWindow::applyBevelTool()
+{
+  if (bevelToolActive())
+  {
+    m_mapView->applyBevelTool();
+  }
+}
+
+void MapWindow::toggleFaceTool()
+{
+  if (canToggleFaceTool())
+  {
+    m_mapView->toggleFaceTool();
+  }
+}
+
+bool MapWindow::canToggleFaceTool() const
+{
+  return m_mapView->canToggleVertexTools();
+}
+
+bool MapWindow::faceToolActive() const
+{
+  return m_mapView->faceToolActive();
+}
+
+void MapWindow::toggleInsetTool()
+{
+  if (canToggleInsetTool())
+  {
+    m_mapView->toggleInsetTool();
+  }
+}
+
+bool MapWindow::canToggleInsetTool() const
+{
+  return m_mapView->canToggleInsetTool();
+}
+
+bool MapWindow::insetToolActive() const
+{
+  return m_mapView->insetToolActive();
+}
+
+void MapWindow::applyInsetTool()
+{
+  if (insetToolActive())
+  {
+    m_mapView->applyInsetTool();
+  }
+}
+
+void MapWindow::toggleSpinTool()
+{
+  if (canToggleSpinTool())
+  {
+    m_mapView->toggleSpinTool();
+  }
+}
+
+bool MapWindow::canToggleSpinTool() const
+{
+  return m_mapView->canToggleSpinTool();
+}
+
+bool MapWindow::spinToolActive() const
+{
+  return m_mapView->spinToolActive();
+}
+
+void MapWindow::applySpinTool()
+{
+  if (spinToolActive())
+  {
+    m_mapView->applySpinTool(m_autoSnapVerticesToInteger);
+  }
+}
+
+void MapWindow::toggleBezierBendTool()
+{
+  if (canToggleBezierBendTool())
+  {
+    m_mapView->toggleBezierBendTool();
+  }
+}
+
+bool MapWindow::canToggleBezierBendTool() const
+{
+  return m_mapView->canToggleBezierBendTool();
+}
+
+bool MapWindow::bezierBendToolActive() const
+{
+  return m_mapView->bezierBendToolActive();
+}
+
+void MapWindow::applyBezierBendTool()
+{
+  if (bezierBendToolActive())
+  {
+    m_mapView->applyBezierBendTool();
+  }
+}
+
+void MapWindow::toggleSculptTool()
+{
+  if (canToggleSculptTool())
+  {
+    m_mapView->toggleSculptTool();
+  }
+}
+
+bool MapWindow::canToggleSculptTool() const
+{
+  return m_mapView->canToggleSculptTool();
+}
+
+bool MapWindow::sculptToolActive() const
+{
+  return m_mapView->sculptToolActive();
+}
+
+void MapWindow::toggleArrayTool()
+{
+  if (canToggleArrayTool())
+  {
+    m_mapView->toggleArrayTool();
+  }
+}
+
+bool MapWindow::canToggleArrayTool() const
+{
+  return m_mapView->canToggleArrayTool();
+}
+
+bool MapWindow::arrayToolActive() const
+{
+  return m_mapView->arrayToolActive();
+}
+
+void MapWindow::applyArrayTool()
+{
+  if (arrayToolActive())
+  {
+    m_mapView->applyArrayTool();
+  }
+}
+
+void MapWindow::toggleSubdivisionTool()
+{
+  if (canToggleSubdivisionTool())
+  {
+    m_mapView->toggleSubdivisionTool();
+  }
+}
+
+bool MapWindow::canToggleSubdivisionTool() const
+{
+  return m_mapView->canToggleSubdivisionTool();
+}
+
+bool MapWindow::subdivisionToolActive() const
+{
+  return m_mapView->subdivisionToolActive();
+}
+
+void MapWindow::applySubdivisionTool()
+{
+  if (subdivisionToolActive())
+  {
+    m_mapView->applySubdivisionTool();
+  }
+}
+
 void MapWindow::csgConvexMerge()
 {
   if (canDoCsgConvexMerge())
@@ -1801,6 +3395,19 @@ bool MapWindow::canDoCsgSubtract() const
   const auto& map = m_document->map();
   const auto& selection = map.selection();
   return selection.hasOnlyBrushes() && !selection.brushes.empty();
+}
+
+void MapWindow::csgSubtract2()
+{
+  if (canDoCsgSubtract2())
+  {
+    mdl::csgSubtract2(m_document->map());
+  }
+}
+
+bool MapWindow::canDoCsgSubtract2() const
+{
+  return canDoCsgSubtract();
 }
 
 void MapWindow::csgHollow()
@@ -2663,6 +4270,24 @@ static void applyRecursively(QObject* object, const F& f)
 
 bool MapWindow::eventFilter(QObject* target, QEvent* event)
 {
+  if (
+    (event->type() == QEvent::ShortcutOverride || event->type() == QEvent::KeyPress)
+    && m_mapView && m_mapView->mapViewToolBox().parameterToolActive()
+    && !QApplication::activeModalWidget())
+  {
+    const auto* keyEvent = static_cast<QKeyEvent*>(event);
+    if (keyEvent->key() == Qt::Key_Escape && keyEvent->modifiers() == Qt::NoModifier)
+    {
+      event->accept();
+      if (event->type() == QEvent::KeyPress)
+      {
+        m_mapView->deactivateCurrentTool();
+        updateActionStateDelayed();
+      }
+      return true;
+    }
+  }
+
   if (
     event->type() == QEvent::MouseButtonPress
     || event->type() == QEvent::MouseButtonRelease

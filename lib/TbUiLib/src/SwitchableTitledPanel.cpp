@@ -64,6 +64,11 @@ QWidget* SwitchableTitledPanel::getPanel(const size_t index) const
   return m_panels[index].panel;
 }
 
+void SwitchableTitledPanel::addTitleWidget(QWidget* widget)
+{
+  m_titleBar->addWidget(widget);
+}
+
 size_t SwitchableTitledPanel::currentIndex() const
 {
   return size_t(m_stackedLayout->currentIndex());
@@ -71,8 +76,13 @@ size_t SwitchableTitledPanel::currentIndex() const
 
 void SwitchableTitledPanel::setCurrentIndex(const size_t index)
 {
+  const auto previousIndex = currentIndex();
   m_stackedLayout->setCurrentIndex(int(index));
   m_titleBar->setStateText(m_panels[index].stateText);
+  if (previousIndex != index)
+  {
+    emit currentIndexChanged(index);
+  }
 }
 
 QByteArray SwitchableTitledPanel::saveState() const

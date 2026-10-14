@@ -228,9 +228,12 @@ std::unique_ptr<DropTracker> ToolChain::dragEnter(
   }
   if (m_tool->toolActive())
   {
-    if (auto dropTracker = m_tool->acceptDrop(inputState, payload))
+    if (m_tool->shouldAcceptDrop(inputState, payload))
     {
-      return dropTracker;
+      if (auto dropTracker = m_tool->acceptDrop(inputState, payload))
+      {
+        return dropTracker;
+      }
     }
   }
   return m_suffix->dragEnter(inputState, payload);

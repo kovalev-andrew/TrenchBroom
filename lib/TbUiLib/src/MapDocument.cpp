@@ -51,6 +51,7 @@
 #include "kd/task_manager.h"
 
 #include "vm/polygon.h"
+#include "vm/scalar.h"
 
 #include <fmt/format.h>
 #include <fmt/std.h>
@@ -189,6 +190,9 @@ void MapDocument::setMap(std::unique_ptr<mdl::Map> map)
 void MapDocument::updateMapFromPreferences()
 {
   m_map->setGamePath(pref(m_map->gameInfo().gamePathPreference));
+  m_map->grid().setRotation(
+    vm::to_radians(
+      static_cast<double>(std::clamp(pref(Preferences::GridRotation), 0.0f, 90.0f))));
 
   m_map->editorContext().setShowPointEntities(pref(Preferences::ShowPointEntities));
   m_map->editorContext().setShowBrushes(pref(Preferences::ShowBrushes));
@@ -455,6 +459,10 @@ void MapDocument::connectMapObservers()
     commandProcessor.commandUndoFailedNotifier.connect(commandUndoFailedNotifier);
   m_notifierConnection +=
     commandProcessor.transactionDoneNotifier.connect(transactionDoneNotifier);
+  m_notifierConnection +=
+    commandProcessor.transactionRedoNotifier.connect(transactionRedoNotifier);
+  m_notifierConnection +=
+    commandProcessor.transactionRedoneNotifier.connect(transactionRedoneNotifier);
   m_notifierConnection +=
     commandProcessor.transactionUndoneNotifier.connect(transactionUndoneNotifier);
 }

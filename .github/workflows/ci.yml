@@ -13,13 +13,16 @@ permissions:
 
 jobs:
   linux:
+    if: github.repository == 'TrenchBroom/TrenchBroom'
     uses: ./.github/workflows/ci-linux.yml
     secrets: inherit
 
   macos:
+    if: github.repository == 'TrenchBroom/TrenchBroom'
     uses: ./.github/workflows/ci-macos.yml
     secrets: inherit
 
   windows:
+    if: github.repository == 'TrenchBroom/TrenchBroom'
     uses: ./.github/workflows/ci-windows.yml
     secrets: inherit

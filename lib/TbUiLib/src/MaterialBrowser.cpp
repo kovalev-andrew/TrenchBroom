@@ -37,11 +37,36 @@
 #include "ui/SearchBox.h"
 #include "ui/ViewConstants.h"
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+
 // for use in QVariant
 Q_DECLARE_METATYPE(tb::ui::MaterialSortOrder)
 
 namespace tb::ui
 {
+namespace
+{
+constexpr auto MaterialBrowserIconSizeSteps =
+  std::array<float, 7>{0.25f, 0.5f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f};
+
+size_t nearestMaterialBrowserIconSizeStep(const float iconSize)
+{
+  auto bestIndex = size_t{0};
+  auto bestDistance = std::abs(iconSize - MaterialBrowserIconSizeSteps[0]);
+  for (size_t i = 1u; i < MaterialBrowserIconSizeSteps.size(); ++i)
+  {
+    const auto distance = std::abs(iconSize - MaterialBrowserIconSizeSteps[i]);
+    if (distance < bestDistance)
+    {
+      bestIndex = i;
+      bestDistance = distance;
+    }
+  }
+  return bestIndex;
+}
+} // namespace
 
 MaterialBrowser::MaterialBrowser(
   AppController& appController, MapDocument& document, QWidget* parent)
@@ -112,6 +137,11 @@ void MaterialBrowser::createGui(AppController& appController)
   m_scrollBar = new QScrollBar{Qt::Vertical};
 
   m_view = new MaterialBrowserView{appController, m_scrollBar, m_document};
+  connect(
+    m_view,
+    &MaterialBrowserView::materialBrowserIconSizeAdjustmentRequested,
+    this,
+    &MaterialBrowser::adjustMaterialBrowserIconSize);
 
   auto* browserPanelSizer = new QHBoxLayout{};
   browserPanelSizer->setContentsMargins(0, 0, 0, 0);
@@ -146,6 +176,22 @@ void MaterialBrowser::createGui(AppController& appController)
     m_view->setHideUnused(m_usedButton->isChecked());
   });
 
+  m_decreaseIconSizeButton = new QPushButton{tr("-")};
+  m_decreaseIconSizeButton->setFixedWidth(24);
+  m_decreaseIconSizeButton->setToolTip(
+    tr("Show more materials per row by making material previews smaller"));
+  connect(m_decreaseIconSizeButton, &QAbstractButton::clicked, this, [&]() {
+    adjustMaterialBrowserIconSize(-1);
+  });
+
+  m_increaseIconSizeButton = new QPushButton{tr("+")};
+  m_increaseIconSizeButton->setFixedWidth(24);
+  m_increaseIconSizeButton->setToolTip(
+    tr("Show fewer materials per row by making material previews larger"));
+  connect(m_increaseIconSizeButton, &QAbstractButton::clicked, this, [&]() {
+    adjustMaterialBrowserIconSize(1);
+  });
+
   m_filterBox = createSearchBox();
   connect(m_filterBox, &QLineEdit::textEdited, this, [&]() {
     m_view->setFilterText(m_filterBox->text().toStdString());
@@ -161,6 +207,8 @@ void MaterialBrowser::createGui(AppController& appController)
   controlLayout->addWidget(m_sortOrderChoice);
   controlLayout->addWidget(m_groupButton);
   controlLayout->addWidget(m_usedButton);
+  controlLayout->addWidget(m_decreaseIconSizeButton);
+  controlLayout->addWidget(m_increaseIconSizeButton);
   controlLayout->addWidget(m_filterBox, 1);
 
   auto* outerLayout = new QVBoxLayout{};
@@ -170,6 +218,7 @@ void MaterialBrowser::createGui(AppController& appController)
   outerLayout->addLayout(controlLayout, 0);
 
   setLayout(outerLayout);
+  updateIconSizeButtons();
 }
 
 void MaterialBrowser::bindEvents()
@@ -196,6 +245,7 @@ void MaterialBrowser::connectObservers()
         || path == Preferences::MaterialBrowserIconSize.path)
       {
         reload();
+        updateIconSizeButtons();
       }
       else
       {
@@ -221,6 +271,46 @@ void MaterialBrowser::updateSelectedMaterial()
   const auto& materialName = map.currentMaterialName();
   const auto* material = map.materialManager().material(materialName);
   m_view->setSelectedMaterial(material);
+}
+
+void MaterialBrowser::adjustMaterialBrowserIconSize(const int direction)
+{
+  if (direction == 0)
+  {
+    return;
+  }
+
+  auto& prefs = PreferenceManager::instance();
+  const auto currentSize = prefs.get(Preferences::MaterialBrowserIconSize);
+  const auto currentIndex = nearestMaterialBrowserIconSizeStep(currentSize);
+  const auto nextIndex = static_cast<size_t>(std::clamp<int>(
+    static_cast<int>(currentIndex) + direction,
+    0,
+    static_cast<int>(MaterialBrowserIconSizeSteps.size()) - 1));
+
+  if (nextIndex == currentIndex)
+  {
+    return;
+  }
+
+  setPref(Preferences::MaterialBrowserIconSize, MaterialBrowserIconSizeSteps[nextIndex]);
+  reload();
+  updateIconSizeButtons();
+}
+
+void MaterialBrowser::updateIconSizeButtons()
+{
+  if (!m_increaseIconSizeButton || !m_decreaseIconSizeButton)
+  {
+    return;
+  }
+
+  const auto currentSize =
+    PreferenceManager::instance().get(Preferences::MaterialBrowserIconSize);
+  const auto currentIndex = nearestMaterialBrowserIconSizeStep(currentSize);
+  m_decreaseIconSizeButton->setEnabled(currentIndex > 0u);
+  m_increaseIconSizeButton->setEnabled(
+    currentIndex + 1u < MaterialBrowserIconSizeSteps.size());
 }
 
 } // namespace tb::ui

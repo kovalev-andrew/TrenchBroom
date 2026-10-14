@@ -109,6 +109,13 @@ public: // clone face attributes from matching faces of other brushes
 public: // clipping
   Result<void> clip(const vm::bbox3d& worldBounds, BrushFace face);
 
+  /**
+   * Splits brush faces along the given planes while keeping the brush as one object.
+   * This adds surface edges without clipping away any brush volume.
+   */
+  Result<void> splitFaces(
+    const vm::bbox3d& worldBounds, const std::vector<vm::plane3d>& planes);
+
 public: // move face along normal
   /**
    * Translates a face by the given delta.

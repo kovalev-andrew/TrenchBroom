@@ -1,0 +1,13 @@
+diff --git a/src/Imath/ImathBox.h b/src/Imath/ImathBox.h
+index 41cdb55..4dcfaae 100644
+--- a/src/Imath/ImathBox.h
++++ b/src/Imath/ImathBox.h
+@@ -14,6 +14,8 @@
+ 
+ #include "ImathVec.h"
+ 
++#include <algorithm>
++
+ IMATH_INTERNAL_NAMESPACE_HEADER_ENTER
+ 
+ ///

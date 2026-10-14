@@ -45,7 +45,7 @@ AppInfoPanel::AppInfoPanel(AppController& appController, QWidget* parent)
   auto* appIcon = new QLabel{};
   appIcon->setPixmap(appIconImage);
 
-  auto* appName = new QLabel{tr("TrenchBroom")};
+  auto* appName = new QLabel{tr("ReyondBroom")};
   setHeaderStyle(appName);
 
   auto* appLine = new BorderLine{};
@@ -101,7 +101,7 @@ AppInfoPanel::AppInfoPanel(AppController& appController, QWidget* parent)
 void AppInfoPanel::versionInfoClicked()
 {
   const auto str =
-    tr("TrenchBroom %1 Build %2").arg(getBuildVersion()).arg(getBuildIdStr());
+    tr("ReyondBroom %1 Build %2").arg(getBuildVersion()).arg(getBuildIdStr());
 
   QApplication::clipboard()->setText(str);
 }

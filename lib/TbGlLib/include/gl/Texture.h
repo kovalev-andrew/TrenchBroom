@@ -72,8 +72,9 @@ struct TextureReadyState
 {
   GLuint textureId;
   bool useMipmap;
+  std::vector<TextureBuffer> buffers;
 
-  kdl_reflect_decl(TextureReadyState, textureId, useMipmap);
+  kdl_reflect_decl(TextureReadyState, textureId, useMipmap, buffers);
 };
 
 struct TextureDroppedState

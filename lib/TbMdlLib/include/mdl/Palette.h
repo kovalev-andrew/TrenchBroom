@@ -107,6 +107,15 @@ public:
     PaletteTransparency transparency,
     Color& averageColor) const;
 
+  unsigned char nearestIndex(
+    unsigned char r,
+    unsigned char g,
+    unsigned char b,
+    unsigned char a,
+    PaletteTransparency transparency) const;
+
+  const std::vector<unsigned char>& rgbaData(PaletteTransparency transparency) const;
+
   friend bool operator==(const Palette& lhs, const Palette& rhs);
   friend bool operator!=(const Palette& lhs, const Palette& rhs);
   friend std::ostream& operator<<(std::ostream& lhs, const Palette& rhs);

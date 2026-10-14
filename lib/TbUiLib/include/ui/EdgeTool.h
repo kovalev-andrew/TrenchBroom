@@ -19,11 +19,14 @@
 
 #pragma once
 
+#include "mdl/Brush.h"
 #include "ui/BrushHandleToolBase.h"
 
+#include <optional>
 #include <string>
 #include <vector>
 
+class QWidget;
 namespace tb::ui
 {
 class MapDocument;
@@ -51,6 +54,89 @@ public:
   std::string actionName() const override;
 
   void removeSelection();
+
+  bool chamferActive() const;
+  bool chamferInwardActive() const;
+  bool chamferCurveAdjustActive() const;
+  bool adjustChamferSegments(int delta);
+  bool adjustChamferWidth(int delta);
+  bool adjustChamferCurve(double delta);
+  bool adjustChamferProportion(double delta);
+  void finishChamfer();
+  void cancelChamfer();
+
+  bool bevelToolActive() const;
+  size_t bevelSegments() const;
+  double bevelWidth() const;
+  double bevelCurve() const;
+  double bevelProportion() const;
+  bool bevelKeepCutGeometry() const;
+  void activateBevelTool();
+  void cancelBevelTool();
+  void applyBevelTool();
+  void resetBevelSettings();
+  void setBevelSegments(size_t segments);
+  void setBevelWidth(double width);
+  void setBevelCurve(double curve);
+  void setBevelProportion(double proportion);
+  void setBevelKeepCutGeometry(bool keepCutGeometry);
+
+  Notifier<EdgeTool&> bevelSettingsDidChangeNotifier;
+
+private:
+  struct ChamferEdge
+  {
+    vm::segment3d originalEdge;
+  };
+
+  struct ChamferBrush
+  {
+    mdl::BrushNode* node = nullptr;
+    mdl::Brush originalBrush;
+    std::vector<ChamferEdge> edges;
+  };
+
+  struct ChamferState
+  {
+    std::vector<ChamferBrush> brushes;
+    std::vector<vm::segment3d> originalEdges;
+    size_t segments = 0u;
+    double width = 0.0;
+    double minWidth = 0.0;
+    double maxWidth = 0.0;
+    double widthStep = 1.0;
+    double curve = 1.0;
+    double proportion = 0.0;
+    bool keepCutGeometry = false;
+  };
+
+  struct BevelSettings
+  {
+    size_t segments = 0u;
+    double width = 0.0;
+    double curve = 1.0;
+    double proportion = 0.0;
+    bool keepCutGeometry = false;
+  };
+
+  std::optional<ChamferState> m_chamfer;
+  BevelSettings m_bevelSettings;
+  bool m_bevelToolActive = false;
+
+  bool beginChamfer();
+  bool applyChamferPreview(
+    size_t targetSegments,
+    double targetWidth,
+    double targetCurve,
+    double targetProportion,
+    bool targetKeepCutGeometry);
+  bool applyBevelSettingsPreview();
+  void updateBevelSettingsFromChamfer();
+  void notifyBevelSettingsChanged();
+
+private: // Tool interface
+  bool doDeactivate() override;
+  QWidget* doCreatePage(QWidget* parent) override;
 };
 
 } // namespace tb::ui

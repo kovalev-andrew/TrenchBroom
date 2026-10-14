@@ -21,6 +21,8 @@
 
 #include "gl/Camera.h"
 
+#include <utility>
+
 namespace tb::render
 {
 
@@ -128,6 +130,38 @@ bool RenderContext::shadeFaces() const
 void RenderContext::setShadeFaces(const bool shadeFaces)
 {
   m_shadeFaces = shadeFaces;
+}
+
+bool RenderContext::previewLighting() const
+{
+  return m_previewLighting && render3D() && !m_previewLights.empty();
+}
+
+bool RenderContext::previewLightingEnabled() const
+{
+  return m_previewLighting && render3D();
+}
+
+const std::vector<PreviewLight>& RenderContext::previewLights() const
+{
+  return m_previewLights;
+}
+
+void RenderContext::setPreviewLighting(
+  const bool previewLighting, std::vector<PreviewLight> lights)
+{
+  m_previewLighting = previewLighting;
+  m_previewLights = std::move(lights);
+}
+
+float RenderContext::timeSeconds() const
+{
+  return m_timeSeconds;
+}
+
+void RenderContext::setTimeSeconds(const float timeSeconds)
+{
+  m_timeSeconds = timeSeconds;
 }
 
 bool RenderContext::showPointEntities() const

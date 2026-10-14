@@ -33,11 +33,76 @@
 #include "render/RenderBatch.h"
 #include "render/RenderContext.h"
 
+#include "vm/util.h"
+
+#include <algorithm>
+#include <cctype>
+#include <cmath>
+#include <string>
+
 namespace tb::render
 {
 
 namespace
 {
+
+constexpr auto MaxPreviewLights = size_t{32};
+
+std::string lowercase(std::string value)
+{
+  std::ranges::transform(value, value.begin(), [](const unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
+  return value;
+}
+
+bool hasSkySurfaceParm(const gl::Material* material)
+{
+  if (!material)
+  {
+    return false;
+  }
+
+  const auto& surfaceParms = material->surfaceParms();
+  return surfaceParms.find("sky") != std::end(surfaceParms);
+}
+
+bool hasSkyTextureName(const gl::Material* material)
+{
+  if (!material)
+  {
+    return false;
+  }
+
+  auto name = lowercase(material->name());
+  std::replace(name.begin(), name.end(), '\\', '/');
+
+  const auto lastSeparator = name.find_last_of('/');
+  const auto basename =
+    lastSeparator == std::string::npos ? name : name.substr(lastSeparator + 1u);
+
+  return basename.rfind("sky", 0) == 0 || name == "common/sky" || name.ends_with("/sky");
+}
+
+bool isPreviewSkyMaterial(const gl::Material* material)
+{
+  return hasSkySurfaceParm(material) || hasSkyTextureName(material);
+}
+
+bool isSplitQuakeSkyMaterial(const gl::Material* material)
+{
+  if (const auto* texture = gl::getTexture(material))
+  {
+    return texture->width() >= texture->height() * 2u;
+  }
+  return false;
+}
+
+float gridRotationRadians()
+{
+  return static_cast<float>(vm::to_radians(
+    static_cast<double>(std::clamp(pref(Preferences::GridRotation), 0.0f, 90.0f))));
+}
 
 class RenderFunc : public gl::MaterialRenderFunc
 {
@@ -150,13 +215,20 @@ void FaceRenderer::render(RenderContext& context)
     const auto applyMaterial = context.showMaterials();
     const auto shadeFaces = context.shadeFaces();
     const auto showFog = context.showFog();
+    const auto gridAlpha = prefs.get(Preferences::GridAlpha);
+    const auto renderGrid = context.showGrid() && gridAlpha > 0.001f;
 
     gl.enable(GL_TEXTURE_2D);
     gl.activeTexture(GL_TEXTURE0);
     shader.set("Brightness", prefs.get(Preferences::Brightness));
-    shader.set("RenderGrid", context.showGrid());
+    shader.set("RenderGrid", renderGrid);
     shader.set("GridSize", static_cast<float>(context.gridSize()));
-    shader.set("GridAlpha", prefs.get(Preferences::GridAlpha));
+    shader.set("GridAlpha", renderGrid ? gridAlpha : 0.0f);
+    const auto gridRotation = renderGrid ? gridRotationRadians() : 0.0f;
+    shader.set("GridRotationCos", std::cos(gridRotation));
+    shader.set("GridRotationSin", std::sin(gridRotation));
+    shader.set(
+      "GridUseUnified3D", renderGrid && prefs.get(Preferences::GridUseUnified3D));
     shader.set("ApplyMaterial", applyMaterial);
     shader.set("Material", 0);
     shader.set("ApplyTinting", m_tint);
@@ -167,6 +239,18 @@ void FaceRenderer::render(RenderContext& context)
     shader.set("GrayScale", m_grayscale);
     shader.set("CameraPosition", context.camera().position());
     shader.set("ShadeFaces", shadeFaces);
+    const auto& previewLights = context.previewLights();
+    const auto previewLightCount = std::min(previewLights.size(), MaxPreviewLights);
+    shader.set("PreviewLighting", context.previewLighting());
+    shader.set("PreviewLightCount", previewLightCount);
+    for (size_t i = 0; i < previewLightCount; ++i)
+    {
+      const auto indexSuffix = "[" + std::to_string(i) + "]";
+      shader.set("PreviewLightPositions" + indexSuffix, previewLights[i].position);
+      shader.set("PreviewLightColors" + indexSuffix, previewLights[i].color);
+      shader.set("PreviewLightRadii" + indexSuffix, previewLights[i].radius);
+      shader.set("PreviewLightScales" + indexSuffix, previewLights[i].scale);
+    }
     shader.set("ShowFog", showFog);
     shader.set("Alpha", m_alpha);
     shader.set("EnableMasked", false);
@@ -196,6 +280,11 @@ void FaceRenderer::render(RenderContext& context)
         const auto enableMasked = texture && texture->mask() == gl::TextureMask::On;
 
         // set any per-material uniforms
+        shader.set(
+          "PreviewSky",
+          context.previewLightingEnabled() && isPreviewSkyMaterial(material));
+        shader.set("PreviewSkySplit", isSplitQuakeSkyMaterial(material));
+        shader.set("PreviewSkyTime", context.timeSeconds());
         shader.set("EnableMasked", enableMasked);
 
         func.before(gl, material);

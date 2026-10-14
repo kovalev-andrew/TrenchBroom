@@ -31,6 +31,15 @@ uniform bool RenderGrid;
 uniform float GridSize;
 uniform float GridAlpha;
 uniform bool ShadeFaces;
+uniform bool PreviewLighting;
+uniform int PreviewLightCount;
+uniform vec3 PreviewLightPositions[32];
+uniform vec3 PreviewLightColors[32];
+uniform float PreviewLightRadii[32];
+uniform float PreviewLightScales[32];
+uniform bool PreviewSky;
+uniform bool PreviewSkySplit;
+uniform float PreviewSkyTime;
 uniform bool ShowFog;
 
 varying vec4 modelCoordinates;
@@ -44,9 +53,65 @@ vec3 applySoftMapBoundsTint(vec3 inputFragColor, vec3 worldCoords);
 vec3 adaptiveGridColor(vec3 background);
 float texturedGridAlpha(float alpha);
 
+vec4 samplePreviewSky()
+{
+  vec3 skyDirection = normalize(-viewVector);
+  float verticalCompression = max(abs(skyDirection.z) + 0.28, 0.28);
+  vec2 base = skyDirection.xy / verticalCompression * 0.22;
+
+  if (PreviewSkySplit)
+  {
+    vec2 nearClouds = fract(base * 1.35 + vec2(PreviewSkyTime * 0.020, PreviewSkyTime * 0.011));
+    vec2 farClouds = fract(base * 0.82 + vec2(-PreviewSkyTime * 0.010, PreviewSkyTime * 0.006));
+
+    vec4 nearLayer = texture2D(Material, vec2(nearClouds.x * 0.5, nearClouds.y));
+    vec4 farLayer = texture2D(Material, vec2(0.5 + farClouds.x * 0.5, farClouds.y));
+    return vec4(mix(farLayer.rgb, nearLayer.rgb, 0.42), max(farLayer.a, nearLayer.a));
+  }
+
+  vec2 skyUv = fract(base + vec2(PreviewSkyTime * 0.012, PreviewSkyTime * 0.006));
+  return texture2D(Material, skyUv);
+}
+
+vec3 applyPreviewLighting(vec3 inputFragColor)
+{
+  if (!PreviewLighting || PreviewLightCount <= 0)
+  {
+    return inputFragColor;
+  }
+
+  vec3 normal = normalize(modelNormal);
+  vec3 lighting = vec3(0.08, 0.08, 0.08);
+
+  for (int i = 0; i < 32; ++i)
+  {
+    if (i < PreviewLightCount)
+    {
+      vec3 toLight = PreviewLightPositions[i] - modelCoordinates.xyz;
+      float distanceToLight = length(toLight);
+      float radius = max(PreviewLightRadii[i], 1.0);
+      float attenuation = max(1.0 - distanceToLight / radius, 0.0);
+      attenuation = attenuation * attenuation * attenuation;
+
+      vec3 lightDirection = distanceToLight > 0.001 ? toLight / distanceToLight : normal;
+      float facing = max(dot(normal, lightDirection), 0.0);
+      float softFacing = 0.06 + 0.94 * facing;
+      lighting += PreviewLightColors[i] * PreviewLightScales[i] * attenuation * softFacing;
+    }
+  }
+
+  return clamp(inputFragColor * clamp(lighting, 0.0, 1.75), 0.0, 1.0);
+}
+
 void main()
 {
-  if (ApplyMaterial)
+  bool renderPreviewSky = PreviewSky && ApplyMaterial;
+
+  if (renderPreviewSky)
+  {
+    gl_FragColor = samplePreviewSky();
+  }
+  else if (ApplyMaterial)
   {
     gl_FragColor = texture2D(Material, gl_TexCoord[0].st);
   }
@@ -80,7 +145,12 @@ void main()
     gl_FragColor = clamp(brightnessCorrection * gl_FragColor, 0.0, 1.0);
   }
 
-  if (ShadeFaces)
+  if (!renderPreviewSky)
+  {
+    gl_FragColor.rgb = applyPreviewLighting(gl_FragColor.rgb);
+  }
+
+  if (ShadeFaces && !renderPreviewSky)
   {
     // angular dimming ( can be controlled with dimStrength )
     // TODO: make view option
@@ -91,7 +161,7 @@ void main()
     gl_FragColor.rgb *= angleDim;
   }
 
-  if (ShowFog)
+  if (ShowFog && !renderPreviewSky)
   {
     float distance = length(viewVector);
 
@@ -110,7 +180,7 @@ void main()
       mix(gl_FragColor.rgb, fogColor, clamp(fogFactor + fogBias, 0.0, maxFogAmount));
   }
 
-  if (RenderGrid && GridAlpha > 0.0)
+  if (RenderGrid && GridAlpha > 0.0 && !renderPreviewSky)
   {
     vec3 coords = modelCoordinates.xyz;
 

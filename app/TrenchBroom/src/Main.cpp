@@ -19,12 +19,15 @@
 
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QDir>
 #include <QEvent>
 #include <QFile>
+#include <QFileInfo>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPalette>
 #include <QProxyStyle>
+#include <QSaveFile>
 #include <QSettings>
 #include <QString>
 #include <QStyleHints>
@@ -40,6 +43,7 @@
 #include "ui/Contracts.h"
 #include "ui/CrashReporter.h"
 #include "ui/FileEventFilter.h"
+#include "ui/GuideCapture.h"
 #include "ui/MapWindowManager.h"
 #include "ui/QPathUtils.h"
 #include "ui/QPreferenceStore.h"
@@ -174,7 +178,7 @@ auto createAppController()
              fmt::format(R"(Game configurations could not be loaded: {})", e.msg);
 
            QMessageBox::critical(
-             nullptr, "TrenchBroom", QString::fromStdString(msg), QMessageBox::Ok);
+             nullptr, "ReyondBroom", QString::fromStdString(msg), QMessageBox::Ok);
            QCoreApplication::exit(1);
          })
          | kdl::value();
@@ -234,6 +238,10 @@ bool parseCommandLineAndOpenFiles(AppController& appController)
   auto parser = QCommandLineParser{};
   parser.addOption(QCommandLineOption("portable"));
   parser.addOption(QCommandLineOption("enableDraftReleaseUpdates"));
+  parser.addOption(QCommandLineOption(
+    "capture-guide",
+    "Capture real editor screenshots using a demo JSON script.",
+    "script"));
   parser.process(*qApp);
 
   if (parser.isSet("enableDraftReleaseUpdates"))
@@ -244,6 +252,10 @@ bool parseCommandLineAndOpenFiles(AppController& appController)
     prefs.saveChanges();
   }
 
+  if (parser.isSet("capture-guide"))
+  {
+    return startGuideCapture(appController, parser.value("capture-guide"));
+  }
   return openFiles(appController, parser.positionalArguments());
 }
 
@@ -310,6 +322,7 @@ int main(int argc, char* argv[])
 
   // Needs to be set before creating the preference manager
   QApplication::setApplicationName("TrenchBroom");
+  QApplication::setApplicationDisplayName("ReyondBroom");
   // Needs to be "" otherwise Qt adds this to the paths returned by QStandardPaths
   // which would cause preferences to move from where they were with wx
   QApplication::setOrganizationName("");
@@ -319,9 +332,34 @@ int main(int argc, char* argv[])
   // QFileSystemWatcher, which requires a QApplication instance
   auto app = QApplication{argc, argv};
 
+  const auto captureIndex = app.arguments().indexOf("--capture-guide");
+  const auto captureMode = captureIndex >= 0 && captureIndex + 1 < app.arguments().size();
+  auto preferencesPath = SystemPaths::preferenceFilePath();
+  if (captureMode)
+  {
+    // Capture sessions may adjust view preferences, but never write the user's profile.
+    const auto scriptInfo = QFileInfo{app.arguments()[captureIndex + 1]};
+    const auto profile =
+      scriptInfo.absolutePath() + "/capture-profile/" + scriptInfo.completeBaseName();
+    QDir{}.mkpath(profile);
+    auto original = QFile{pathAsQString(preferencesPath)};
+    if (original.open(QIODevice::ReadOnly))
+    {
+      auto snapshot = QSaveFile{profile + "/Preferences.json"};
+      if (snapshot.open(QIODevice::WriteOnly))
+      {
+        snapshot.write(original.readAll());
+        snapshot.commit();
+      }
+    }
+    preferencesPath = pathFromQString(profile + "/Preferences.json");
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, profile);
+    QApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
+  }
+
   // PreferenceManager is destroyed by TrenchBroomApp::~TrenchBroomApp()
   PreferenceManager::createInstance(
-    std::make_unique<QPreferenceStore>(pathAsQString(SystemPaths::preferenceFilePath())));
+    std::make_unique<QPreferenceStore>(pathAsQString(preferencesPath)));
 
   // Style sheets must be loaded before creating the app controller, or they won't apply
   // to the welcome window, which the app controller creates
@@ -338,8 +376,11 @@ int main(int argc, char* argv[])
   installFileEventFilter(*appController);
 #endif
 
-  appController->askForAutoUpdates();
-  appController->triggerAutoUpdateCheck();
+  if (!captureMode)
+  {
+    appController->askForAutoUpdates();
+    appController->triggerAutoUpdateCheck();
+  }
 
   if (!parseCommandLineAndOpenFiles(*appController))
   {

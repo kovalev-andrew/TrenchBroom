@@ -58,12 +58,341 @@
 #include "kd/task_manager.h"
 #include "kd/vector_utils.h"
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <map>
+#include <optional>
 #include <ranges>
+#include <string>
+#include <vector>
 
 namespace tb::mdl
 {
 
 kdl_reflect_impl(TransformVerticesResult);
+
+namespace
+{
+struct BrushConversionCluster
+{
+  Node* parent = nullptr;
+  std::vector<BrushNode*> brushes;
+};
+
+bool planesEqual(const vm::plane3d& lhs, const vm::plane3d& rhs)
+{
+  return 1.0 - vm::dot(lhs.normal, rhs.normal) < 0.001
+         && std::abs(lhs.distance - rhs.distance) < 0.1;
+}
+
+Result<Brush> createBrushFromUniqueHullPlanes(
+  const Polyhedron3& polyhedron, const Map& map, const std::string& materialName)
+{
+  if (polyhedron.empty())
+  {
+    return Error{"Cannot create brush from empty polyhedron"};
+  }
+
+  auto faces = std::vector<BrushFace>{};
+  const auto defaultAttribs = BrushFaceAttributes{
+    materialName, map.gameInfo().gameConfig.faceAttribsConfig.defaults};
+
+  for (const auto* face : polyhedron.faces())
+  {
+    const auto& plane = face->plane();
+    if (std::ranges::any_of(faces, [&](const auto& candidate) {
+          return planesEqual(candidate.boundary(), plane);
+        }))
+    {
+      continue;
+    }
+
+    auto bIt = std::begin(face->boundary());
+    const auto* edge1 = *bIt++;
+    const auto* edge2 = *bIt++;
+    const auto* edge3 = *bIt++;
+
+    const auto& p1 = edge1->origin()->position();
+    const auto& p2 = edge2->origin()->position();
+    const auto& p3 = edge3->origin()->position();
+
+    auto brushFace =
+      BrushFace::create(p1, p3, p2, defaultAttribs, map.worldNode().mapFormat());
+    if (!brushFace)
+    {
+      return std::get<Error>(brushFace.error());
+    }
+    faces.push_back(std::move(brushFace).value());
+  }
+
+  return Brush::create(map.worldBounds(), std::move(faces));
+}
+
+Result<Brush> createBrushFromUniqueSourcePlanes(
+  const Brush& sourceBrush, const Map& map, const std::string& materialName)
+{
+  auto faces = std::vector<BrushFace>{};
+  faces.reserve(sourceBrush.faceCount());
+
+  for (const auto& face : sourceBrush.faces())
+  {
+    if (std::ranges::any_of(faces, [&](const auto& candidate) {
+          return planesEqual(candidate.boundary(), face.boundary());
+        }))
+    {
+      continue;
+    }
+    faces.push_back(face);
+  }
+
+  if (faces.size() < 4u)
+  {
+    return Error{"Not enough unique planes to create brush"};
+  }
+
+  auto brushResult = Brush::create(map.worldBounds(), std::move(faces));
+  if (brushResult)
+  {
+    auto brush = std::move(brushResult).value();
+    brush.cloneFaceAttributesFrom(sourceBrush);
+    return brush;
+  }
+
+  return BrushBuilder{map.worldNode().mapFormat(), map.worldBounds()}.createBrush(
+    sourceBrush.vertexPositions(), materialName);
+}
+
+Result<Brush> createBestEffortTriangulatedBrush(
+  const BrushNode& brushNode, const Map& map, const std::string& materialName)
+{
+  const auto& sourceBrush = brushNode.brush();
+  const auto usefulSimplification = [&](const Brush& brush) {
+    return sourceBrush.faceCount() <= 6u || brush.faceCount() < sourceBrush.faceCount();
+  };
+
+  auto sourcePlaneBrushResult =
+    createBrushFromUniqueSourcePlanes(sourceBrush, map, materialName);
+  if (sourcePlaneBrushResult)
+  {
+    auto brush = std::move(sourcePlaneBrushResult).value();
+    if (usefulSimplification(brush))
+    {
+      return brush;
+    }
+  }
+
+  auto points = std::vector<vm::vec3d>{};
+  points.reserve(sourceBrush.vertices().size());
+  for (const auto* vertex : sourceBrush.vertices())
+  {
+    points.push_back(vertex->position());
+  }
+
+  if (points.size() >= 4u)
+  {
+    const auto polyhedron = Polyhedron3{std::move(points)};
+    if (polyhedron.polyhedron() && polyhedron.closed())
+    {
+      auto brushResult = createBrushFromUniqueHullPlanes(polyhedron, map, materialName);
+      if (brushResult)
+      {
+        auto brush = std::move(brushResult).value();
+        if (usefulSimplification(brush))
+        {
+          return brush;
+        }
+      }
+
+      const auto builder = BrushBuilder{map.worldNode().mapFormat(), map.worldBounds()};
+      brushResult = builder.createBrush(polyhedron, materialName);
+      if (brushResult)
+      {
+        auto brush = std::move(brushResult).value();
+        if (usefulSimplification(brush))
+        {
+          return brush;
+        }
+      }
+    }
+  }
+
+  return Error{"Could not simplify triangulated brush without changing its shape"};
+}
+
+Result<Brush> createBestEffortTriangulatedBrush(
+  const std::vector<BrushNode*>& brushNodes,
+  const Map& map,
+  const std::string& materialName)
+{
+  if (brushNodes.empty())
+  {
+    return Error{"Cannot convert empty brush selection"};
+  }
+  if (brushNodes.size() == 1u)
+  {
+    return createBestEffortTriangulatedBrush(*brushNodes.front(), map, materialName);
+  }
+
+  auto sourceFaceCount = size_t{0u};
+  auto points = std::vector<vm::vec3d>{};
+  for (const auto* brushNode : brushNodes)
+  {
+    const auto& brush = brushNode->brush();
+    sourceFaceCount += brush.faceCount();
+    points.reserve(points.size() + brush.vertices().size());
+    for (const auto* vertex : brush.vertices())
+    {
+      points.push_back(vertex->position());
+    }
+  }
+
+  const auto usefulSimplification = [&](const Brush& brush) {
+    return brush.faceCount() < sourceFaceCount;
+  };
+
+  if (points.size() >= 4u)
+  {
+    const auto polyhedron = Polyhedron3{std::move(points)};
+    if (polyhedron.polyhedron() && polyhedron.closed())
+    {
+      auto brushResult = createBrushFromUniqueHullPlanes(polyhedron, map, materialName);
+      if (brushResult)
+      {
+        auto brush = std::move(brushResult).value();
+        if (usefulSimplification(brush))
+        {
+          return brush;
+        }
+      }
+
+      const auto builder = BrushBuilder{map.worldNode().mapFormat(), map.worldBounds()};
+      brushResult = builder.createBrush(polyhedron, materialName);
+      if (brushResult)
+      {
+        auto brush = std::move(brushResult).value();
+        if (usefulSimplification(brush))
+        {
+          return brush;
+        }
+      }
+    }
+  }
+
+  return Error{
+    "Could not simplify triangulated brush cluster without changing its shape"};
+}
+
+std::vector<const Brush*> toSourceBrushes(const std::vector<BrushNode*>& brushNodes)
+{
+  auto result = std::vector<const Brush*>{};
+  result.reserve(brushNodes.size());
+  for (const auto* brushNode : brushNodes)
+  {
+    result.push_back(&brushNode->brush());
+  }
+  return result;
+}
+
+std::vector<BrushNode*> collectBrushesInSubtree(Node& node)
+{
+  auto result = std::vector<BrushNode*>{};
+  node.accept(
+    kdl::overload(
+      [&](
+        auto&& thisLambda, WorldNode& worldNode) { worldNode.visitChildren(thisLambda); },
+      [&](
+        auto&& thisLambda, LayerNode& layerNode) { layerNode.visitChildren(thisLambda); },
+      [&](
+        auto&& thisLambda, GroupNode& groupNode) { groupNode.visitChildren(thisLambda); },
+      [&](auto&& thisLambda, EntityNode& entityNode) {
+        entityNode.visitChildren(thisLambda);
+      },
+      [&](BrushNode& brushNode) { result.push_back(&brushNode); },
+      [&](PatchNode&) {}));
+  return kdl::vec_sort_and_remove_duplicates(std::move(result));
+}
+
+std::vector<BrushNode*> collectAllBrushes(Map& map)
+{
+  return collectBrushesInSubtree(map.worldNode());
+}
+
+std::vector<BrushNode*> collectSelectedBrushesForConversion(Map& map)
+{
+  auto result = std::vector<BrushNode*>{};
+  const auto& selection = map.selection();
+  const auto& allBrushes = selection.allBrushes();
+  result.insert(result.end(), allBrushes.begin(), allBrushes.end());
+  for (const auto& faceHandle : selection.brushFaces)
+  {
+    result.push_back(faceHandle.node());
+  }
+
+  const auto collect = [&]<typename Handle>() {
+    if (!map.nodeHandles().anyHandleSelected<Handle>())
+      return;
+    for (auto* brush : collectAllBrushes(map))
+      for (const auto& handle : Handle::getHandles(*brush))
+        if (map.nodeHandles().isHandleSelected<Handle>(handle))
+        {
+          result.push_back(brush);
+          break;
+        }
+  };
+  collect.template operator()<VertexHandle>();
+  collect.template operator()<EdgeHandle>();
+  collect.template operator()<FaceHandle>();
+
+  return kdl::vec_sort_and_remove_duplicates(std::move(result));
+}
+
+std::vector<BrushConversionCluster> collectBrushConversionClusters(Map& map)
+{
+  auto result = std::vector<BrushConversionCluster>{};
+  auto claimedBrushes = std::vector<BrushNode*>{};
+
+  for (auto* node : map.selection().nodes)
+  {
+    node->accept(
+      kdl::overload(
+        [&](GroupNode& groupNode) {
+          auto brushes = collectBrushesInSubtree(groupNode);
+          if (!brushes.empty())
+          {
+            claimedBrushes.insert(
+              std::end(claimedBrushes), std::begin(brushes), std::end(brushes));
+            result.push_back(BrushConversionCluster{&groupNode, std::move(brushes)});
+          }
+        },
+        [&](EntityNode& entityNode) {
+          auto brushes = collectBrushesInSubtree(entityNode);
+          if (!brushes.empty())
+          {
+            claimedBrushes.insert(
+              std::end(claimedBrushes), std::begin(brushes), std::end(brushes));
+            result.push_back(BrushConversionCluster{&entityNode, std::move(brushes)});
+          }
+        },
+        [&](WorldNode&) {},
+        [&](LayerNode&) {},
+        [&](BrushNode&) {},
+        [&](PatchNode&) {}));
+  }
+
+  claimedBrushes = kdl::vec_sort_and_remove_duplicates(std::move(claimedBrushes));
+
+  for (auto* brushNode : collectSelectedBrushesForConversion(map))
+  {
+    if (!kdl::vec_contains(claimedBrushes, brushNode))
+    {
+      result.push_back(BrushConversionCluster{brushNode->parent(), {brushNode}});
+    }
+  }
+
+  return result;
+}
+} // namespace
 
 bool transformSelection(
   Map& map, const std::string& commandName, const vm::mat4x4d& transformation)
@@ -690,6 +1019,59 @@ bool csgConvexMerge(Map& map)
          | kdl::is_success();
 }
 
+bool convertTriangulatedBrushes(Map& map)
+{
+  const auto conversionClusters = collectBrushConversionClusters(map);
+  if (conversionClusters.empty())
+  {
+    return false;
+  }
+
+  auto toAdd = std::map<Node*, std::vector<Node*>>{};
+  auto toRemove = std::vector<Node*>{};
+
+  for (const auto& cluster : conversionClusters)
+  {
+    auto brushResult =
+      createBestEffortTriangulatedBrush(cluster.brushes, map, map.currentMaterialName());
+    if (!brushResult)
+    {
+      static_cast<void>(brushResult | kdl::if_error([&](auto e) {
+                          map.logger().error()
+                            << "Could not convert triangulated brush: " << e.msg;
+                        }));
+      continue;
+    }
+
+    auto brush = std::move(brushResult).value();
+    brush.cloneFaceAttributesFrom(toSourceBrushes(cluster.brushes));
+
+    toAdd[cluster.parent].push_back(new BrushNode{std::move(brush)});
+    toRemove.insert(
+      std::end(toRemove), std::begin(cluster.brushes), std::end(cluster.brushes));
+  }
+
+  toRemove = kdl::vec_sort_and_remove_duplicates(std::move(toRemove));
+  if (toRemove.empty())
+  {
+    return false;
+  }
+
+  auto transaction = Transaction{map, "Convert Triangulated Brushes"};
+  deselectAll(map);
+  const auto added = addNodes(map, toAdd);
+  if (added.empty())
+  {
+    transaction.cancel();
+    return false;
+  }
+
+  removeNodes(map, toRemove);
+  selectNodes(map, added);
+  transaction.commit();
+  return true;
+}
+
 bool csgSubtract(Map& map)
 {
   const auto subtrahendNodes = std::vector<BrushNode*>{map.selection().brushes};
@@ -753,6 +1135,280 @@ bool csgSubtract(Map& map)
              return false;
            })
          | kdl::value();
+}
+
+namespace
+{
+constexpr auto Subtract2Epsilon = 0.001;
+constexpr auto MaxSubtract2FragmentsPerBrush = size_t{512};
+
+bool nearEqual(const double lhs, const double rhs)
+{
+  return std::abs(lhs - rhs) <= Subtract2Epsilon;
+}
+
+void addUniqueCoordinate(
+  std::vector<double>& coordinates,
+  const double value,
+  const double minValue,
+  const double maxValue)
+{
+  if (value <= minValue + Subtract2Epsilon || value >= maxValue - Subtract2Epsilon)
+  {
+    return;
+  }
+  if (std::ranges::none_of(coordinates, [&](const auto candidate) {
+        return nearEqual(candidate, value);
+      }))
+  {
+    coordinates.push_back(value);
+  }
+}
+
+bool isAxisAlignedCuboid(const Brush& brush)
+{
+  if (brush.faceCount() != 6u || brush.vertexCount() != 8u)
+  {
+    return false;
+  }
+
+  const auto& bounds = brush.bounds();
+  for (size_t axis = 0; axis < 3u; ++axis)
+  {
+    if (bounds.max[axis] <= bounds.min[axis] + Subtract2Epsilon)
+    {
+      return false;
+    }
+  }
+
+  for (const auto& point : brush.vertexPositions())
+  {
+    for (size_t axis = 0; axis < 3u; ++axis)
+    {
+      if (
+        !nearEqual(point[axis], bounds.min[axis])
+        && !nearEqual(point[axis], bounds.max[axis]))
+      {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+bool pointInsideAnyBounds(const vm::vec3d& point, const std::vector<vm::bbox3d>& bounds)
+{
+  return std::ranges::any_of(bounds, [&](const auto& box) {
+    return point.x() > box.min.x() + Subtract2Epsilon
+           && point.x() < box.max.x() - Subtract2Epsilon
+           && point.y() > box.min.y() + Subtract2Epsilon
+           && point.y() < box.max.y() - Subtract2Epsilon
+           && point.z() > box.min.z() + Subtract2Epsilon
+           && point.z() < box.max.z() - Subtract2Epsilon;
+  });
+}
+
+std::optional<std::vector<Brush>> csgSubtract2Fragments(
+  Map& map, const Brush& minuend, const std::vector<const Brush*>& subtrahends)
+{
+  if (std::ranges::any_of(subtrahends, [](const auto* brush) {
+        return !isAxisAlignedCuboid(*brush);
+      }))
+  {
+    return std::nullopt;
+  }
+
+  const auto& minuendBounds = minuend.bounds();
+  auto subtrahendBounds = std::vector<vm::bbox3d>{};
+  subtrahendBounds.reserve(subtrahends.size());
+  for (const auto* subtrahend : subtrahends)
+  {
+    if (minuendBounds.intersects(subtrahend->bounds()) && minuend.intersects(*subtrahend))
+    {
+      subtrahendBounds.push_back(subtrahend->bounds());
+    }
+  }
+
+  if (subtrahendBounds.empty())
+  {
+    return std::vector<Brush>{minuend};
+  }
+
+  auto coordinates = std::array<std::vector<double>, 3u>{
+    std::vector<double>{minuendBounds.min.x(), minuendBounds.max.x()},
+    std::vector<double>{minuendBounds.min.y(), minuendBounds.max.y()},
+    std::vector<double>{minuendBounds.min.z(), minuendBounds.max.z()}};
+
+  for (const auto& bounds : subtrahendBounds)
+  {
+    for (size_t axis = 0; axis < 3u; ++axis)
+    {
+      addUniqueCoordinate(
+        coordinates[axis],
+        std::clamp(bounds.min[axis], minuendBounds.min[axis], minuendBounds.max[axis]),
+        minuendBounds.min[axis],
+        minuendBounds.max[axis]);
+      addUniqueCoordinate(
+        coordinates[axis],
+        std::clamp(bounds.max[axis], minuendBounds.min[axis], minuendBounds.max[axis]),
+        minuendBounds.min[axis],
+        minuendBounds.max[axis]);
+    }
+  }
+
+  for (auto& axisCoordinates : coordinates)
+  {
+    std::ranges::sort(axisCoordinates);
+  }
+
+  const auto cellCount = (coordinates[0].size() - 1u) * (coordinates[1].size() - 1u)
+                         * (coordinates[2].size() - 1u);
+  if (cellCount > MaxSubtract2FragmentsPerBrush)
+  {
+    return std::nullopt;
+  }
+
+  const auto builder = BrushBuilder{
+    map.worldNode().mapFormat(),
+    map.worldBounds(),
+    map.gameInfo().gameConfig.faceAttribsConfig.defaults};
+
+  auto result = std::vector<Brush>{};
+  result.reserve(cellCount);
+  for (size_t x = 0; x + 1u < coordinates[0].size(); ++x)
+  {
+    for (size_t y = 0; y + 1u < coordinates[1].size(); ++y)
+    {
+      for (size_t z = 0; z + 1u < coordinates[2].size(); ++z)
+      {
+        const auto min =
+          vm::vec3d{coordinates[0][x], coordinates[1][y], coordinates[2][z]};
+        const auto max = vm::vec3d{
+          coordinates[0][x + 1u], coordinates[1][y + 1u], coordinates[2][z + 1u]};
+        if (
+          max.x() <= min.x() + Subtract2Epsilon || max.y() <= min.y() + Subtract2Epsilon
+          || max.z() <= min.z() + Subtract2Epsilon)
+        {
+          continue;
+        }
+
+        const auto center = (min + max) / 2.0;
+        if (pointInsideAnyBounds(center, subtrahendBounds))
+        {
+          continue;
+        }
+
+        auto cellBrush =
+          builder.createCuboid(vm::bbox3d{min, max}, map.currentMaterialName());
+        if (!cellBrush)
+        {
+          return std::nullopt;
+        }
+
+        auto fragment = std::move(cellBrush).value();
+        if (!fragment.intersects(minuend))
+        {
+          continue;
+        }
+
+        if (!fragment.intersect(map.worldBounds(), minuend))
+        {
+          return std::nullopt;
+        }
+
+        fragment.cloneFaceAttributesFrom(minuend);
+        result.push_back(std::move(fragment));
+      }
+    }
+  }
+
+  return result;
+}
+
+std::vector<Brush> csgSubtractFallbackFragments(
+  Map& map, const Brush& minuend, const std::vector<const Brush*>& subtrahends)
+{
+  auto result = std::vector<Brush>{};
+  auto subtractionResults = minuend.subtract(
+    map.worldNode().mapFormat(),
+    map.worldBounds(),
+    map.currentMaterialName(),
+    subtrahends);
+
+  for (auto& subtractionResult : subtractionResults)
+  {
+    if (subtractionResult)
+    {
+      result.push_back(std::move(subtractionResult).value());
+    }
+    else
+    {
+      subtractionResult | kdl::if_error([&](const auto& e) {
+        map.logger().error() << "Could not subtract brushes: " << e.msg;
+      }) | kdl::ignore();
+    }
+  }
+
+  return result;
+}
+} // namespace
+
+bool csgSubtract2(Map& map)
+{
+  const auto subtrahendNodes = std::vector<BrushNode*>{map.selection().brushes};
+  if (subtrahendNodes.empty())
+  {
+    return false;
+  }
+
+  auto transaction = Transaction{map, "CSG Subtract 2"};
+  selectTouchingNodes(map, false);
+
+  const auto minuendNodes = std::vector<BrushNode*>{map.selection().brushes};
+  const auto subtrahends = subtrahendNodes
+                           | std::views::transform([](const auto* subtrahendNode) {
+                               return &subtrahendNode->brush();
+                             })
+                           | kdl::ranges::to<std::vector>();
+
+  auto toAdd = std::map<Node*, std::vector<Node*>>{};
+  auto toRemove =
+    std::vector<Node*>{std::begin(subtrahendNodes), std::end(subtrahendNodes)};
+
+  for (auto* minuendNode : minuendNodes)
+  {
+    const auto& minuend = minuendNode->brush();
+    auto betterFragments = csgSubtract2Fragments(map, minuend, subtrahends);
+    auto currentBrushes = betterFragments
+                            ? std::move(*betterFragments)
+                            : csgSubtractFallbackFragments(map, minuend, subtrahends);
+
+    if (!currentBrushes.empty())
+    {
+      auto resultNodes =
+        currentBrushes | kdl::views::as_rvalue
+        | std::views::transform([&](auto b) { return new BrushNode{std::move(b)}; })
+        | kdl::ranges::to<std::vector>();
+      auto& toAddForParent = toAdd[minuendNode->parent()];
+      kdl::vec_append(toAddForParent, std::move(resultNodes));
+    }
+
+    toRemove.push_back(minuendNode);
+  }
+
+  deselectAll(map);
+  const auto added = addNodes(map, toAdd);
+  removeNodes(map, toRemove);
+  selectNodes(map, added);
+
+  if (!transaction.commit())
+  {
+    transaction.cancel();
+    return false;
+  }
+
+  return true;
 }
 
 bool csgIntersect(Map& map)

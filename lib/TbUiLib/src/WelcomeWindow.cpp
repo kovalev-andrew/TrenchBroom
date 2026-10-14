@@ -46,7 +46,7 @@ WelcomeWindow::WelcomeWindow(AppController& appController)
 void WelcomeWindow::createGui()
 {
   setWindowIconTB(this);
-  setWindowTitle("Welcome to TrenchBroom");
+  setWindowTitle("Welcome to ReyondBroom");
 
   m_recentDocumentListBox = new RecentDocumentListBox{m_appController.recentDocuments()};
   m_recentDocumentListBox->setToolTip("Double click on a file to open it");

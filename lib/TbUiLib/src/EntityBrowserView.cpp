@@ -45,6 +45,8 @@
 #include "render/Transformation.h"
 #include "ui/MapDocument.h"
 
+#include <QWheelEvent>
+
 #include "kd/contracts.h"
 #include "kd/string_compare.h"
 #include "kd/string_utils.h"
@@ -126,14 +128,54 @@ void EntityBrowserView::setFilterText(const std::string& filterText)
   }
 }
 
+void EntityBrowserView::setSelectedEntityDefinition(const std::string& classname)
+{
+  if (classname != m_selectedClassname)
+  {
+    m_selectedClassname = classname;
+    update();
+  }
+}
+
+void EntityBrowserView::setIconScaleFactor(const float iconScaleFactor)
+{
+  if (iconScaleFactor != m_iconScaleFactor)
+  {
+    m_iconScaleFactor = iconScaleFactor;
+    invalidate();
+    update();
+  }
+}
+
+void EntityBrowserView::wheelEvent(QWheelEvent* event)
+{
+  if (event->modifiers() & Qt::ControlModifier)
+  {
+    auto delta = event->angleDelta().y();
+    if (delta == 0)
+    {
+      delta = event->pixelDelta().y();
+    }
+
+    if (delta != 0)
+    {
+      emit entityBrowserIconSizeAdjustmentRequested(delta > 0 ? 1 : -1);
+      event->accept();
+      return;
+    }
+  }
+
+  CellView::wheelEvent(event);
+}
+
 void EntityBrowserView::doInitLayout(Layout& layout)
 {
   layout.setOuterMargin(5.0f);
   layout.setGroupMargin(5.0f);
   layout.setRowMargin(5.0f);
   layout.setCellMargin(5.0f);
-  layout.setCellWidth(93.0f, 93.0f);
-  layout.setCellHeight(64.0f, 128.0f);
+  layout.setCellWidth(m_iconScaleFactor * 93.0f, m_iconScaleFactor * 93.0f);
+  layout.setCellHeight(m_iconScaleFactor * 64.0f, m_iconScaleFactor * 128.0f);
   layout.setMaxUpScale(1.5f);
 }
 
@@ -305,6 +347,18 @@ void EntityBrowserView::doRender(
 
   renderBounds(gl, layout, y, height);
   renderModels(gl, layout, y, height, transformation);
+  renderSelection(gl, layout, y, height);
+}
+
+void EntityBrowserView::doLeftClick(Layout& layout, const float x, const float y)
+{
+  if (const auto* cell = layout.cellAt(x, y))
+  {
+    m_selectedClassname = cellData(*cell).entityDefinition.name;
+    emit entityDefinitionSelected(
+      QString::fromStdString(cellData(*cell).entityDefinition.name));
+    update();
+  }
 }
 
 bool EntityBrowserView::shouldRenderFocusIndicator() const
@@ -362,6 +416,88 @@ void EntityBrowserView::renderBounds(
     vertexArray.render(gl, gl::PrimType::Lines);
     vertexArray.cleanup(gl, shader.program());
   }
+}
+
+void EntityBrowserView::renderSelection(
+  gl::Gl& gl, Layout& layout, const float y, const float height)
+{
+  if (m_selectedClassname.empty())
+  {
+    return;
+  }
+
+  using SelectionVertex = gl::VertexTypes::P2C4::Vertex;
+  auto vertices = std::vector<SelectionVertex>{};
+  const auto color = RgbaF{1.0f, 0.08f, 0.04f, 1.0f}.toVec();
+
+  const auto addLine = [&](const vm::vec2f& a, const vm::vec2f& b) {
+    vertices.emplace_back(a, color);
+    vertices.emplace_back(b, color);
+  };
+
+  for (const auto& group : layout.groups())
+  {
+    if (group.intersectsY(y, height))
+    {
+      for (const auto& row : group.rows())
+      {
+        if (row.intersectsY(y, height))
+        {
+          for (const auto& cell : row.cells())
+          {
+            if (cellData(cell).entityDefinition.name != m_selectedClassname)
+            {
+              continue;
+            }
+
+            const auto& bounds = cell.itemBounds();
+            const auto left = bounds.left() - 3.0f;
+            const auto right = bounds.right() + 3.0f;
+            const auto top = height - (bounds.top() - y) + 3.0f;
+            const auto bottom = height - (bounds.bottom() - y) - 3.0f;
+
+            const auto topLeft = vm::vec2f{left, top};
+            const auto topRight = vm::vec2f{right, top};
+            const auto bottomRight = vm::vec2f{right, bottom};
+            const auto bottomLeft = vm::vec2f{left, bottom};
+            addLine(topLeft, topRight);
+            addLine(topRight, bottomRight);
+            addLine(bottomRight, bottomLeft);
+            addLine(bottomLeft, topLeft);
+          }
+        }
+      }
+    }
+  }
+
+  if (vertices.empty())
+  {
+    return;
+  }
+
+  const auto viewLeft = float(0);
+  const auto viewTop = float(size().height());
+  const auto viewRight = float(size().width());
+  const auto viewBottom = float(0);
+  const auto transformation = render::Transformation{
+    gl,
+    vm::ortho_matrix(-1.0f, 1.0f, viewLeft, viewTop, viewRight, viewBottom),
+    vm::view_matrix(vm::vec3f{0, 0, -1}, vm::vec3f{0, 1, 0})
+      * vm::translation_matrix(vm::vec3f{0.0f, 0.0f, 0.1f})};
+
+  gl.disable(GL_DEPTH_TEST);
+  gl.lineWidth(2.0f);
+
+  auto shader = gl::ActiveShader{gl, shaderManager(), gl::Shaders::VaryingPCShader};
+  auto vertexArray = gl::VertexArray::move(std::move(vertices));
+  vertexArray.prepare(gl, vboManager());
+  if (vertexArray.setup(gl, shader.program()))
+  {
+    vertexArray.render(gl, gl::PrimType::Lines);
+    vertexArray.cleanup(gl, shader.program());
+  }
+  gl.lineWidth(1.0f);
+  gl.enable(GL_DEPTH_TEST);
 }
 
 void EntityBrowserView::renderModels(

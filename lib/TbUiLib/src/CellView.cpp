@@ -388,6 +388,7 @@ void CellView::renderContents(gl::Gl& gl)
   gl.frontFace(GL_CCW);
   renderTitleBackgrounds(gl, y, h);
   renderTitleStrings(gl, y, h);
+  doRenderTitleControls(gl, m_layout, y, h);
 }
 
 void CellView::setupGL(gl::Gl& gl)
@@ -472,10 +473,11 @@ auto collectStringVertices(
         auto& font = fontManager.font(defaultFont);
         const auto quads = font.quads(groupTitle, false, offset);
 
-        const auto titleVertices = TextVertex::toList(kdl::views::zip(
-          quads | kdl::views::stride(2),
-          quads | std::views::drop(1) | kdl::views::stride(2),
-          kdl::views::repeat(textColor.to<RgbaF>().toVec())));
+        const auto titleVertices = TextVertex::toList(
+          kdl::views::zip(
+            quads | kdl::views::stride(2),
+            quads | std::views::drop(1) | kdl::views::stride(2),
+            kdl::views::repeat(textColor.to<RgbaF>().toVec())));
 
         auto& vertices = stringVertices[defaultFont];
         vertices.insert(
@@ -502,10 +504,11 @@ auto collectStringVertices(
             const auto yOffset = vm::vec2f{x, y + height - bounds.bottom()};
 
             const auto quads = font.quads(title, false, yOffset);
-            const auto vertices = TextVertex::toList(kdl::views::zip(
-              quads | kdl::views::stride(2),
-              quads | std::views::drop(1) | kdl::views::stride(2),
-              kdl::views::repeat(textColor.to<RgbaF>().toVec())));
+            const auto vertices = TextVertex::toList(
+              kdl::views::zip(
+                quads | kdl::views::stride(2),
+                quads | std::views::drop(1) | kdl::views::stride(2),
+                kdl::views::repeat(textColor.to<RgbaF>().toVec())));
 
             kdl::vec_append(stringVertices[fontDescriptor], vertices);
           }
@@ -550,6 +553,7 @@ void CellView::renderTitleStrings(gl::Gl& gl, float y, float height)
 }
 
 void CellView::doClear() {}
+void CellView::doRenderTitleControls(gl::Gl&, Layout&, float, float) {}
 void CellView::doLeftClick(Layout&, float, float) {}
 void CellView::doContextMenu(Layout&, float, float, QContextMenuEvent*) {}
 

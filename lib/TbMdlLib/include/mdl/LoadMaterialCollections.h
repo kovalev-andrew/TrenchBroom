@@ -26,6 +26,7 @@
 
 #include <filesystem>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace kdl
@@ -66,6 +67,13 @@ Result<std::vector<gl::MaterialCollection>> loadMaterialCollections(
   const gl::CreateTextureResource& createResource,
   kdl::task_manager& taskManager,
   Logger& logger);
+
+Result<gl::MaterialCollection> loadTextureFolderMaterialCollection(
+  const std::filesystem::path& folderPath,
+  const gl::CreateTextureResource& createResource);
+
+std::vector<std::string> textureFolderMaterialNames(
+  const std::vector<std::filesystem::path>& texturePaths);
 
 } // namespace mdl
 } // namespace tb

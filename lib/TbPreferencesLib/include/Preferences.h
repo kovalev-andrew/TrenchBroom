@@ -200,6 +200,9 @@ inline auto Brightness = Preference<float>{"render/Brightness", 1.4f};
 inline auto GridAlpha = Preference<float>{"render/Grid/Alpha", 0.5f};
 inline auto GridColor2D =
   Preference<Color>{"render/Grid/Color2D", RgbaF{0.8f, 0.8f, 0.8f, 0.8f}};
+inline auto GridRotation = Preference<float>{"render/Grid/Rotation", 0.0f};
+inline auto GridUseUnified3D =
+  Preference<bool>{"render/Grid/Use unified 3D brush grid", true};
 
 inline auto TextureMinFilter = Preference<int>{"render/Texture mode min filter", 0x2700};
 inline auto TextureMagFilter = Preference<int>{"render/Texture mode mag filter", 0x2600};
@@ -291,6 +294,8 @@ inline auto FaceRenderMode =
   Preference<std::string>{"Map view/Face render mode", FaceRenderModeTextured};
 
 inline auto ShadeFaces = Preference<bool>{"Map view/Shade faces", true};
+inline auto PreviewQuakeLighting =
+  Preference<bool>{"Map view/Preview Quake lighting", false};
 inline auto ShowFog = Preference<bool>{"Map view/Show fog", false};
 inline auto ShowEdges = Preference<bool>{"Map view/Show edges", true};
 

@@ -24,6 +24,9 @@
 #include "render/Transformation.h"
 
 #include "vm/bbox.h"
+#include "vm/vec.h"
+
+#include <vector>
 
 namespace tb
 {
@@ -42,6 +45,14 @@ enum class RenderMode
 {
   Render3D,
   Render2D
+};
+
+struct PreviewLight
+{
+  vm::vec3f position;
+  vm::vec3f color;
+  float radius = 0.0f;
+  float scale = 1.0f;
 };
 
 class RenderContext
@@ -71,6 +82,9 @@ private:
   bool m_showFaces = true;
   bool m_showEdges = true;
   bool m_shadeFaces = true;
+  bool m_previewLighting = false;
+  std::vector<PreviewLight> m_previewLights;
+  float m_timeSeconds = 0.0f;
 
   bool m_showPointEntities = true;
   bool m_showPointEntityModels = true;
@@ -127,6 +141,14 @@ public:
 
   bool shadeFaces() const;
   void setShadeFaces(bool shadeFaces);
+
+  bool previewLighting() const;
+  bool previewLightingEnabled() const;
+  const std::vector<PreviewLight>& previewLights() const;
+  void setPreviewLighting(bool previewLighting, std::vector<PreviewLight> lights);
+
+  float timeSeconds() const;
+  void setTimeSeconds(float timeSeconds);
 
   bool showPointEntities() const;
   void setShowPointEntities(bool showPointEntities);

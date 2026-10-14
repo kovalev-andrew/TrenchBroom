@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ultimate Trench Broom - Visual Guide</title><style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:#f2f4f5;color:#202629;font:16px/1.5 Arial,sans-serif}
+a{color:#147132;text-decoration:none}a:hover{text-decoration:underline}
+header{padding:24px 32px;border-bottom:1px solid #cbd2d5;background:white}
+h1{margin:0;font-size:28px;font-weight:700;letter-spacing:0}
+header p{margin:6px 0 0;color:#5d666b;font-size:14px}
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:28px;padding:24px 28px}
+nav{position:sticky;top:20px;align-self:start;max-height:calc(100vh - 40px);overflow:auto}
+nav a{display:block;padding:5px 8px;color:#354045;font-size:14px}
+nav a:hover{background:#e2eae5}
+main{min-width:0;max-width:1600px}
+section{border-bottom:1px solid #cbd2d5;padding:0 0 22px;margin:0 0 32px}
+h2{font-size:23px;margin:0 0 4px;letter-spacing:0}
+.description{margin:0 0 7px;max-width:900px;color:#354045;font-size:16px}
+.route{margin:0 0 18px;font-size:14px;color:#546069}
+figure{margin:0 0 24px}
+figcaption{font-size:18px;font-weight:600;padding:0 0 10px}
+img{width:100%;height:auto;display:block;background:#252525;border:1px solid #c5cbce}
+footer{font-size:14px;color:#546069;padding:0 0 24px}
+@media(max-width:900px){header{padding:20px 16px}.layout{display:block;padding:20px 16px}nav{position:static;max-height:none;margin-bottom:24px;columns:2}nav a{break-inside:avoid}h1{font-size:25px}figcaption{font-size:16px}}
+@media(max-width:480px){nav{columns:1}h2{font-size:21px}}
+@media print{body{background:white}.layout{display:block;padding:0}header{padding:0 0 14px}nav{display:none}section{break-before:page}figure{break-inside:avoid}img{border:0}footer{display:none}}
+</style></head>
+<body><header><h1>Ultimate Trench Broom</h1><p>Visual guide. Real editor screenshots and short steps. Click an image for full resolution.</p></header>
+<div class="layout"><nav aria-label="Tools"><a href="#terrain">Terrain</a>
+<a href="#polygon-cut">Polygon Cut</a>
+<a href="#polygon-spawn">Polygon Spawn</a>
+<a href="#bevel">Bevel Tool</a>
+<a href="#bevel-gestures">Bevel Mouse Controls</a>
+<a href="#inset">Inset Tool</a>
+<a href="#spin">Spin Tool</a>
+<a href="#bezier-bend">Bezier Bend</a>
+<a href="#subdivision">Subdivision</a>
+<a href="#subtract-2">Subtract 2</a>
+<a href="#convert-triang">Convert Triang Brushes</a>
+<a href="#rock">Generate Rock</a>
+<a href="#sculpt">Sculpt Tool</a>
+<a href="#array-random">Array: RandomRadius</a>
+<a href="#array-line">Array: Line</a>
+<a href="#array-radial">Array: Radial</a>
+<a href="#grid-rotation">Grid Rotation</a>
+<a href="#snap-integer">Auto Integer Snap</a>
+<a href="#xyz">Edit XYZ Coordinates</a>
+<a href="#symmetry">Symmetry</a>
+<a href="#prefabs">Prefab Collections</a>
+<a href="#entity-list">EntityList</a>
+<a href="#material-browser">Material Browser Controls</a>
+<a href="#texture-folder">Add a Texture Folder</a>
+<a href="#palette">Choose an Export Palette</a>
+<a href="#entity-browser">Entity Browser Zoom</a>
+<a href="#unity-sync">Sync a Map to Unity</a>
+<a href="#lighting">Quake Lighting &amp; Sky Preview</a>
+<a href="#entity-animation">Door, Button &amp; Lift Preview</a>
+<a href="#train">func_train Preview</a>
+<a href="#intermission">Intermission Camera Preview</a>
+<a href="#spawn-master">Spawn Master</a></nav>
+<main><section id="terrain">
+<h2>Terrain</h2><p class="description">Turns a flat brush into adjustable terrain with a live height preview.</p><p class="route">Tools &gt; Generate Terrain | Shift + T</p>
+<figure><figcaption>1. Select a wide, flat brush.</figcaption>
+<a href="screenshots/terrain-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="screenshots/terrain-01.png" alt="1. Select a wide, flat brush."></a></figure>
+<figure><figcaption>2. Press Shift + T. Start with U / V = 10.</figcaption>
+<a href="screenshots/terrain-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="screenshots/terrain-02.png" alt="2. Press Shift + T. Start with U / V = 10."></a></figure>
+<figure><figcaption>3. Adjust Height and Seed. Apply keeps the result; Esc cancels.</figcaption>
+<a href="screenshots/terrain-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="screenshots/terrain-03.png" alt="3. Adjust Height and Seed. Apply keeps the result; Esc cancels."></a></figure>
+</section>
+<section id="polygon-cut">
+<h2>Polygon Cut</h2><p class="description">Cuts a closed, hand-drawn shape out of the selected brush.</p><p class="route">Tools &gt; Polygon Cut Tool | Shift + C</p>
+<figure><figcaption>1. Select the brush. Press Shift + C.</figcaption>
+<a href="captures/polygon-cut/polygon-cut-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/polygon-cut/polygon-cut-01.png" alt="1. Select the brush. Press Shift + C."></a></figure>
+<figure><figcaption>2. Click points on the brush. Click the first point to close.</figcaption>
+<a href="captures/polygon-cut/polygon-cut-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/polygon-cut/polygon-cut-02.png" alt="2. Click points on the brush. Click the first point to close."></a></figure>
+<figure><figcaption>3. Press Enter to cut. Depth 0 cuts through; Keep cutout preserves the piece.</figcaption>
+<a href="captures/polygon-cut/polygon-cut-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/polygon-cut/polygon-cut-03.png" alt="3. Press Enter to cut. Depth 0 cuts through; Keep cutout preserves the piece."></a></figure>
+</section>
+<section id="polygon-spawn">
+<h2>Polygon Spawn</h2><p class="description">Builds new brushes from a closed outline drawn on a brush surface.</p><p class="route">Tools &gt; Polygon Spawn Tool | Shift + F</p>
+<figure><figcaption>1. Select the base brush. Press Shift + F.</figcaption>
+<a href="captures/polygon-spawn/polygon-spawn-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/polygon-spawn/polygon-spawn-01.png" alt="1. Select the base brush. Press Shift + F."></a></figure>
+<figure><figcaption>2. Click an outline and close it manually.</figcaption>
+<a href="captures/polygon-spawn/polygon-spawn-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/polygon-spawn/polygon-spawn-02.png" alt="2. Click an outline and close it manually."></a></figure>
+<figure><figcaption>3. Press Enter. New brush height equals the grid size.</figcaption>
+<a href="captures/polygon-spawn/polygon-spawn-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/polygon-spawn/polygon-spawn-03.png" alt="3. Press Enter. New brush height equals the grid size."></a></figure>
+</section>
+<section id="bevel">
+<h2>Bevel Tool</h2><p class="description">Rounds selected brush edges with adjustable width, segments and curvature.</p><p class="route">Tools &gt; Bevel Tool | Shift + B</p>
+<figure><figcaption>1. Select a brush. Press Shift + B, then click its top edge.</figcaption>
+<a href="captures/bevel/bevel-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/bevel/bevel-01.png" alt="1. Select a brush. Press Shift + B, then click its top edge."></a></figure>
+<figure><figcaption>2. Set Segments and Width to round the edge. Apply keeps the result; Esc cancels.</figcaption>
+<a href="captures/bevel/bevel-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/bevel/bevel-02.png" alt="2. Set Segments and Width to round the edge. Apply keeps the result; Esc cancels."></a></figure>
+</section>
+<section id="bevel-gestures">
+<h2>Bevel Mouse Controls</h2><p class="description">Adjusts an edge bevel directly with mouse gestures and modifier keys.</p><p class="route">Edge Tool | E</p>
+<figure><figcaption>1. Edge Tool: select edges. Ctrl + wheel changes segments.</figcaption>
+<a href="captures/bevel-gestures/bevel-gestures-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/bevel-gestures/bevel-gestures-01.png" alt="1. Edge Tool: select edges. Ctrl + wheel changes segments."></a></figure>
+<figure><figcaption>2. Ctrl + Shift + wheel changes width.</figcaption>
+<a href="captures/bevel-gestures/bevel-gestures-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/bevel-gestures/bevel-gestures-02.png" alt="2. Ctrl + Shift + wheel changes width."></a></figure>
+<figure><figcaption>3. Ctrl + right-drag adjusts curvature. Ctrl + middle-drag adjusts proportion.</figcaption>
+<a href="captures/bevel-gestures/bevel-gestures-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/bevel-gestures/bevel-gestures-03.png" alt="3. Ctrl + right-drag adjusts curvature. Ctrl + middle-drag adjusts proportion."></a></figure>
+</section>
+<section id="inset">
+<h2>Inset Tool</h2><p class="description">Creates a smaller face inside one selected face, surrounded by a brush border.</p><p class="route">Tools &gt; Inset Tool | Shift + I</p>
+<figure><figcaption>1. Select one brush. Press Shift + I.</figcaption>
+<a href="captures/inset/inset-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/inset/inset-01.png" alt="1. Select one brush. Press Shift + I."></a></figure>
+<figure><figcaption>2. Select exactly one face. Amount starts at zero.</figcaption>
+<a href="captures/inset/inset-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/inset/inset-02.png" alt="2. Select exactly one face. Amount starts at zero."></a></figure>
+<figure><figcaption>3. Increase Amount to create the centre and border. Snap to grid uses grid-sized steps. Apply.</figcaption>
+<a href="captures/inset/inset-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/inset/inset-03.png" alt="3. Increase Amount to create the centre and border. Snap to grid uses grid-sized steps. Apply."></a></figure>
+</section>
+<section id="spin">
+<h2>Spin Tool</h2><p class="description">Extrudes selected faces into a segmented chain that follows a movable end handle.</p><p class="route">Tools &gt; Spin Tool</p>
+<figure><figcaption>1. Open Spin and select one or more faces.</figcaption>
+<a href="captures/spin/spin-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/spin/spin-01.png" alt="1. Open Spin and select one or more faces."></a></figure>
+<figure><figcaption>2. Drag the end cube or an axis arrow to bend the chain.</figcaption>
+<a href="captures/spin/spin-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/spin/spin-02.png" alt="2. Drag the end cube or an axis arrow to bend the chain."></a></figure>
+<figure><figcaption>3. Set Flex and End scale. Rings rotate the end. Apply; Esc cancels; Ctrl + Z undoes.</figcaption>
+<a href="captures/spin/spin-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/spin/spin-03.png" alt="3. Set Flex and End scale. Rings rotate the end. Apply; Esc cancels; Ctrl + Z undoes."></a></figure>
+</section>
+<section id="bezier-bend">
+<h2>Bezier Bend</h2><p class="description">Bends a brush group along an editable curve, with position, rotation and scale handles.</p><p class="route">Tools &gt; Bezier Bend Tool</p>
+<figure><figcaption>1. Group the brushes. Select one group and open Bezier Bend.</figcaption>
+<a href="captures/bezier-bend/bezier-bend-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/bezier-bend/bezier-bend-01.png" alt="1. Group the brushes. Select one group and open Bezier Bend."></a></figure>
+<figure><figcaption>2. Choose Axis and Segments. Keep joints holds neighbouring pieces together.</figcaption>
+<a href="captures/bezier-bend/bezier-bend-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/bezier-bend/bezier-bend-02.png" alt="2. Choose Axis and Segments. Keep joints holds neighbouring pieces together."></a></figure>
+<figure><figcaption>3. Drag handles. Move, Scale and Rotate affect the group; Subdiv adds cuts. Apply.</figcaption>
+<a href="captures/bezier-bend/bezier-bend-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/bezier-bend/bezier-bend-03.png" alt="3. Drag handles. Move, Scale and Rotate affect the group; Subdiv adds cuts. Apply."></a></figure>
+</section>
+<section id="subdivision">
+<h2>Subdivision</h2><p class="description">Splits brushes into smaller pieces by segment count or grid size.</p><p class="route">Tools &gt; Subdivision Tool</p>
+<figure><figcaption>1. Select brushes, a face or one group. Open Subdivision.</figcaption>
+<a href="captures/subdivision/subdivision-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/subdivision/subdivision-01.png" alt="1. Select brushes, a face or one group. Open Subdivision."></a></figure>
+<figure><figcaption>2. Segments divides the brush into U x V cells.</figcaption>
+<a href="captures/subdivision/subdivision-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/subdivision/subdivision-02.png" alt="2. Segments divides the brush into U x V cells."></a></figure>
+<figure><figcaption>3. Grid size uses Cell spacing. Choose World grid or Texture pivot, then Apply.</figcaption>
+<a href="captures/subdivision/subdivision-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/subdivision/subdivision-03.png" alt="3. Grid size uses Cell spacing. Choose World grid or Texture pivot, then Apply."></a></figure>
+</section>
+<section id="subtract-2">
+<h2>Subtract 2</h2><p class="description">Subtracts cutter brushes while preferring straight, clean boundaries between the remaining pieces.</p><p class="route">Edit &gt; CSG &gt; Subtract 2</p>
+<figure><figcaption>1. Place a cutter through the target brush.</figcaption>
+<a href="captures/subtract-2/subtract-2-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/subtract-2/subtract-2-01.png" alt="1. Place a cutter through the target brush."></a></figure>
+<figure><figcaption>2. Select the cutter, not the target.</figcaption>
+<a href="captures/subtract-2/subtract-2-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/subtract-2/subtract-2-02.png" alt="2. Select the cutter, not the target."></a></figure>
+<figure><figcaption>3. Edit &gt; CSG &gt; Subtract 2. The result prefers straight chunk boundaries. Ctrl + Z undoes.</figcaption>
+<a href="captures/subtract-2/subtract-2-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/subtract-2/subtract-2-03.png" alt="3. Edit &gt; CSG &gt; Subtract 2. The result prefers straight chunk boundaries. Ctrl + Z undoes."></a></figure>
+</section>
+<section id="convert-triang">
+<h2>Convert Triang Brushes</h2><p class="description">Rebuilds triangulated brush faces into simpler surfaces while preserving the overall shape.</p><p class="route">Edit &gt; Convert Triang Brushes | Ctrl + Shift + B</p>
+<figure><figcaption>1. Select triangulated brushes.</figcaption>
+<a href="captures/convert-triang/convert-triang-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/convert-triang/convert-triang-01.png" alt="1. Select triangulated brushes."></a></figure>
+<figure><figcaption>2. Edit &gt; Convert Triang Brushes, or Ctrl + Shift + B.</figcaption>
+<a href="captures/convert-triang/convert-triang-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/convert-triang/convert-triang-02.png" alt="2. Edit &gt; Convert Triang Brushes, or Ctrl + Shift + B."></a></figure>
+<figure><figcaption>3. Inspect the shape. Each brush is rebuilt separately; difficult shapes may only convert approximately.</figcaption>
+<a href="captures/convert-triang/convert-triang-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/convert-triang/convert-triang-03.png" alt="3. Inspect the shape. Each brush is rebuilt separately; difficult shapes may only convert approximately."></a></figure>
+</section>
+<section id="rock">
+<h2>Generate Rock</h2><p class="description">Turns a brush into a seeded rock shape, optionally hollow or grouped.</p><p class="route">Tools &gt; Generate Rock</p>
+<figure><figcaption>1. Select a size-defining brush. Open Generate Rock.</figcaption>
+<a href="captures/rock/rock-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/rock/rock-01.png" alt="1. Select a size-defining brush. Open Generate Rock."></a></figure>
+<figure><figcaption>2. Segments controls detail. Seed changes the shape.</figcaption>
+<a href="captures/rock/rock-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/rock/rock-02.png" alt="2. Segments controls detail. Seed changes the shape."></a></figure>
+<figure><figcaption>3. Hollow enables Thickness. Create group keeps the rock together. Apply; Esc cancels.</figcaption>
+<a href="captures/rock/rock-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/rock/rock-03.png" alt="3. Hollow enables Thickness. Create group keeps the rock together. Apply; Esc cancels."></a></figure>
+</section>
+<section id="sculpt">
+<h2>Sculpt Tool</h2><p class="description">Raises, lowers or smooths brush surfaces while keeping shared vertices together.</p><p class="route">Tools &gt; Sculpt Tool</p>
+<figure><figcaption>1. Open Sculpt. Choose Raise, Lower or Smooth; set Width and Intensity.</figcaption>
+<a href="captures/sculpt/sculpt-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/sculpt/sculpt-01.png" alt="1. Open Sculpt. Choose Raise, Lower or Smooth; set Width and Intensity."></a></figure>
+<figure><figcaption>2. Hold the left mouse button to shape the surface. Shared vertices stay joined.</figcaption>
+<a href="captures/sculpt/sculpt-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/sculpt/sculpt-02.png" alt="2. Hold the left mouse button to shape the surface. Shared vertices stay joined."></a></figure>
+<figure><figcaption>3. Smooth softens the shape. Prevent collapse protects the back surface. Esc exits; Ctrl + Z undoes.</figcaption>
+<a href="captures/sculpt/sculpt-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/sculpt/sculpt-03.png" alt="3. Smooth softens the shape. Prevent collapse protects the back surface. Esc exits; Ctrl + Z undoes."></a></figure>
+</section>
+<section id="array-random">
+<h2>Array: RandomRadius</h2><p class="description">Scatters copies of one object or group within a seeded random radius.</p><p class="route">Tools &gt; Array Tool</p>
+<figure><figcaption>1. Select one object or group. Open Array and choose RandomRadius.</figcaption>
+<a href="captures/array-random/array-random-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/array-random/array-random-01.png" alt="1. Select one object or group. Open Array and choose RandomRadius."></a></figure>
+<figure><figcaption>2. Set Count, Radius and Seed. Face center turns a chosen side inward.</figcaption>
+<a href="captures/array-random/array-random-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/array-random/array-random-02.png" alt="2. Set Count, Radius and Seed. Face center turns a chosen side inward."></a></figure>
+<figure><figcaption>3. Inspect the live preview, then Apply. Default resets settings; Ctrl + Z undoes.</figcaption>
+<a href="captures/array-random/array-random-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/array-random/array-random-03.png" alt="3. Inspect the live preview, then Apply. Default resets settings; Ctrl + Z undoes."></a></figure>
+</section>
+<section id="array-line">
+<h2>Array: Line</h2><p class="description">Places copies in one or more lines with adjustable spacing and offsets.</p><p class="route">Tools &gt; Array Tool</p>
+<figure><figcaption>1. Select one object or group. Open Array and choose Line.</figcaption>
+<a href="captures/array-line/array-line-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/array-line/array-line-01.png" alt="1. Select one object or group. Open Array and choose Line."></a></figure>
+<figure><figcaption>2. Set Count, Spacing and Offset. Lines + Cross center creates a star.</figcaption>
+<a href="captures/array-line/array-line-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/array-line/array-line-02.png" alt="2. Set Count, Spacing and Offset. Lines + Cross center creates a star."></a></figure>
+<figure><figcaption>3. Inspect the live preview, then Apply. Default resets settings; Ctrl + Z undoes.</figcaption>
+<a href="captures/array-line/array-line-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/array-line/array-line-03.png" alt="3. Inspect the live preview, then Apply. Default resets settings; Ctrl + Z undoes."></a></figure>
+</section>
+<section id="array-radial">
+<h2>Array: Radial</h2><p class="description">Arranges copies around a circle or across multiple concentric rings.</p><p class="route">Tools &gt; Array Tool</p>
+<figure><figcaption>1. Select one object or group. Open Array and choose Radial.</figcaption>
+<a href="captures/array-radial/array-radial-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/array-radial/array-radial-01.png" alt="1. Select one object or group. Open Array and choose Radial."></a></figure>
+<figure><figcaption>2. Set Count, Rings and Ring spacing. Face center adjusts orientation.</figcaption>
+<a href="captures/array-radial/array-radial-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/array-radial/array-radial-02.png" alt="2. Set Count, Rings and Ring spacing. Face center adjusts orientation."></a></figure>
+<figure><figcaption>3. Inspect the live preview, then Apply. Default resets settings; Ctrl + Z undoes.</figcaption>
+<a href="captures/array-radial/array-radial-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/array-radial/array-radial-03.png" alt="3. Inspect the live preview, then Apply. Default resets settings; Ctrl + Z undoes."></a></figure>
+</section>
+<section id="grid-rotation">
+<h2>Grid Rotation</h2><p class="description">Rotates the brush surface grid and its snapping direction.</p><p class="route">Tools &gt; Grid Rotation</p>
+<figure><figcaption>1. Open Grid Rotation to change the editor grid.</figcaption>
+<a href="captures/grid-rotation/grid-rotation-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/grid-rotation/grid-rotation-01.png" alt="1. Open Grid Rotation to change the editor grid."></a></figure>
+<figure><figcaption>2. Change Angle. Unified brush face grid joins the grid across faces.</figcaption>
+<a href="captures/grid-rotation/grid-rotation-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/grid-rotation/grid-rotation-02.png" alt="2. Change Angle. Unified brush face grid joins the grid across faces."></a></figure>
+<figure><figcaption>3. Snapping follows the angle. Apply saves it; Esc restores the old settings.</figcaption>
+<a href="captures/grid-rotation/grid-rotation-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/grid-rotation/grid-rotation-03.png" alt="3. Snapping follows the angle. Apply saves it; Esc restores the old settings."></a></figure>
+</section>
+<section id="snap-integer">
+<h2>Auto Integer Snap</h2><p class="description">Automatically snaps new and edited brush vertices to whole-number coordinates.</p><p class="route">Toolbar &gt; Snap Int</p>
+<figure><figcaption>1. Select a brush. Snap Int sits left of Grid.</figcaption>
+<a href="captures/snap-integer/snap-integer-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/snap-integer/snap-integer-01.png" alt="1. Select a brush. Snap Int sits left of Grid."></a></figure>
+<figure><figcaption>2. Turn on Snap Int. New and edited vertices snap to whole numbers.</figcaption>
+<a href="captures/snap-integer/snap-integer-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/snap-integer/snap-integer-02.png" alt="2. Turn on Snap Int. New and edited vertices snap to whole numbers."></a></figure>
+<figure><figcaption>3. Edit normally. Integer snap is not grid snap; click Snap Int again to disable.</figcaption>
+<a href="captures/snap-integer/snap-integer-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/snap-integer/snap-integer-03.png" alt="3. Edit normally. Integer snap is not grid snap; click Snap Int again to disable."></a></figure>
+</section>
+<section id="xyz">
+<h2>Edit XYZ Coordinates</h2><p class="description">Moves a selected brush, face, edge or vertex by entering exact coordinates.</p><p class="route">Viewport &gt; XYZ panel</p>
+<figure><figcaption>1. Select one brush, face, edge or vertex. Its XYZ position appears at the bottom right.</figcaption>
+<a href="captures/xyz/xyz-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/xyz/xyz-01.png" alt="1. Select one brush, face, edge or vertex. Its XYZ position appears at the bottom right."></a></figure>
+<figure><figcaption>2. Click the XYZ panel. Type a coordinate; the selection moves immediately.</figcaption>
+<a href="captures/xyz/xyz-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/xyz/xyz-02.png" alt="2. Click the XYZ panel. Type a coordinate; the selection moves immediately."></a></figure>
+<figure><figcaption>3. Click elsewhere to close the editor. Ctrl + Z undoes the move.</figcaption>
+<a href="captures/xyz/xyz-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/xyz/xyz-03.png" alt="3. Click elsewhere to close the editor. Ctrl + Z undoes the move."></a></figure>
+</section>
+<section id="symmetry">
+<h2>Symmetry</h2><p class="description">Repeats edits around one chosen centre object across matching sectors.</p><p class="route">Tools &gt; Symmetry Tool</p>
+<figure><figcaption>1. Select the centre object and open Symmetry.</figcaption>
+<a href="captures/symmetry/symmetry-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/symmetry/symmetry-01.png" alt="1. Select the centre object and open Symmetry."></a></figure>
+<figure><figcaption>2. Choose 2, 4 or 8 sides. Pink lines mark the active axis.</figcaption>
+<a href="captures/symmetry/symmetry-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/symmetry/symmetry-02.png" alt="2. Choose 2, 4 or 8 sides. Pink lines mark the active axis."></a></figure>
+<figure><figcaption>3. Edit any side. To stop, select the axis and choose Off. Existing copies stay.</figcaption>
+<a href="captures/symmetry/symmetry-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/symmetry/symmetry-03.png" alt="3. Edit any side. To stop, select the axis and choose Off. Existing copies stay."></a></figure>
+</section>
+<section id="prefabs">
+<h2>Prefab Collections</h2><p class="description">Loads named groups from map collections and places them as reusable objects.</p><p class="route">Right inspector &gt; Prefabs</p>
+<figure><figcaption>1. Open Prefabs. Add Collection loads named groups from a .map file.</figcaption>
+<a href="captures/prefabs/prefabs-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/prefabs/prefabs-01.png" alt="1. Open Prefabs. Add Collection loads named groups from a .map file."></a></figure>
+<figure><figcaption>2. Each named group becomes a prefab card. Use the arrow to collapse its collection.</figcaption>
+<a href="captures/prefabs/prefabs-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/prefabs/prefabs-02.png" alt="2. Each named group becomes a prefab card. Use the arrow to collapse its collection."></a></figure>
+<figure><figcaption>3. Drag a card into the viewport. Each placed group receives a unique name. Ctrl + Z undoes.</figcaption>
+<a href="captures/prefabs/prefabs-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/prefabs/prefabs-03.png" alt="3. Drag a card into the viewport. Each placed group receives a unique name. Ctrl + Z undoes."></a></figure>
+</section>
+<section id="entity-list">
+<h2>EntityList</h2><p class="description">Finds named entities and groups, then focuses the viewport on a chosen result.</p><p class="route">Right inspector &gt; EntityList</p>
+<figure><figcaption>1. Open EntityList to see named entities and groups.</figcaption>
+<a href="captures/entity-list/entity-list-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/entity-list/entity-list-01.png" alt="1. Open EntityList to see named entities and groups."></a></figure>
+<figure><figcaption>2. Type part of a name to filter the list.</figcaption>
+<a href="captures/entity-list/entity-list-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/entity-list/entity-list-02.png" alt="2. Type part of a name to filter the list."></a></figure>
+<figure><figcaption>3. Double-click a result to select it and focus the camera.</figcaption>
+<a href="captures/entity-list/entity-list-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/entity-list/entity-list-03.png" alt="3. Double-click a result to select it and focus the camera."></a></figure>
+</section>
+<section id="material-browser">
+<h2>Material Browser Controls</h2><p class="description">Changes texture preview size and collapses or expands material collections.</p><p class="route">Right inspector &gt; Face</p>
+<figure><figcaption>1. Open Face &gt; Material Browser. Group organizes textures into collections.</figcaption>
+<a href="captures/material-browser/material-browser-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/material-browser/material-browser-01.png" alt="1. Open Face &gt; Material Browser. Group organizes textures into collections."></a></figure>
+<figure><figcaption>2. Ctrl + wheel up enlarges previews; down makes them smaller. The + and - buttons do the same.</figcaption>
+<a href="captures/material-browser/material-browser-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/material-browser/material-browser-02.png" alt="2. Ctrl + wheel up enlarges previews; down makes them smaller. The + and - buttons do the same."></a></figure>
+<figure><figcaption>3. Use Hide / Show in a collection header to collapse or expand it. Refresh reloads texture folders.</figcaption>
+<a href="captures/material-browser/material-browser-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/material-browser/material-browser-03.png" alt="3. Use Hide / Show in a collection header to collapse or expand it. Refresh reloads texture folders."></a></figure>
+</section>
+<section id="texture-folder">
+<h2>Add a Texture Folder</h2><p class="description">Loads PNG and JPG folders as usable textures and generates their compile WAD.</p><p class="route">Material Browser &gt; Settings &gt; Add Texture Folder</p>
+<figure><figcaption>1. In Material Browser Settings, click Add Texture Folder.</figcaption>
+<a href="captures/textures/texture-folder-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/textures/texture-folder-01.png" alt="1. In Material Browser Settings, click Add Texture Folder."></a></figure>
+<figure><figcaption>2. Choose a PNG or JPG folder. The folder icon in Enabled identifies it.</figcaption>
+<a href="captures/textures/texture-folder-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/textures/texture-folder-02.png" alt="2. Choose a PNG or JPG folder. The folder icon in Enabled identifies it."></a></figure>
+<figure><figcaption>3. Apply its textures to faces. Refresh reloads new files and rebuilds the compile WAD.</figcaption>
+<a href="captures/textures/texture-folder-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/textures/texture-folder-03.png" alt="3. Apply its textures to faces. Refresh reloads new files and rebuilds the compile WAD."></a></figure>
+</section>
+<section id="palette">
+<h2>Choose an Export Palette</h2><p class="description">Chooses and previews the colour palette used when exporting texture folders to WAD.</p><p class="route">Material Browser &gt; Settings &gt; Pallete</p>
+<figure><figcaption>1. Open Material Browser Settings. Click Pallete to choose the WAD export palette.</figcaption>
+<a href="captures/textures/palette-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/textures/palette-01.png" alt="1. Open Material Browser Settings. Click Pallete to choose the WAD export palette."></a></figure>
+<figure><figcaption>2. Choose a palette file and check its colour preview.</figcaption>
+<a href="captures/textures/palette-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/textures/palette-02.png" alt="2. Choose a palette file and check its colour preview."></a></figure>
+<figure><figcaption>3. OK stores the palette. PNG and JPG folders can now generate a compile WAD.</figcaption>
+<a href="captures/textures/palette-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/textures/palette-03.png" alt="3. OK stores the palette. PNG and JPG folders can now generate a compile WAD."></a></figure>
+</section>
+<section id="entity-browser">
+<h2>Entity Browser Zoom</h2><p class="description">Changes entity model preview size for easier browsing and selection.</p><p class="route">Right inspector &gt; Entity</p>
+<figure><figcaption>1. Open Entity &gt; Entity Browser.</figcaption>
+<a href="captures/entity-browser/entity-browser-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/entity-browser/entity-browser-01.png" alt="1. Open Entity &gt; Entity Browser."></a></figure>
+<figure><figcaption>2. Hover the browser. Ctrl + wheel up enlarges models; down shrinks them.</figcaption>
+<a href="captures/entity-browser/entity-browser-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/entity-browser/entity-browser-02.png" alt="2. Hover the browser. Ctrl + wheel up enlarges models; down shrinks them."></a></figure>
+<figure><figcaption>3. Use the + and - buttons below the models to change preview size.</figcaption>
+<a href="captures/entity-browser/entity-browser-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/entity-browser/entity-browser-03.png" alt="3. Use the + and - buttons below the models to change preview size."></a></figure>
+</section>
+<section id="unity-sync">
+<h2>Sync a Map to Unity</h2><p class="description">Exports map geometry and textures into a Unity prefab with an adjustable scale.</p><p class="route">Unity &gt; Sync Map...</p>
+<figure><figcaption>1. Unity &gt; Sync Map. Choose a Unity project or its Assets folder.</figcaption>
+<a href="captures/unity-sync/unity-sync-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/unity-sync/unity-sync-01.png" alt="1. Unity &gt; Sync Map. Choose a Unity project or its Assets folder."></a></figure>
+<figure><figcaption>2. Keep brushes separate preserves individual brush objects inside one prefab. Default scale is 0.1.</figcaption>
+<a href="captures/unity-sync/unity-sync-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/unity-sync/unity-sync-02.png" alt="2. Keep brushes separate preserves individual brush objects inside one prefab. Default scale is 0.1."></a></figure>
+<figure><figcaption>3. Sync exports geometry and textures. Existing materials and textures are kept.</figcaption>
+<a href="captures/unity-sync/unity-sync-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/unity-sync/unity-sync-03.png" alt="3. Sync exports geometry and textures. Existing materials and textures are kept."></a></figure>
+</section>
+<section id="lighting">
+<h2>Quake Lighting &amp; Sky Preview</h2><p class="description">Shows an approximate Quake lighting and animated sky preview inside the editor.</p><p class="route">View &gt; Preview Quake Lighting</p>
+<figure><figcaption>1. Add light entities and sky-textured faces.</figcaption>
+<a href="captures/lighting/lighting-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/lighting/lighting-01.png" alt="1. Add light entities and sky-textured faces."></a></figure>
+<figure><figcaption>2. Enable the lighting icon. Lights and animated Quake sky are shown in the viewport.</figcaption>
+<a href="captures/lighting/lighting-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/lighting/lighting-02.png" alt="2. Enable the lighting icon. Lights and animated Quake sky are shown in the viewport."></a></figure>
+<figure><figcaption>3. Move a light to inspect its reach. Toggle the icon off to return to normal editing.</figcaption>
+<a href="captures/lighting/lighting-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/lighting/lighting-03.png" alt="3. Move a light to inspect its reach. Toggle the icon off to return to normal editing."></a></figure>
+</section>
+<section id="entity-animation">
+<h2>Door, Button &amp; Lift Preview</h2><p class="description">Previews door, button and lift movement using their current entity settings.</p><p class="route">Select entity &gt; Play above XYZ</p>
+<figure><figcaption>1. Select a func_door, func_button or func_plat. Play appears above XYZ.</figcaption>
+<a href="captures/entity-animation/entity-animation-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/entity-animation/entity-animation-01.png" alt="1. Select a func_door, func_button or func_plat. Play appears above XYZ."></a></figure>
+<figure><figcaption>2. Click Play. Green means active; the motion loops forward and backward.</figcaption>
+<a href="captures/entity-animation/entity-animation-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/entity-animation/entity-animation-02.png" alt="2. Click Play. Green means active; the motion loops forward and backward."></a></figure>
+<figure><figcaption>3. Edit speed, height or other movement properties to update the preview live. Deselect or stop to restore.</figcaption>
+<a href="captures/entity-animation/entity-animation-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/entity-animation/entity-animation-03.png" alt="3. Edit speed, height or other movement properties to update the preview live. Deselect or stop to restore."></a></figure>
+</section>
+<section id="train">
+<h2>func_train Preview</h2><p class="description">Previews a func_train moving through its linked path_corner route.</p><p class="route">Select func_train &gt; Play above XYZ</p>
+<figure><figcaption>1. Give func_train a target matching the first path_corner targetname.</figcaption>
+<a href="captures/train/train-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/train/train-01.png" alt="1. Give func_train a target matching the first path_corner targetname."></a></figure>
+<figure><figcaption>2. Connect path_corner targets in order. Click Play to preview the route.</figcaption>
+<a href="captures/train/train-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/train/train-02.png" alt="2. Connect path_corner targets in order. Click Play to preview the route."></a></figure>
+<figure><figcaption>3. Change speed while playing. Stop or deselect to return to the original geometry.</figcaption>
+<a href="captures/train/train-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/train/train-03.png" alt="3. Change speed while playing. Stop or deselect to return to the original geometry."></a></figure>
+</section>
+<section id="intermission">
+<h2>Intermission Camera Preview</h2><p class="description">Shows the view from a selected info_intermission camera before compiling the map.</p><p class="route">Select info_intermission</p>
+<figure><figcaption>1. Place and select an info_intermission entity.</figcaption>
+<a href="captures/intermission/intermission-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/intermission/intermission-01.png" alt="1. Place and select an info_intermission entity."></a></figure>
+<figure><figcaption>2. The live camera view appears above XYZ. Set position and mangle to frame the shot.</figcaption>
+<a href="captures/intermission/intermission-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/intermission/intermission-02.png" alt="2. The live camera view appears above XYZ. Set position and mangle to frame the shot."></a></figure>
+<figure><figcaption>3. Move the entity and inspect the preview before compiling.</figcaption>
+<a href="captures/intermission/intermission-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/intermission/intermission-03.png" alt="3. Move the entity and inspect the preview before compiling."></a></figure>
+</section>
+<section id="spawn-master">
+<h2>Spawn Master</h2><p class="description">Builds a reusable teleport closet that spawns a chosen entity when a trigger activates.</p><p class="route">Tools &gt; Spawn Master</p>
+<figure><figcaption>1. Select a trigger or button with a target property.</figcaption>
+<a href="captures/spawn-master/spawn-master-01.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/spawn-master/spawn-master-01.png" alt="1. Select a trigger or button with a target property."></a></figure>
+<figure><figcaption>2. Choose an existing destination targetname and the entity to spawn. Selected models have a red border.</figcaption>
+<a href="captures/spawn-master/spawn-master-02.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/spawn-master/spawn-master-02.png" alt="2. Choose an existing destination targetname and the entity to spawn. Selected models have a red border."></a></figure>
+<figure><figcaption>3. OK builds a teleport closet in empty space below the trigger. Later additions reuse and expand the closet.</figcaption>
+<a href="captures/spawn-master/spawn-master-03.png" target="_blank" rel="noopener"><img loading="lazy" decoding="async" src="captures/spawn-master/spawn-master-03.png" alt="3. OK builds a teleport closet in empty space below the trigger. Later additions reuse and expand the closet."></a></figure>
+</section>
+<footer>Real editor captures. Personal file paths are replaced with examples or covered for privacy. Hidden experimental tools are not included.</footer></main></div></body></html>

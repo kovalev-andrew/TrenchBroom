@@ -113,6 +113,10 @@ get_build_platform(APP_PLATFORM_NAME)
 # Create the executable target and link with libraries
 add_executable(TrenchBroom WIN32 MACOSX_BUNDLE)
 target_sources(TrenchBroom PRIVATE ${APP_SOURCE} ${INDEX_OUTPUT_PATH} ${DOC_MANUAL_TARGET_FILES_ABSOLUTE} ${DOC_MANUAL_SHORTCUTS_JS_TARGET_ABSOLUTE} ${DOC_MANUAL_TARGET_IMAGE_FILES_ABSOLUTE})
+set_target_properties(
+  TrenchBroom PROPERTIES
+    OUTPUT_NAME "TrenchBroom"
+    RUNTIME_OUTPUT_NAME "TrenchBroom")
 
 if(WIN32 AND COMPILER_IS_MSVC)
     # We embed our own application manifest via TrenchBroom.rc; tell the linker not to
@@ -153,7 +157,7 @@ set_target_properties(TrenchBroom PROPERTIES AUTORCC TRUE)
 if(APPLE)
     # Configure variables that are substituted into the plist
     # Set CFBundleName, which controls the application menu label
-    set_target_properties(TrenchBroom PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "TrenchBroom")
+    set_target_properties(TrenchBroom PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "ReyondBroom")
     # Set CFBundleShortVersionString to "2.0.0". This is displayed in the Finder and Spotlight.
     set_target_properties(TrenchBroom PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${CPACK_PACKAGE_VERSION}")
     # Set CFBundleVersion to the git describe output. Apple docs say it should be "three non-negative, period-separated integers with the first integer being greater than zero"
@@ -240,7 +244,10 @@ endif()
 
 # Generate a small stripped PDB for release builds so we get stack traces with symbols
 if(COMPILER_IS_MSVC)
-    set_target_properties(TrenchBroom PROPERTIES LINK_FLAGS_RELEASE "/DEBUG /PDBSTRIPPED:app/TrenchBroom/TrenchBroom-stripped.pdb /PDBALTPATH:TrenchBroom-stripped.pdb")
+    target_link_options(TrenchBroom PRIVATE
+        "$<$<CONFIG:Release>:/DEBUG>"
+        "$<$<CONFIG:Release>:/PDBSTRIPPED:$<TARGET_FILE_DIR:TrenchBroom>/TrenchBroom-stripped.pdb>"
+        "$<$<CONFIG:Release>:/PDBALTPATH:TrenchBroom-stripped.pdb>")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD")
@@ -330,10 +337,10 @@ if(WIN32 OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD")
 endif()
 
 # Common CPack configuration
-set(APP_PACKAGE_FILE_NAME "TrenchBroom-${APP_PLATFORM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${GIT_DESCRIBE}-${CMAKE_BUILD_TYPE}")
+set(APP_PACKAGE_FILE_NAME "ReyondBroom-${APP_PLATFORM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${GIT_DESCRIBE}-${CMAKE_BUILD_TYPE}")
 set(CPACK_PACKAGE_FILE_NAME ${APP_PACKAGE_FILE_NAME})
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "TrenchBroom Level Editor")
-set(CPACK_PACKAGE_VENDOR "TrenchBroom")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "ReyondBroom Level Editor")
+set(CPACK_PACKAGE_VENDOR "ReyondBroom")
 # We want stack trace symbols even in our release builds, so don't strip.
 set(CPACK_STRIP_FILES FALSE)
 

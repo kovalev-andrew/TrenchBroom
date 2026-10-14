@@ -19,6 +19,8 @@
 
 #include <QApplication>
 #include <QComboBox>
+#include <QDoubleSpinBox>
+#include <QKeyEvent>
 
 #include "Result.h"
 #include "TestEnvironment.h"
@@ -27,15 +29,24 @@
 #include "gl/ResourceManager.h"
 #include "gl/TestGl.h"
 #include "gl/TestUtils.h"
+#include "mdl/BrushNode.h"
 #include "mdl/GameConfigFixture.h"
 #include "mdl/Grid.h"
+#include "mdl/Group.h"
+#include "mdl/GroupNode.h"
 #include "mdl/Map.h"
 #include "mdl/MapFormat.h"
+#include "mdl/Map_Nodes.h"
+#include "mdl/Map_Selection.h"
+#include "mdl/TestFactory.h"
 #include "ui/AppControllerFixture.h"
 #include "ui/CatchConfig.h"
 #include "ui/MapDocument.h"
 #include "ui/MapDocumentFixture.h"
 #include "ui/MapWindow.h"
+
+#include <functional>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -64,6 +75,77 @@ TEST_CASE("MapWindow")
                   | kdl::value();
 
   auto window = MapWindow{appController, std::move(document)};
+
+  SECTION("Esc disables parameter tools, including from a numeric field")
+  {
+    auto& map = window.document().map();
+    auto* source = mdl::createBrushNode(map);
+    mdl::addNodes(map, {{mdl::parentForNodes(map), {source}}});
+    auto* group = new mdl::GroupNode{mdl::Group{"bend-test"}};
+    group->addChild(mdl::createBrushNode(map));
+    mdl::addNodes(map, {{mdl::parentForNodes(map), {group}}});
+    struct ToolCase
+    {
+      const char* name;
+      std::function<void()> activate;
+      std::function<bool()> active;
+    };
+    const auto cases = std::vector<ToolCase>{
+      {"Bezier",
+       [&] { window.toggleBezierBendTool(); },
+       [&] { return window.bezierBendToolActive(); }},
+      {"Sculpt",
+       [&] { window.toggleSculptTool(); },
+       [&] { return window.sculptToolActive(); }},
+      {"Array",
+       [&] { window.toggleArrayTool(); },
+       [&] { return window.arrayToolActive(); }},
+      {"Subdivision",
+       [&] { window.toggleSubdivisionTool(); },
+       [&] { return window.subdivisionToolActive(); }},
+      {"Bevel",
+       [&] { window.toggleBevelTool(); },
+       [&] { return window.bevelToolActive(); }},
+      {"Inset",
+       [&] { window.toggleInsetTool(); },
+       [&] { return window.insetToolActive(); }},
+      {"Spin", [&] { window.toggleSpinTool(); }, [&] { return window.spinToolActive(); }},
+      {"Polygon Cut",
+       [&] { window.togglePolygonCutTool(); },
+       [&] { return window.polygonCutToolActive(); }},
+      {"Polygon Spawn",
+       [&] { window.togglePolygonSpawnTool(); },
+       [&] { return window.polygonSpawnToolActive(); }},
+      {"Terrain",
+       [&] { window.showTerrainGeneratorDialog(); },
+       [&] { return window.terrainGeneratorActive(); }},
+      {"Rock",
+       [&] { window.showRockGeneratorDialog(); },
+       [&] { return window.rockGeneratorActive(); }},
+      {"Grid Rotation",
+       [&] { window.showGridRotationDialog(); },
+       [&] { return window.gridRotationActive(); }},
+    };
+    for (const auto& test : cases)
+    {
+      DYNAMIC_SECTION(test.name)
+      {
+        mdl::selectNodes(
+          map,
+          {test.name == std::string{"Bezier"} ? static_cast<mdl::Node*>(group) : source});
+        test.activate();
+        REQUIRE(test.active());
+        auto* input = window.findChild<QDoubleSpinBox*>();
+        REQUIRE(input != nullptr);
+        auto escape = QKeyEvent{QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier};
+        QApplication::sendEvent(input, &escape);
+        CHECK_FALSE(test.active());
+        QApplication::sendEvent(input, &escape);
+        QApplication::sendEvent(input, &escape);
+        CHECK_FALSE(test.active());
+      }
+    }
+  }
 
   SECTION("load resets grid size dropdown")
   {

@@ -53,6 +53,8 @@ private:
   QComboBox* m_sortOrderChoice = nullptr;
   QPushButton* m_groupButton = nullptr;
   QPushButton* m_usedButton = nullptr;
+  QPushButton* m_increaseIconSizeButton = nullptr;
+  QPushButton* m_decreaseIconSizeButton = nullptr;
   QLineEdit* m_filterBox = nullptr;
   QScrollBar* m_scrollBar = nullptr;
   MaterialBrowserView* m_view = nullptr;
@@ -82,6 +84,8 @@ private:
 
   void reload();
   void updateSelectedMaterial();
+  void adjustMaterialBrowserIconSize(int direction);
+  void updateIconSizeButtons();
 };
 
 } // namespace ui

@@ -107,6 +107,9 @@ using GLsizeiptr = std::intptr_t;
 #ifndef GL_DEPTH_TEST
 #define GL_DEPTH_TEST 0x0B71
 #endif
+#ifndef GL_ENABLE_BIT
+#define GL_ENABLE_BIT 0x00002000
+#endif
 #ifndef GL_DOUBLE
 #define GL_DOUBLE 0x140A
 #endif
@@ -257,6 +260,12 @@ using GLsizeiptr = std::intptr_t;
 #ifndef GL_SHORT
 #define GL_SHORT 0x1402
 #endif
+#ifndef GL_SCISSOR_BIT
+#define GL_SCISSOR_BIT 0x00080000
+#endif
+#ifndef GL_SCISSOR_TEST
+#define GL_SCISSOR_TEST 0x0C11
+#endif
 #ifndef GL_SRC_ALPHA
 #define GL_SRC_ALPHA 0x0302
 #endif
@@ -352,6 +361,9 @@ using GLsizeiptr = std::intptr_t;
 #endif
 #ifndef GL_VERTEX_SHADER
 #define GL_VERTEX_SHADER 0x8B31
+#endif
+#ifndef GL_VIEWPORT_BIT
+#define GL_VIEWPORT_BIT 0x00000800
 #endif
 #ifndef GL_ZERO
 #define GL_ZERO 0

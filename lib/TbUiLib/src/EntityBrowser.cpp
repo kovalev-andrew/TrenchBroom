@@ -19,6 +19,9 @@
 
 #include "ui/EntityBrowser.h"
 
+#include <algorithm>
+#include <array>
+
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QLineEdit>
@@ -43,6 +46,14 @@ Q_DECLARE_METATYPE(tb::mdl::EntityDefinitionSortOrder)
 namespace tb::ui
 {
 
+namespace
+{
+
+constexpr auto EntityBrowserIconSizeSteps =
+  std::array<float, 6>{0.65f, 0.8f, 1.0f, 1.25f, 1.55f, 1.9f};
+
+} // namespace
+
 EntityBrowser::EntityBrowser(
   AppController& appController, MapDocument& document, QWidget* parent)
   : QWidget{parent}
@@ -63,10 +74,29 @@ void EntityBrowser::reload()
   }
 }
 
+void EntityBrowser::setSelectedEntityDefinition(const std::string& classname)
+{
+  if (m_view)
+  {
+    m_view->setSelectedEntityDefinition(classname);
+  }
+}
+
 void EntityBrowser::createGui(AppController& appController)
 {
   m_scrollBar = new QScrollBar{Qt::Vertical};
   m_view = new EntityBrowserView{appController, m_scrollBar, m_document};
+  m_view->setIconScaleFactor(EntityBrowserIconSizeSteps[m_iconSizeStep]);
+  connect(
+    m_view,
+    &EntityBrowserView::entityDefinitionSelected,
+    this,
+    &EntityBrowser::entityDefinitionSelected);
+  connect(
+    m_view,
+    &EntityBrowserView::entityBrowserIconSizeAdjustmentRequested,
+    this,
+    &EntityBrowser::adjustEntityBrowserIconSize);
 
   auto* browserPanelSizer = new QHBoxLayout{};
   browserPanelSizer->setContentsMargins(0, 0, 0, 0);
@@ -105,6 +135,22 @@ void EntityBrowser::createGui(AppController& appController)
     m_view->setHideUnused(m_usedButton->isChecked());
   });
 
+  m_decreaseIconSizeButton = new QPushButton{tr("-")};
+  m_decreaseIconSizeButton->setFixedWidth(24);
+  m_decreaseIconSizeButton->setToolTip(
+    tr("Show more entity definitions per row by making previews smaller"));
+  connect(m_decreaseIconSizeButton, &QAbstractButton::clicked, this, [&]() {
+    adjustEntityBrowserIconSize(-1);
+  });
+
+  m_increaseIconSizeButton = new QPushButton{tr("+")};
+  m_increaseIconSizeButton->setFixedWidth(24);
+  m_increaseIconSizeButton->setToolTip(
+    tr("Show fewer entity definitions per row by making previews larger"));
+  connect(m_increaseIconSizeButton, &QAbstractButton::clicked, this, [&]() {
+    adjustEntityBrowserIconSize(1);
+  });
+
   m_filterBox = createSearchBox();
   connect(m_filterBox, &QLineEdit::textEdited, this, [&]() {
     m_view->setFilterText(m_filterBox->text().toStdString());
@@ -121,6 +167,8 @@ void EntityBrowser::createGui(AppController& appController)
   controlSizer->addWidget(m_groupButton, 0);
   controlSizer->addWidget(m_usedButton, 0);
   controlSizer->addWidget(m_filterBox, 1);
+  controlSizer->addWidget(m_decreaseIconSizeButton, 0);
+  controlSizer->addWidget(m_increaseIconSizeButton, 0);
 
   auto* outerSizer = new QVBoxLayout{};
   outerSizer->setContentsMargins(0, 0, 0, 0);
@@ -129,6 +177,7 @@ void EntityBrowser::createGui(AppController& appController)
   outerSizer->addLayout(controlSizer, 0);
 
   setLayout(outerSizer);
+  updateIconSizeButtons();
 }
 
 void EntityBrowser::connectObservers()
@@ -146,12 +195,46 @@ void EntityBrowser::connectObservers()
       if (path == pref(m_document.map().gameInfo().gamePathPreference))
       {
         reload();
+        updateIconSizeButtons();
       }
       else
       {
         m_view->update();
       }
     });
+}
+
+void EntityBrowser::adjustEntityBrowserIconSize(const int direction)
+{
+  if (direction == 0)
+  {
+    return;
+  }
+
+  const auto nextStep = static_cast<size_t>(std::clamp<int>(
+    static_cast<int>(m_iconSizeStep) + direction,
+    0,
+    static_cast<int>(EntityBrowserIconSizeSteps.size()) - 1));
+  if (nextStep == m_iconSizeStep)
+  {
+    return;
+  }
+
+  m_iconSizeStep = nextStep;
+  m_view->setIconScaleFactor(EntityBrowserIconSizeSteps[m_iconSizeStep]);
+  updateIconSizeButtons();
+}
+
+void EntityBrowser::updateIconSizeButtons()
+{
+  if (!m_decreaseIconSizeButton || !m_increaseIconSizeButton)
+  {
+    return;
+  }
+
+  m_decreaseIconSizeButton->setEnabled(m_iconSizeStep > 0u);
+  m_increaseIconSizeButton->setEnabled(
+    m_iconSizeStep + 1u < EntityBrowserIconSizeSteps.size());
 }
 
 } // namespace tb::ui

@@ -44,6 +44,53 @@ protected:
   }
 
 public:
+  // Geometry tools keep preview state as positions while the editor owns typed handles.
+  class GeometryHandles
+  {
+    mdl::NodeHandleManager& m_manager;
+
+  public:
+    explicit GeometryHandles(mdl::NodeHandleManager& manager)
+      : m_manager{manager}
+    {
+    }
+    auto selectedHandles() const
+    {
+      return HandleType::getPositions(m_manager.template selectedHandles<HandleType>());
+    }
+    size_t selectedHandleCount() const
+    {
+      return m_manager.template selectedHandleCount<HandleType>();
+    }
+    void deselectAll() { m_manager.template deselectAllHandles<HandleType>(); }
+    void select(const typename HandleType::Position& position)
+    {
+      const auto handle = HandleType{position};
+      if (m_manager.template containsHandle<HandleType>(handle))
+        m_manager.template selectHandle<HandleType>(handle);
+    }
+    void select(const std::vector<typename HandleType::Position>& positions)
+    {
+      for (const auto& position : positions)
+        select(position);
+    }
+  };
+
+  GeometryHandles geometryHandles() const
+  {
+    return GeometryHandles{this->m_document.map().nodeHandles()};
+  }
+
+  std::vector<mdl::BrushNode*> findIncidentBrushes(
+    const typename HandleType::Position& position) const
+  {
+    auto result = std::vector<mdl::BrushNode*>{};
+    for (auto* node : this->findIncidentNodes(HandleType{position}))
+      if (auto* brush = dynamic_cast<mdl::BrushNode*>(node))
+        result.push_back(brush);
+    return result;
+  }
+
   bool canDoCsgConvexMerge() const
   {
     return this->handleManager().template selectedHandleCount<HandleType>() > 1;

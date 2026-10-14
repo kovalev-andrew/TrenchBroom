@@ -19,6 +19,10 @@
  along with TrenchBroom. If not, see <http://www.gnu.org/licenses/>.
  */
 
+uniform float GridRotationCos;
+uniform float GridRotationSin;
+uniform bool GridUseUnified3D;
+
 // Soft line coverage shared with the other grid shaders (see GridCommon.fragsh).
 float gridLine(float coord, float stripeSize, float isMajor);
 
@@ -65,6 +69,40 @@ float gridLinesSoft(
   return theGrid;
 }
 
+float gridLineSoft(
+  float coord, float gridRatio, float gridRatio2, float lineWidth, float gridBlend)
+{
+  float stripeRatio = lineWidth * gridRatio;
+  float stripeRatio2 = lineWidth * gridRatio2;
+  float stripeSize = 1.0 - stripeRatio;
+  float stripeSize2 = 1.0 - stripeRatio2;
+
+  float theGrid = getSoftStripes(coord, gridRatio, stripeSize);
+  float nextGrid = getSoftStripes(coord, gridRatio2, stripeSize2);
+  return mix(theGrid, nextGrid, gridBlend) * 0.5;
+}
+
+float gridLinesSoft3D(
+  vec3 inCoords,
+  vec3 normal,
+  float gridRatio,
+  float gridRatio2,
+  float lineWidth,
+  float gridBlend)
+{
+  vec3 tangentAmount = sqrt(max(vec3(0.0), vec3(1.0) - normal * normal));
+  vec3 weights = smoothstep(vec3(0.02), vec3(0.2), tangentAmount);
+
+  float result = 0.0;
+  result =
+    max(result, gridLineSoft(inCoords.x, gridRatio, gridRatio2, lineWidth, gridBlend) * weights.x);
+  result =
+    max(result, gridLineSoft(inCoords.y, gridRatio, gridRatio2, lineWidth, gridBlend) * weights.y);
+  result =
+    max(result, gridLineSoft(inCoords.z, gridRatio, gridRatio2, lineWidth, gridBlend) * weights.z);
+  return result;
+}
+
 /**
  * Given a valid grid size, returns the next larger one.
  */
@@ -80,6 +118,13 @@ float gridNextLarger(float size)
 float gridFloor(float size)
 {
   return exp2(floor(log2(size)));
+}
+
+vec2 rotateGridCoords(vec2 coords)
+{
+  return vec2(
+    GridRotationCos * coords.x - GridRotationSin * coords.y,
+    GridRotationSin * coords.x + GridRotationCos * coords.y);
 }
 
 /*
@@ -117,27 +162,53 @@ float grid(
   float gridRatio = 1.0 / baseGridSize;
   float gridRatio2 = 1.0 / nextGridSize;
 
-  vec2 baseCoords; // coordinates used for overlay creation
-
-  if (abs(normal.x) > abs(normal.y))
+  if (!GridUseUnified3D)
   {
-    if (abs(normal.x) > abs(normal.z))
+    vec2 baseCoords;
+
+    if (abs(normal.x) > abs(normal.y))
     {
-      baseCoords = coords.yz;
+      if (abs(normal.x) > abs(normal.z))
+      {
+        baseCoords = coords.yz;
+      }
+      else
+      {
+        baseCoords = coords.xy;
+      }
+    }
+    else if (abs(normal.y) > abs(normal.z))
+    {
+      baseCoords = coords.xz;
     }
     else
     {
       baseCoords = coords.xy;
     }
-  }
-  else if (abs(normal.y) > abs(normal.z))
-  {
-    baseCoords = coords.xz;
-  }
-  else
-  {
-    baseCoords = coords.xy;
+
+    baseCoords = rotateGridCoords(baseCoords);
+    return gridLinesSoft(baseCoords, gridRatio, gridRatio2, lineWidth, gridBlend);
   }
 
-  return gridLinesSoft(baseCoords, gridRatio, gridRatio2, lineWidth, gridBlend);
+  if (abs(GridRotationSin) < 0.000001)
+  {
+    vec3 absNormal = abs(normal);
+    if (absNormal.x > 0.999)
+    {
+      return gridLinesSoft(coords.yz, gridRatio, gridRatio2, lineWidth, gridBlend);
+    }
+    if (absNormal.y > 0.999)
+    {
+      return gridLinesSoft(coords.xz, gridRatio, gridRatio2, lineWidth, gridBlend);
+    }
+    if (absNormal.z > 0.999)
+    {
+      return gridLinesSoft(coords.xy, gridRatio, gridRatio2, lineWidth, gridBlend);
+    }
+  }
+
+  vec3 gridCoords = vec3(rotateGridCoords(coords.xy), coords.z);
+  vec3 gridNormal = normalize(vec3(rotateGridCoords(normal.xy), normal.z));
+  return gridLinesSoft3D(
+    gridCoords, gridNormal, gridRatio, gridRatio2, lineWidth, gridBlend);
 }

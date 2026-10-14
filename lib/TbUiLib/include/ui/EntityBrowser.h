@@ -19,9 +19,13 @@
 
 #pragma once
 
+#include <QString>
 #include <QWidget>
 
 #include "NotifierConnection.h"
+
+#include <cstddef>
+#include <string>
 
 class QPushButton;
 class QComboBox;
@@ -42,9 +46,12 @@ private:
   QComboBox* m_sortOrderChoice = nullptr;
   QPushButton* m_groupButton = nullptr;
   QPushButton* m_usedButton = nullptr;
+  QPushButton* m_decreaseIconSizeButton = nullptr;
+  QPushButton* m_increaseIconSizeButton = nullptr;
   QLineEdit* m_filterBox = nullptr;
   QScrollBar* m_scrollBar = nullptr;
   EntityBrowserView* m_view = nullptr;
+  size_t m_iconSizeStep = 2u;
 
   NotifierConnection m_notifierConnection;
 
@@ -53,9 +60,15 @@ public:
     AppController& appController, MapDocument& document, QWidget* parent = nullptr);
 
   void reload();
+  void setSelectedEntityDefinition(const std::string& classname);
+
+signals:
+  void entityDefinitionSelected(const QString& classname);
 
 private:
   void createGui(AppController& appController);
+  void adjustEntityBrowserIconSize(int direction);
+  void updateIconSizeButtons();
 
   void connectObservers();
 };

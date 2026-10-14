@@ -41,12 +41,25 @@
 #include "kd/ranges/to.h"
 #include "kd/vector_utils.h"
 
+#include "vm/util.h"
 #include "vm/vec.h"
 
+#include <algorithm>
+#include <cmath>
 #include <ranges>
 
 namespace tb::render
 {
+namespace
+{
+
+float gridRotationRadians()
+{
+  return static_cast<float>(vm::to_radians(
+    static_cast<double>(std::clamp(pref(Preferences::GridRotation), 0.0f, 90.0f))));
+}
+
+} // namespace
 
 PatchRenderer::PatchRenderer(const mdl::EditorContext& editorContext)
   : m_editorContext{editorContext}
@@ -325,6 +338,7 @@ struct RenderFunc : public gl::MaterialRenderFunc
 {
   gl::ActiveShader& shader;
   bool applyMaterial;
+  bool renderGrid;
   const Color& defaultColor;
   int minFilter;
   int magFilter;
@@ -332,11 +346,13 @@ struct RenderFunc : public gl::MaterialRenderFunc
   RenderFunc(
     gl::ActiveShader& i_shader,
     const bool i_applyMaterial,
+    const bool i_renderGrid,
     const Color& i_defaultColor,
     const int i_minFilter,
     const int i_magFilter)
     : shader{i_shader}
     , applyMaterial{i_applyMaterial}
+    , renderGrid{i_renderGrid}
     , defaultColor{i_defaultColor}
     , minFilter{i_minFilter}
     , magFilter{i_magFilter}
@@ -379,13 +395,19 @@ void PatchRenderer::render(RenderContext& context)
   const bool applyMaterial = context.showMaterials();
   const bool shadeFaces = context.shadeFaces();
   const bool showFog = context.showFog();
+  const auto gridAlpha = prefs.get(Preferences::GridAlpha);
+  const auto renderGrid = context.showGrid() && gridAlpha > 0.001f;
 
   gl.enable(GL_TEXTURE_2D);
   gl.activeTexture(GL_TEXTURE0);
   shader.set("Brightness", prefs.get(Preferences::Brightness));
-  shader.set("RenderGrid", context.showGrid());
+  shader.set("RenderGrid", renderGrid);
   shader.set("GridSize", static_cast<float>(context.gridSize()));
-  shader.set("GridAlpha", prefs.get(Preferences::GridAlpha));
+  shader.set("GridAlpha", renderGrid ? gridAlpha : 0.0f);
+  const auto gridRotation = renderGrid ? gridRotationRadians() : 0.0f;
+  shader.set("GridRotationCos", std::cos(gridRotation));
+  shader.set("GridRotationSin", std::sin(gridRotation));
+  shader.set("GridUseUnified3D", renderGrid && prefs.get(Preferences::GridUseUnified3D));
   shader.set("ApplyMaterial", applyMaterial);
   shader.set("Material", 0);
   shader.set("ApplyTinting", m_tint);
@@ -409,6 +431,7 @@ void PatchRenderer::render(RenderContext& context)
   auto func = RenderFunc{
     shader,
     applyMaterial,
+    renderGrid,
     m_defaultColor,
     context.minFilterMode(),
     context.magFilterMode()};

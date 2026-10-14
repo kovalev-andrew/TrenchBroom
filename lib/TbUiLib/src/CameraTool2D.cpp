@@ -107,7 +107,9 @@ bool shouldPan(const InputState& inputState)
 {
   return (
     inputState.mouseButtonsPressed(MouseButtons::Right)
-    || (inputState.mouseButtonsPressed(MouseButtons::Middle) && !pref(Preferences::CameraEnableAltMove)));
+    || (inputState.mouseButtonsPressed(MouseButtons::Middle)
+        && !pref(Preferences::CameraEnableAltMove)
+        && !inputState.modifierKeysDown(ModifierKeys::CtrlCmd)));
 }
 
 bool shouldDragZoom(const InputState& inputState)

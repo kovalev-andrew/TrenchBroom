@@ -20,6 +20,7 @@
 #include "ui/FlyModeHelper.h"
 
 #include <QElapsedTimer>
+#include <QKeyEvent>
 #include <QMouseEvent>
 
 #include "PreferenceManager.h"
@@ -54,6 +55,20 @@ bool eventMatchesShortcut(
     const auto modifiers = Qt::KeyboardModifiers{};
     const auto key = event.keyCombination().key();
     const auto eventSequence = QKeySequence{QKeyCombination{modifiers, key}};
+    const auto ourKey = shortcut[0].key();
+#ifdef _WIN32
+    // On non-Latin keyboard layouts Qt reports translated keys such as Cyrillic
+    // letters in event.key(). The native virtual key still identifies the physical
+    // letter key, so keep fly movement working on layouts like Russian.
+    if (ourKey >= Qt::Key_A && ourKey <= Qt::Key_Z)
+    {
+      return event.nativeVirtualKey() == static_cast<quint32>('A' + (ourKey - Qt::Key_A));
+    }
+    if (ourKey >= Qt::Key_0 && ourKey <= Qt::Key_9)
+    {
+      return event.nativeVirtualKey() == static_cast<quint32>('0' + (ourKey - Qt::Key_0));
+    }
+#endif
     return eventSequence.matches(shortcut) == QKeySequence::ExactMatch;
   });
 }

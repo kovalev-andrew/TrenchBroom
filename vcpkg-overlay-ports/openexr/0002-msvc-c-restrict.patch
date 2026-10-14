@@ -1,0 +1,17 @@
+diff --git a/src/lib/OpenEXRCore/internal_dwa_helpers.h b/src/lib/OpenEXRCore/internal_dwa_helpers.h
+index e65d7c1..8101889 100644
+--- a/src/lib/OpenEXRCore/internal_dwa_helpers.h
++++ b/src/lib/OpenEXRCore/internal_dwa_helpers.h
+@@ -8,6 +8,12 @@
+ 
+ #include "dwaLookups.h"
+ 
++#ifndef __cplusplus
++#    if defined(_MSC_VER) && !defined(restrict)
++#        define restrict __restrict
++#    endif
++#endif
++
+ /**************************************/
+ 
+ typedef enum _AcCompression

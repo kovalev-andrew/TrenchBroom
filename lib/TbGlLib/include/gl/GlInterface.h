@@ -33,6 +33,7 @@ public:
   virtual void clearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) = 0;
 
   virtual void viewport(GLint x, GLint y, GLsizei width, GLsizei height) = 0;
+  virtual void scissor(GLint x, GLint y, GLsizei width, GLsizei height) = 0;
 
   virtual void matrixMode(GLenum mode) = 0;
   virtual void loadMatrixd(const GLdouble* matrix) = 0;

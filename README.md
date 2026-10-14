@@ -31,9 +31,26 @@ See [AGENTS.md](AGENTS.md) for contributor conventions and [BUILD.md](BUILD.md) 
 build prerequisites. Fracture and Settle remain experimental; validate generated
 geometry with your game's BSP compiler. The upstream GPL license is preserved.
 
+## Extended editing tools
+
+This branch integrates the supported features of
+[UltimateTrenchBroom](https://github.com/dragxnd/UltimateTrenchBroom), authored by
+dragxnd and based on TrenchBroom. See [the integration guide](ULTIMATE.md)
+([Russian](ULTIMATE.ru.md)) for the feature inventory and compatibility notes.
+
+## Contributors and license
+
+- dragxnd: UltimateTrenchBroom tools, workflow design and documentation.
+- Kristian Duske and the TrenchBroom contributors: original editor and infrastructure.
+
+ReyondBroom retains upstream copyright notices and the
+[GPL-3.0-or-later license](LICENSE.txt).
+
 ## Upstream TrenchBroom
 
-[![TrenchBroom Icon](app/TrenchBroom/resources/graphics/images/AppIcon.png)](https://www.youtube.com/watch?v=shcAvnYp9ow)
+
+
+[![Original TrenchBroom Icon](docs/assets/upstream-icon.png)](https://www.youtube.com/watch?v=shcAvnYp9ow)
 
 TrenchBroom is a modern cross-platform level editor for Quake-engine based games.
 

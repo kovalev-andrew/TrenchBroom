@@ -23,7 +23,9 @@
 #include <QClipboard>
 #include <QMenu>
 #include <QTextStream>
+#include <QWheelEvent>
 
+#include "Color.h"
 #include "PreferenceManager.h"
 #include "Preferences.h"
 #include "gl/ActiveShader.h"
@@ -45,7 +47,10 @@
 #include "ui/MapDocument.h"
 
 #include "kd/contracts.h"
+#include "kd/ranges/repeat_view.h"
+#include "kd/ranges/stride_view.h"
 #include "kd/ranges/to.h"
+#include "kd/ranges/zip_view.h"
 #include "kd/string_compare.h"
 #include "kd/string_utils.h"
 #include "kd/vector_utils.h"
@@ -54,12 +59,22 @@
 #include "vm/mat_ext.h"
 #include "vm/vec.h"
 
+#include <algorithm>
 #include <ranges>
 #include <string>
 #include <vector>
 
 namespace tb::ui
 {
+namespace
+{
+
+constexpr auto GroupToggleButtonWidth = 46.0f;
+constexpr auto GroupToggleButtonHorizontalMargin = 4.0f;
+constexpr auto GroupToggleButtonVerticalMargin = 2.0f;
+constexpr auto GroupToggleButtonTextMargin = 3.0f;
+
+} // namespace
 
 MaterialBrowserView::MaterialBrowserView(
   AppController& appController, QScrollBar* scrollBar, MapDocument& document)
@@ -135,6 +150,27 @@ void MaterialBrowserView::revealMaterial(const gl::Material* material)
   });
 }
 
+void MaterialBrowserView::wheelEvent(QWheelEvent* event)
+{
+  if (event->modifiers() & Qt::ControlModifier)
+  {
+    auto delta = event->angleDelta().y();
+    if (delta == 0)
+    {
+      delta = event->pixelDelta().y();
+    }
+
+    if (delta != 0)
+    {
+      emit materialBrowserIconSizeAdjustmentRequested(delta > 0 ? 1 : -1);
+      event->accept();
+      return;
+    }
+  }
+
+  CellView::wheelEvent(event);
+}
+
 void MaterialBrowserView::resourcesWereProcessed(const std::vector<gl::ResourceId>&)
 {
   reloadMaterials();
@@ -171,8 +207,15 @@ void MaterialBrowserView::doReloadLayout(Layout& layout)
   {
     for (const auto* collection : getCollections())
     {
-      layout.addGroup(collection->path().string(), float(fontSize) + 2.0f);
-      addMaterialsToLayout(layout, getMaterials(*collection), font);
+      const auto title =
+        collection->path().is_absolute() && qApp->property("guidePathPrivacy").toBool()
+          ? std::string{"ExampleProject/Textures"}
+          : collection->path().string();
+      layout.addGroup(title, float(fontSize) + 2.0f);
+      if (!isGroupCollapsed(title))
+      {
+        addMaterialsToLayout(layout, getMaterials(*collection), font);
+      }
     }
   }
   else
@@ -312,6 +355,15 @@ void MaterialBrowserView::doRender(
   renderMaterials(gl, layout, y, height);
 }
 
+void MaterialBrowserView::doRenderTitleControls(
+  gl::Gl& gl, Layout& layout, const float y, const float height)
+{
+  if (m_group)
+  {
+    renderGroupToggleButtons(gl, layout, y, height);
+  }
+}
+
 bool MaterialBrowserView::shouldRenderFocusIndicator() const
 {
   return false;
@@ -408,12 +460,13 @@ void MaterialBrowserView::renderMaterials(
             const auto& bounds = cell.itemBounds();
             const auto& material = cellData(cell);
 
-            auto vertexArray = gl::VertexArray::move(std::vector<Vertex>{
-              Vertex{{bounds.left(), height - (bounds.top() - y)}, {0, 0}},
-              Vertex{{bounds.left(), height - (bounds.bottom() - y)}, {0, 1}},
-              Vertex{{bounds.right(), height - (bounds.bottom() - y)}, {1, 1}},
-              Vertex{{bounds.right(), height - (bounds.top() - y)}, {1, 0}},
-            });
+            auto vertexArray = gl::VertexArray::move(
+              std::vector<Vertex>{
+                Vertex{{bounds.left(), height - (bounds.top() - y)}, {0, 0}},
+                Vertex{{bounds.left(), height - (bounds.bottom() - y)}, {0, 1}},
+                Vertex{{bounds.right(), height - (bounds.bottom() - y)}, {1, 1}},
+                Vertex{{bounds.right(), height - (bounds.top() - y)}, {1, 0}},
+              });
 
             material.activate(
               gl,
@@ -436,8 +489,150 @@ void MaterialBrowserView::renderMaterials(
   }
 }
 
+void MaterialBrowserView::renderGroupToggleButtons(
+  gl::Gl& gl, Layout& layout, const float y, const float height)
+{
+  using ButtonVertex = gl::VertexTypes::P2C4::Vertex;
+  using TextVertex = gl::VertexTypes::P2UV2C4::Vertex;
+
+  auto buttonVertices = std::vector<ButtonVertex>{};
+  auto textVertices = std::vector<TextVertex>{};
+
+  const auto buttonColor = RgbaF{0.0f, 0.0f, 0.0f, 0.35f}.toVec();
+  const auto textColor = pref(Preferences::BrowserTextColor).to<RgbaF>().toVec();
+  const auto fontDescriptor = gl::FontDescriptor{
+    pref(Preferences::RendererFontPath), size_t(pref(Preferences::BrowserFontSize))};
+  auto& font = fontManager().font(fontDescriptor);
+
+  for (const auto& group : layout.groups())
+  {
+    if (group.intersectsY(y, height) && !group.title().empty())
+    {
+      const auto bounds = groupToggleButtonBounds(layout, group, y, height);
+      buttonVertices.emplace_back(
+        vm::vec2f{bounds.left(), height - (bounds.top() - y)}, buttonColor);
+      buttonVertices.emplace_back(
+        vm::vec2f{bounds.left(), height - (bounds.bottom() - y)}, buttonColor);
+      buttonVertices.emplace_back(
+        vm::vec2f{bounds.right(), height - (bounds.bottom() - y)}, buttonColor);
+      buttonVertices.emplace_back(
+        vm::vec2f{bounds.right(), height - (bounds.top() - y)}, buttonColor);
+
+      const auto buttonText = isGroupCollapsed(group.title()) ? "Show" : "Hide";
+      const auto textSize = font.measure(buttonText);
+      const auto textX =
+        bounds.left()
+        + std::max((bounds.width - textSize.x()) / 2.0f, GroupToggleButtonTextMargin);
+      const auto textY = height - (bounds.bottom() - y)
+                         + std::max((bounds.height - textSize.y()) / 2.0f, 0.0f);
+
+      const auto quads = font.quads(buttonText, false, vm::vec2f{textX, textY});
+      const auto vertices = TextVertex::toList(
+        kdl::views::zip(
+          quads | kdl::views::stride(2),
+          quads | std::views::drop(1) | kdl::views::stride(2),
+          kdl::views::repeat(textColor)));
+      kdl::vec_append(textVertices, vertices);
+    }
+  }
+
+  if (!buttonVertices.empty())
+  {
+    auto vertexArray = gl::VertexArray::move(std::move(buttonVertices));
+    auto shader =
+      gl::ActiveShader{gl, shaderManager(), gl::Shaders::MaterialBrowserBorderShader};
+
+    vertexArray.prepare(gl, vboManager());
+    if (vertexArray.setup(gl, shader.program()))
+    {
+      vertexArray.render(gl, gl::PrimType::Quads);
+      vertexArray.cleanup(gl, shader.program());
+    }
+  }
+
+  if (!textVertices.empty())
+  {
+    auto vertexArray = gl::VertexArray::move(std::move(textVertices));
+    auto shader = gl::ActiveShader{gl, shaderManager(), gl::Shaders::ColoredTextShader};
+    shader.set("Texture", 0);
+
+    vertexArray.prepare(gl, vboManager());
+    if (vertexArray.setup(gl, shader.program()))
+    {
+      font.activate(gl);
+      vertexArray.render(gl, gl::PrimType::Quads);
+      vertexArray.cleanup(gl, shader.program());
+      font.deactivate(gl);
+    }
+  }
+}
+
+LayoutBounds MaterialBrowserView::groupToggleButtonBounds(
+  const Layout& layout, const Group& group, const float y, const float height) const
+{
+  const auto titleBounds = layout.titleBoundsForVisibleRect(group, y, height);
+  const auto buttonWidth = std::min(
+    GroupToggleButtonWidth,
+    std::max(0.0f, titleBounds.width - 2.0f * GroupToggleButtonHorizontalMargin));
+  const auto buttonHeight =
+    std::max(0.0f, titleBounds.height - 2.0f * GroupToggleButtonVerticalMargin);
+
+  return LayoutBounds{
+    titleBounds.right() - buttonWidth - GroupToggleButtonHorizontalMargin,
+    titleBounds.top() + GroupToggleButtonVerticalMargin,
+    buttonWidth,
+    buttonHeight};
+}
+
+const MaterialBrowserView::Group* MaterialBrowserView::groupToggleButtonAt(
+  Layout& layout, const float x, const float y) const
+{
+  if (!m_group)
+  {
+    return nullptr;
+  }
+
+  const auto visible = visibleRect();
+  const auto visibleY = float(visible.y());
+  const auto visibleHeight = float(visible.height());
+  for (const auto& group : layout.groups())
+  {
+    if (group.intersectsY(visibleY, visibleHeight) && !group.title().empty())
+    {
+      const auto bounds = groupToggleButtonBounds(layout, group, visibleY, visibleHeight);
+      if (bounds.containsPoint(x, y))
+      {
+        return &group;
+      }
+    }
+  }
+
+  return nullptr;
+}
+
+bool MaterialBrowserView::isGroupCollapsed(const std::string& title) const
+{
+  return m_collapsedGroups.contains(title);
+}
+
+void MaterialBrowserView::toggleGroupCollapsed(const std::string& title)
+{
+  if (m_collapsedGroups.erase(title) == 0u)
+  {
+    m_collapsedGroups.insert(title);
+  }
+  reloadMaterials();
+}
+
 void MaterialBrowserView::doLeftClick(Layout& layout, const float x, const float y)
 {
+  if (const auto* group = groupToggleButtonAt(layout, x, y))
+  {
+    const auto title = group->title();
+    toggleGroupCollapsed(title);
+    return;
+  }
+
   if (const auto* cell = layout.cellAt(x, y))
   {
     const auto& material = cellData(*cell);

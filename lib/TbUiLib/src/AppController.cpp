@@ -271,9 +271,9 @@ void AppController::askForAutoUpdates()
     const auto enableAutoCheck =
       QMessageBox::question(
         nullptr,
-        "TrenchBroom",
+        "ReyondBroom",
         tr(
-          R"(TrenchBroom can check for updates automatically. Would you like to enable this now?)"),
+          R"(ReyondBroom can check for updates automatically. Would you like to enable this now?)"),
         QMessageBox::Yes | QMessageBox::No)
       == QMessageBox::Yes;
 
@@ -311,7 +311,7 @@ bool AppController::newDocument()
            })
          | kdl::transform_error([&](const auto& e) {
              QMessageBox::critical(
-               nullptr, "TrenchBroom", e.msg.c_str(), QMessageBox::Ok);
+               nullptr, "ReyondBroom", e.msg.c_str(), QMessageBox::Ok);
              return false;
            })
          | kdl::value();
@@ -372,7 +372,7 @@ bool AppController::openDocument(const std::filesystem::path& path)
            })
          | kdl::transform_error([&](const auto& e) {
              QMessageBox::critical(
-               nullptr, "TrenchBroom", e.msg.c_str(), QMessageBox::Ok);
+               nullptr, "ReyondBroom", e.msg.c_str(), QMessageBox::Ok);
              return false;
            })
          | kdl::value();

@@ -90,6 +90,7 @@
 #include "mdl/SoftMapBoundsValidator.h"
 #include "mdl/TagManager.h"
 #include "mdl/Transaction.h"
+#include "mdl/TransactionScope.h"
 #include "mdl/UndoableCommand.h"
 #include "mdl/UpdateLinkedGroupsCommand.h"
 #include "mdl/UpdateLinkedGroupsHelper.h"
@@ -1247,13 +1248,28 @@ void Map::loadMaterials()
 
   m_materialManager->clear();
 
+  auto createTextureResource = makeCreateResource<gl::TextureResource>(m_resourceManager);
   loadMaterialCollections(
     *m_gameFileSystem,
     gameInfo().gameConfig.materialConfig,
-    makeCreateResource<gl::TextureResource>(m_resourceManager),
+    createTextureResource,
     taskManager(),
     m_logger)
     | kdl::transform([&](auto materialCollections) {
+        for (const auto& collectionPath : enabledMaterialCollections(*this))
+        {
+          if (collectionPath.is_absolute())
+          {
+            loadTextureFolderMaterialCollection(collectionPath, createTextureResource)
+              | kdl::transform([&](auto materialCollection) {
+                  materialCollections.push_back(std::move(materialCollection));
+                })
+              | kdl::transform_error([&](auto e) {
+                  m_logger.error() << "Could not load texture folder '" << collectionPath
+                                   << "': " << e.msg;
+                });
+          }
+        }
         m_materialManager->setMaterialCollections(std::move(materialCollections));
       })
     | kdl::transform_error([&](auto e) {
@@ -1517,11 +1533,29 @@ void Map::clearRepeatableCommands()
   m_repeatStack->clear();
 }
 
+bool Map::hasOpenTransaction() const
+{
+  return m_commandProcessor->hasOpenTransaction();
+}
+
 void Map::startTransaction(std::string name, const TransactionScope scope)
 {
   logger().debug() << "Starting transaction '" + name + "'";
   m_commandProcessor->startTransaction(std::move(name), scope);
   m_repeatStack->startTransaction();
+}
+
+bool Map::startTransactionWithLastCommand(std::string name)
+{
+  logger().debug() << "Starting transaction with last command '" + name + "'";
+  if (!m_commandProcessor->startTransactionWithLastCommand(
+        std::move(name), TransactionScope::Oneshot))
+  {
+    return false;
+  }
+
+  m_repeatStack->startTransaction();
+  return true;
 }
 
 void Map::rollbackTransaction()

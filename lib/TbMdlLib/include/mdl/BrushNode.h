@@ -73,6 +73,7 @@ public:
 
   const Brush& brush() const;
   Brush setBrush(Brush brush);
+  Brush setBrushForPreview(Brush brush);
 
   bool hasSelectedFaces() const;
   void selectFace(size_t faceIndex);

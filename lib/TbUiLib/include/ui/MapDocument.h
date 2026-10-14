@@ -143,6 +143,8 @@ public:
   Notifier<mdl::UndoableCommand&> commandUndoneNotifier;
   Notifier<mdl::UndoableCommand&> commandUndoFailedNotifier;
   Notifier<const std::string&, bool, bool> transactionDoneNotifier;
+  Notifier<const std::string&, bool, bool> transactionRedoNotifier;
+  Notifier<const std::string&, bool, bool> transactionRedoneNotifier;
   Notifier<const std::string&, bool, bool> transactionUndoneNotifier;
 
   Notifier<> pointFileWasLoadedNotifier;

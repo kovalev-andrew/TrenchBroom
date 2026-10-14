@@ -25,12 +25,16 @@
 #include "gl/VertexType.h"
 #include "ui/CellView.h"
 
+#include <QString>
+
 #include "vm/bbox.h"
 #include "vm/quat.h" // IWYU pragma: keep
 
 #include <optional>
 #include <string>
 #include <vector>
+
+class QWheelEvent;
 
 namespace tb
 {
@@ -96,6 +100,8 @@ private:
   bool m_hideUnused = false;
   mdl::EntityDefinitionSortOrder m_sortOrder;
   std::string m_filterText;
+  std::string m_selectedClassname;
+  float m_iconScaleFactor = 1.0f;
 
   NotifierConnection m_notifierConnection;
 
@@ -103,6 +109,10 @@ public:
   EntityBrowserView(
     AppController& appController, QScrollBar* scrollBar, MapDocument& document);
   ~EntityBrowserView() override;
+
+signals:
+  void entityDefinitionSelected(const QString& classname);
+  void entityBrowserIconSizeAdjustmentRequested(int direction);
 
 public:
   void setDefaultModelScaleExpression(
@@ -112,8 +122,12 @@ public:
   void setGroup(bool group);
   void setHideUnused(bool hideUnused);
   void setFilterText(const std::string& filterText);
+  void setSelectedEntityDefinition(const std::string& classname);
+  void setIconScaleFactor(float iconScaleFactor);
 
 private:
+  void wheelEvent(QWheelEvent* event) override;
+
   void doInitLayout(Layout& layout) override;
   void doReloadLayout(Layout& layout) override;
 
@@ -133,10 +147,12 @@ private:
 
   void doClear() override;
   void doRender(gl::Gl& gl, Layout& layout, float y, float height) override;
+  void doLeftClick(Layout& layout, float x, float y) override;
   bool shouldRenderFocusIndicator() const override;
   const Color& getBackgroundColor() override;
 
   void renderBounds(gl::Gl& gl, Layout& layout, float y, float height);
+  void renderSelection(gl::Gl& gl, Layout& layout, float y, float height);
 
   class MeshFunc;
   void renderModels(

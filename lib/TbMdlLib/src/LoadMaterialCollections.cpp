@@ -20,6 +20,8 @@
 #include "mdl/LoadMaterialCollections.h"
 
 #include "Logger.h"
+#include "fs/DiskFileSystem.h"
+#include "fs/DiskIO.h"
 #include "fs/FileSystem.h"
 #include "fs/PathInfo.h"
 #include "fs/PathMatcher.h"
@@ -53,8 +55,11 @@
 #include <fmt/std.h>
 
 #include <algorithm>
+#include <cctype>
+#include <memory>
 #include <ranges>
 #include <string>
+#include <unordered_set>
 
 namespace tb::mdl
 {
@@ -74,6 +79,52 @@ Result<std::optional<Palette>> loadPalette(
            return mdl::loadPalette(*file, materialConfig.palette);
          })
          | kdl::transform([](auto palette) { return std::optional{std::move(palette)}; });
+}
+
+std::string textureFolderMaterialNameBase(const std::filesystem::path& texturePath)
+{
+  auto name = kdl::str_to_lower(texturePath.stem().string());
+  std::ranges::replace_if(
+    name,
+    [](const auto c) {
+      return std::isspace(static_cast<unsigned char>(c)) || c == '/' || c == '\\'
+             || c == ';';
+    },
+    '_');
+
+  if (name.empty())
+  {
+    name = "texture";
+  }
+
+  if (name.size() > 15u)
+  {
+    name = name.substr(0u, 15u);
+  }
+
+  return name;
+}
+
+std::string makeUniqueTextureFolderMaterialName(
+  const std::string& baseName, std::unordered_set<std::string>& usedNames)
+{
+  if (usedNames.insert(baseName).second)
+  {
+    return baseName;
+  }
+
+  for (size_t i = 1u;; ++i)
+  {
+    const auto suffix = "_" + std::to_string(i);
+    const auto prefixLength = suffix.size() < 15u ? 15u - suffix.size() : 1u;
+    auto candidate = baseName.substr(0u, std::min(baseName.size(), prefixLength));
+    candidate += suffix;
+
+    if (usedNames.insert(candidate).second)
+    {
+      return candidate;
+    }
+  }
 }
 
 bool shouldExclude(
@@ -362,6 +413,22 @@ std::vector<gl::MaterialCollection> groupMaterialsIntoCollections(
 
 } // namespace
 
+std::vector<std::string> textureFolderMaterialNames(
+  const std::vector<std::filesystem::path>& texturePaths)
+{
+  auto usedNames = std::unordered_set<std::string>{};
+  auto result = std::vector<std::string>{};
+  result.reserve(texturePaths.size());
+
+  for (const auto& texturePath : texturePaths)
+  {
+    result.push_back(makeUniqueTextureFolderMaterialName(
+      textureFolderMaterialNameBase(texturePath), usedNames));
+  }
+
+  return result;
+}
+
 
 Result<gl::Material> loadMaterial(
   const fs::FileSystem& fs,
@@ -423,6 +490,66 @@ Result<std::vector<gl::MaterialCollection>> loadMaterialCollections(
            })
          | kdl::transform([&](auto materials) {
              return groupMaterialsIntoCollections(std::move(materials));
+           });
+}
+
+Result<gl::MaterialCollection> loadTextureFolderMaterialCollection(
+  const std::filesystem::path& folderPath,
+  const gl::CreateTextureResource& createResource)
+{
+  static const auto TextureFolderExtensions =
+    std::vector<std::filesystem::path>{".png", ".jpg", ".jpeg"};
+
+  if (!folderPath.is_absolute())
+  {
+    return Error{fmt::format("Texture folder path must be absolute: {}", folderPath)};
+  }
+
+  if (fs::Disk::pathInfo(folderPath) != fs::PathInfo::Directory)
+  {
+    return Error{fmt::format("Texture folder does not exist: {}", folderPath)};
+  }
+
+  auto folderFs = std::make_shared<fs::DiskFileSystem>(folderPath);
+  return folderFs->find(
+           std::filesystem::path{},
+           fs::TraversalMode::Recursive,
+           fs::makeExtensionPathMatcher(TextureFolderExtensions))
+         | kdl::and_then([&](auto texturePaths) {
+             texturePaths = kdl::vec_sort(std::move(texturePaths));
+             const auto materialNames = textureFolderMaterialNames(texturePaths);
+
+             auto materials = std::vector<gl::Material>{};
+             materials.reserve(texturePaths.size());
+
+             for (size_t i = 0u; i < texturePaths.size(); ++i)
+             {
+               const auto& texturePath = texturePaths[i];
+               auto name = materialNames[i];
+               auto textureLoader =
+                 [folderFs, texturePath, name]() -> Result<gl::Texture> {
+                 return loadTexture(texturePath, name, *folderFs, std::nullopt)
+                        | kdl::or_else([&](auto e) -> Result<gl::Texture> {
+                            return Error{fmt::format(
+                              "Could not load texture '{}': {}", texturePath, e.msg)};
+                          });
+               };
+
+               auto material =
+                 gl::Material{name, createResource(std::move(textureLoader))};
+               folderFs->makeAbsolute(texturePath)
+                 | kdl::transform([&](auto absolutePath) {
+                     material.setAbsolutePath(std::move(absolutePath));
+                   })
+                 | kdl::or_else([](auto) { return kdl::void_success; });
+               material.setRelativePath(texturePath);
+               material.setCollectionName(folderPath.string());
+
+               materials.push_back(std::move(material));
+             }
+
+             return Result<gl::MaterialCollection>{
+               gl::MaterialCollection{folderPath, std::move(materials)}};
            });
 }
 

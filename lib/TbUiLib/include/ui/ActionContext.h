@@ -44,8 +44,17 @@ constexpr Type NoSelection = 1u << 11u;
 constexpr Type NodeSelection = 1u << 12u;
 constexpr Type FaceSelection = 1u << 13u;
 constexpr Type SelectionOwnedByTool = 1u << 14u;
+constexpr Type PolygonCutTool = 1u << 15u;
+constexpr Type BezierBendTool = 1u << 16u;
+constexpr Type PolygonCutMode = 1u << 17u;
+constexpr Type PolygonSpawnMode = 1u << 18u;
+constexpr Type BevelMode = 1u << 19u;
+constexpr Type InsetMode = 1u << 20u;
+constexpr Type SpinMode = 1u << 21u;
 constexpr Type AnyTool = AnyNodeHandleTool | AssembleBrushTool | ClipTool | RotateTool
-                         | ScaleTool | ShearTool | SweepTool;
+                         | ScaleTool | ShearTool | SweepTool | PolygonCutTool
+                         | BezierBendTool | PolygonCutMode | PolygonSpawnMode | BevelMode
+                         | InsetMode | SpinMode;
 constexpr Type AnyOrNoTool = AnyTool | NoTool;
 constexpr Type AnySelection = NodeSelection | FaceSelection;
 constexpr Type AnyOrNoSelection = AnySelection | NoSelection | SelectionOwnedByTool;

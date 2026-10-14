@@ -23,6 +23,7 @@
 #include <QHeaderView>
 #include <QItemSelectionModel>
 #include <QMenu>
+#include <QSignalBlocker>
 #include <QTableView>
 
 #include "mdl/BrushNode.h"
@@ -152,25 +153,26 @@ void IssueBrowserView::updateIssues()
     }
   };
 
-  map.worldNode().accept(kdl::overload(
-    [&](auto&& thisLambda, mdl::WorldNode& worldNode) {
-      collectIssues(worldNode);
-      worldNode.visitChildren(thisLambda);
-    },
-    [&](auto&& thisLambda, mdl::LayerNode& layerNode) {
-      collectIssues(layerNode);
-      layerNode.visitChildren(thisLambda);
-    },
-    [&](auto&& thisLambda, mdl::GroupNode& groupNode) {
-      collectIssues(groupNode);
-      groupNode.visitChildren(thisLambda);
-    },
-    [&](auto&& thisLambda, mdl::EntityNode& entityNode) {
-      collectIssues(entityNode);
-      entityNode.visitChildren(thisLambda);
-    },
-    [&](mdl::BrushNode& brushNode) { collectIssues(brushNode); },
-    [&](mdl::PatchNode& patchNode) { collectIssues(patchNode); }));
+  map.worldNode().accept(
+    kdl::overload(
+      [&](auto&& thisLambda, mdl::WorldNode& worldNode) {
+        collectIssues(worldNode);
+        worldNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, mdl::LayerNode& layerNode) {
+        collectIssues(layerNode);
+        layerNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, mdl::GroupNode& groupNode) {
+        collectIssues(groupNode);
+        groupNode.visitChildren(thisLambda);
+      },
+      [&](auto&& thisLambda, mdl::EntityNode& entityNode) {
+        collectIssues(entityNode);
+        entityNode.visitChildren(thisLambda);
+      },
+      [&](mdl::BrushNode& brushNode) { collectIssues(brushNode); },
+      [&](mdl::PatchNode& patchNode) { collectIssues(patchNode); }));
 
   issues = kdl::vec_sort(std::move(issues), [](const auto* lhs, const auto* rhs) {
     return lhs->seqId() > rhs->seqId();
@@ -334,6 +336,14 @@ void IssueBrowserView::invalidate()
   m_valid = false;
   setEnabled(false);
   setUpdatesEnabled(false);
+
+  // Qt may query even a hidden table during layout or a window capture. The old
+  // issues can already have been destroyed by changes to their owning nodes.
+  if (!m_tableModel->issues().empty())
+  {
+    const auto blocker = QSignalBlocker{m_tableView->selectionModel()};
+    m_tableModel->setIssues({});
+  }
 
   m_validateSignalDelayer->queueSignal();
 }

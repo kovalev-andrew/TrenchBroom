@@ -23,6 +23,7 @@
 #include "gl/FontDescriptor.h"
 #include "ui/CellView.h"
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -59,6 +60,7 @@ private:
   bool m_hideUnused = false;
   MaterialSortOrder m_sortOrder = MaterialSortOrder::Name;
   std::string m_filterText;
+  std::set<std::string> m_collapsedGroups;
 
   const gl::Material* m_selectedMaterial = nullptr;
 
@@ -78,6 +80,8 @@ public:
   void setSelectedMaterial(const gl::Material* selectedMaterial);
 
   void revealMaterial(const gl::Material* material);
+
+  void wheelEvent(QWheelEvent* event) override;
 
 private:
   void resourcesWereProcessed(const std::vector<gl::ResourceId>& resources);
@@ -106,12 +110,19 @@ private:
 
   void doClear() override;
   void doRender(gl::Gl& gl, Layout& layout, float y, float height) override;
+  void doRenderTitleControls(gl::Gl& gl, Layout& layout, float y, float height) override;
   bool shouldRenderFocusIndicator() const override;
   const Color& getBackgroundColor() override;
 
   void renderBounds(gl::Gl& gl, Layout& layout, float y, float height);
   const Color& materialColor(const gl::Material& material) const;
   void renderMaterials(gl::Gl& gl, Layout& layout, float y, float height);
+  void renderGroupToggleButtons(gl::Gl& gl, Layout& layout, float y, float height);
+  LayoutBounds groupToggleButtonBounds(
+    const Layout& layout, const Group& group, float y, float height) const;
+  const Group* groupToggleButtonAt(Layout& layout, float x, float y) const;
+  bool isGroupCollapsed(const std::string& title) const;
+  void toggleGroupCollapsed(const std::string& title);
 
   void doLeftClick(Layout& layout, float x, float y) override;
   QString tooltip(const Cell& cell) override;
@@ -120,6 +131,7 @@ private:
   const gl::Material& cellData(const Cell& cell) const;
 signals:
   void materialSelected(const gl::Material* material);
+  void materialBrowserIconSizeAdjustmentRequested(int direction);
 };
 
 } // namespace ui

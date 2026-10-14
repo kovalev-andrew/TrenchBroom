@@ -24,10 +24,12 @@
 #include <QIODevice>
 #include <QVBoxLayout>
 
+#include "ui/EntityListInspector.h"
 #include "ui/EntityInspector.h"
 #include "ui/FaceInspector.h"
 #include "ui/MapInspector.h"
 #include "ui/MapViewBar.h"
+#include "ui/PrefabInspector.h"
 #include "ui/SyncHeightEventFilter.h"
 #include "ui/TabBar.h"
 #include "ui/TabBook.h"
@@ -35,7 +37,11 @@
 
 namespace tb::ui
 {
-Inspector::Inspector(AppController& appController, MapDocument& document, QWidget* parent)
+Inspector::Inspector(
+  AppController& appController,
+  MapDocument& document,
+  MapWindow& mapWindow,
+  QWidget* parent)
   : QWidget{parent}
 {
   m_tabBook = new TabBook{};
@@ -44,10 +50,14 @@ Inspector::Inspector(AppController& appController, MapDocument& document, QWidge
   m_mapInspector = new MapInspector{document};
   m_entityInspector = new EntityInspector{appController, document};
   m_faceInspector = new FaceInspector{appController, document};
+  m_prefabInspector = new PrefabInspector{document};
+  m_entityListInspector = new EntityListInspector{document, mapWindow};
 
   m_tabBook->addPage(m_mapInspector, "Map");
   m_tabBook->addPage(m_entityInspector, "Entity");
   m_tabBook->addPage(m_faceInspector, "Face");
+  m_tabBook->addPage(m_prefabInspector, "Prefabs");
+  m_tabBook->addPage(m_entityListInspector, "EntityList");
 
   auto* layout = new QVBoxLayout{};
   layout->setContentsMargins(0, 0, 0, 0);

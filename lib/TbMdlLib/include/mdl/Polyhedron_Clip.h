@@ -142,6 +142,37 @@ typename Polyhedron<T, FP, VP>::ClipResult Polyhedron<T, FP, VP>::clip(
 }
 
 template <typename T, typename FP, typename VP>
+bool Polyhedron<T, FP, VP>::splitFacesByPlane(
+  const vm::plane<T, 3>& plane, const T /* epsilon */)
+{
+  assert(checkInvariant());
+
+  if (checkIntersects(plane))
+  {
+    return false;
+  }
+
+  try
+  {
+    const auto oldEdgeCount = edgeCount();
+    intersectWithPlane(plane);
+    updateBounds();
+    assert(checkInvariant());
+    return edgeCount() != oldEdgeCount;
+  }
+  catch (const NoSeamException& e)
+  {
+    assert(checkInvariant());
+    for (const auto* edge : e.splitFaces())
+    {
+      assertResult(mergeNeighbours(edge->firstEdge()));
+    }
+    assert(checkInvariant());
+    return false;
+  }
+}
+
+template <typename T, typename FP, typename VP>
 std::optional<typename Polyhedron<T, FP, VP>::ClipResult::FailureReason> Polyhedron<
   T,
   FP,
@@ -468,6 +499,7 @@ void Polyhedron<T, FP, VP>::intersectWithPlane(
     newBoundaryFirst, newBoundarySplitter, HalfEdgeList({oldBoundarySplitter}));
 
   auto* newFace = new Face{std::move(newBoundary), oldFace->plane()};
+  newFace->setPayload(oldFace->payload());
   auto* newEdge = new Edge{oldBoundarySplitter, newBoundarySplitter};
 
   m_edges.push_back(newEdge);

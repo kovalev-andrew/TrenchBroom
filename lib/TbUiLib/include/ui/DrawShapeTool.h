@@ -35,11 +35,14 @@ private:
 public:
   explicit DrawShapeTool(MapDocument& document);
   void update(const vm::bbox3d& bounds);
+  void updateGridAligned(const vm::bbox3d& bounds);
 
   bool cancel();
 
 private:
   DrawShapeToolExtensionManager m_extensionManager;
+
+  void update(const vm::bbox3d& bounds, bool gridAligned);
 
   QWidget* doCreatePage(QWidget* parent) override;
 };

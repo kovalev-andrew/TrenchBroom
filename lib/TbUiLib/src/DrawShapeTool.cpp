@@ -22,6 +22,7 @@
 #include "Logger.h"
 #include "mdl/Brush.h" // IWYU pragma: keep
 #include "mdl/BrushNode.h"
+#include "mdl/Grid.h"
 #include "mdl/Map.h"
 #include "mdl/Map_Nodes.h"
 #include "mdl/Map_Selection.h"
@@ -32,6 +33,9 @@
 
 #include "kd/ranges/to.h"
 #include "kd/result.h"
+
+#include "vm/mat_ext.h"
+#include "vm/scalar.h"
 
 #include <ranges>
 
@@ -57,7 +61,37 @@ DrawShapeTool::DrawShapeTool(MapDocument& document)
 
 void DrawShapeTool::update(const vm::bbox3d& bounds)
 {
+  update(bounds, false);
+}
+
+void DrawShapeTool::updateGridAligned(const vm::bbox3d& bounds)
+{
+  update(bounds, true);
+}
+
+void DrawShapeTool::update(const vm::bbox3d& bounds, const bool gridAligned)
+{
   m_extensionManager.createBrushes(bounds) | kdl::transform([&](auto brushes) {
+    auto& map = m_document.map();
+    if (gridAligned && !vm::is_equal(map.grid().rotation(), 0.0, vm::Cd::almost_zero()))
+    {
+      const auto transform =
+        vm::rotation_matrix(vm::vec3d{0.0, 0.0, 1.0}, -map.grid().rotation());
+      for (auto& brush : brushes)
+      {
+        const auto result = brush.transform(map.worldBounds(), transform, true);
+        if (!result)
+        {
+          result | kdl::if_error([&](const auto& e) {
+            m_document.logger().error()
+              << "Could not rotate grid-aligned shape brush: " << e.msg;
+          }) | kdl::ignore();
+          clearBrushes();
+          return;
+        }
+      }
+    }
+
     updateBrushes(
       brushes | std::views::transform([](auto brush) {
         return std::make_unique<mdl::BrushNode>(std::move(brush));

@@ -6,6 +6,7 @@ vcpkg_from_github(
     HEAD_REF main
     PATCHES
       0001-hide-symbols-by-default.patch
+      0002-msvc-c-restrict.patch
 )
 
 vcpkg_check_features(OUT_FEATURE_OPTIONS OPTIONS

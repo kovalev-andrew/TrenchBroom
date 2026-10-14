@@ -60,4 +60,9 @@ TitleBar::TitleBar(
 {
 }
 
+void TitleBar::addWidget(QWidget* widget)
+{
+  layout()->addWidget(widget);
+}
+
 } // namespace tb::ui

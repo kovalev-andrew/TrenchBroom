@@ -33,7 +33,9 @@
 #include <fmt/format.h>
 #include <fmt/std.h>
 
+#include <algorithm>
 #include <cstring>
+#include <limits>
 #include <ostream>
 #include <string>
 
@@ -113,6 +115,66 @@ bool Palette::indexedToRgba(
   }
 
   return hasTransparency;
+}
+
+unsigned char Palette::nearestIndex(
+  const unsigned char r,
+  const unsigned char g,
+  const unsigned char b,
+  const unsigned char a,
+  const PaletteTransparency transparency) const
+{
+  const auto& paletteData = (transparency == PaletteTransparency::Opaque)
+                              ? m_data->opaqueData
+                              : m_data->index255TransparentData;
+
+  if (paletteData.empty())
+  {
+    return 0u;
+  }
+
+  if (transparency == PaletteTransparency::Index255Transparent && a < 128u)
+  {
+    return 255u;
+  }
+
+  const auto colorCount = std::min<size_t>(paletteData.size() / 4u, 256u);
+  const auto searchCount =
+    transparency == PaletteTransparency::Index255Transparent && colorCount > 255u
+      ? 255u
+      : colorCount;
+
+  auto bestIndex = size_t{0u};
+  auto bestDistance = std::numeric_limits<uint32_t>::max();
+
+  for (size_t i = 0u; i < searchCount; ++i)
+  {
+    const auto pr = int(paletteData[i * 4u + 0u]);
+    const auto pg = int(paletteData[i * 4u + 1u]);
+    const auto pb = int(paletteData[i * 4u + 2u]);
+    const auto dr = int(r) - pr;
+    const auto dg = int(g) - pg;
+    const auto db = int(b) - pb;
+    const auto distance = uint32_t(dr * dr + dg * dg + db * db);
+    if (distance < bestDistance)
+    {
+      bestDistance = distance;
+      bestIndex = i;
+      if (distance == 0u)
+      {
+        break;
+      }
+    }
+  }
+
+  return static_cast<unsigned char>(bestIndex);
+}
+
+const std::vector<unsigned char>& Palette::rgbaData(
+  const PaletteTransparency transparency) const
+{
+  return transparency == PaletteTransparency::Opaque ? m_data->opaqueData
+                                                     : m_data->index255TransparentData;
 }
 
 bool operator==(const Palette& lhs, const Palette& rhs)

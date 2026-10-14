@@ -112,6 +112,12 @@ void GlDebug::viewport(
   glAssert(m_gl.viewport(x, y, width, height));
 }
 
+void GlDebug::scissor(
+  const GLint x, const GLint y, const GLsizei width, const GLsizei height)
+{
+  glAssert(m_gl.scissor(x, y, width, height));
+}
+
 void GlDebug::matrixMode(const GLenum mode)
 {
   glAssert(m_gl.matrixMode(mode));

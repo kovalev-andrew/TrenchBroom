@@ -28,7 +28,11 @@
 #include "render/RenderContext.h"
 
 #include "vm/bbox.h"
+#include "vm/util.h"
 #include "vm/vec.h"
+
+#include <algorithm>
+#include <cmath>
 
 namespace tb::render
 {
@@ -58,6 +62,11 @@ void GridRenderer::render(RenderContext& renderContext)
     shader.set("GridAlpha", pref(Preferences::GridAlpha));
     shader.set("GridColor", pref(Preferences::GridColor2D));
     shader.set("CameraZoom", camera.zoom());
+    const auto gridRotation = static_cast<float>(vm::to_radians(
+      static_cast<double>(std::clamp(pref(Preferences::GridRotation), 0.0f, 90.0f))));
+    shader.set("GridRotationCos", std::cos(gridRotation));
+    shader.set("GridRotationSin", std::sin(gridRotation));
+    shader.set("GridUseUnified3D", pref(Preferences::GridUseUnified3D));
 
     if (m_vertexArray.setup(gl, shader.program()))
     {

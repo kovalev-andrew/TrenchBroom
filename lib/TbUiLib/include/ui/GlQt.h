@@ -38,6 +38,7 @@ public:
   void clearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) override;
 
   void viewport(GLint x, GLint y, GLsizei width, GLsizei height) override;
+  void scissor(GLint x, GLint y, GLsizei width, GLsizei height) override;
 
   void matrixMode(GLenum mode) override;
   void loadMatrixd(const GLdouble* matrix) override;

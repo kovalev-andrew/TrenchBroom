@@ -398,6 +398,67 @@ Result<void> Brush::clip(const vm::bbox3d& worldBounds, BrushFace face)
   return updateGeometryFromFaces(worldBounds);
 }
 
+Result<void> Brush::splitFaces(
+  const vm::bbox3d& worldBounds, const std::vector<vm::plane3d>& planes)
+{
+  contract_pre(m_geometry != nullptr);
+
+  auto newGeometry = BrushGeometry{*m_geometry, CopyCallback{}};
+  auto changed = false;
+  for (const auto& plane : planes)
+  {
+    changed = newGeometry.splitFacesByPlane(plane) || changed;
+  }
+
+  if (!changed)
+  {
+    return kdl::void_success;
+  }
+
+  if (!worldBounds.contains(newGeometry.bounds()))
+  {
+    return Error{"Brush exceeds world bounds"};
+  }
+
+  auto newFaces = std::vector<BrushFace>{};
+  newFaces.reserve(newGeometry.faces().size());
+
+  auto error = std::optional<Error>{};
+  for (auto* faceGeometry : newGeometry.faces())
+  {
+    if (
+      const auto faceIndex = faceGeometry->payload();
+      faceIndex && *faceIndex < m_faces.size())
+    {
+      auto& newFace = newFaces.emplace_back(m_faces[*faceIndex]);
+      newFace.setGeometry(faceGeometry);
+      newFace.updatePointsFromVertices()
+        | kdl::transform([&]() { faceGeometry->setPayload(newFaces.size() - 1u); })
+        | kdl::transform_error([&](auto e) {
+            if (!error)
+            {
+              error = e;
+            }
+          });
+    }
+    else
+    {
+      return Error{"Brush is incomplete"};
+    }
+  }
+
+  if (error)
+  {
+    return *error;
+  }
+
+  m_faces = std::move(newFaces);
+  m_geometry = std::make_unique<BrushGeometry>(std::move(newGeometry));
+
+  assert(checkFaceLinks());
+  return kdl::void_success;
+}
+
 Result<void> Brush::moveBoundary(
   const vm::bbox3d& worldBounds,
   const size_t faceIndex,

@@ -33,6 +33,7 @@
 
 #include "vm/bbox.h"
 #include "vm/line.h"
+#include "vm/mat_ext.h"
 #include "vm/plane.h"
 
 namespace tb::ui
@@ -60,7 +61,7 @@ public:
   {
     const auto currentBounds =
       makeBounds(inputState, initialHandlePosition, initialHandlePosition);
-    m_tool.update(currentBounds);
+    m_tool.updateGridAligned(currentBounds);
     m_tool.refreshViews();
 
     return makeHandlePositionProposer(
@@ -78,7 +79,7 @@ public:
 
       if (!currentBounds.is_empty())
       {
-        m_tool.update(currentBounds);
+        m_tool.updateGridAligned(currentBounds);
         m_tool.refreshViews();
       }
     }
@@ -149,7 +150,7 @@ private:
       return false;
     }
 
-    m_tool.update(currentBounds);
+    m_tool.updateGridAligned(currentBounds);
     return true;
   }
 
@@ -158,11 +159,15 @@ private:
     const vm::vec3d& initialHandlePosition,
     const vm::vec3d& currentHandlePosition) const
   {
+    const auto& grid = m_tool.grid();
+    const auto initialGridPosition = grid.toGridSpace(initialHandlePosition);
+    const auto currentGridPosition = grid.toGridSpace(currentHandlePosition);
+
     auto bounds = snapBounds(
       inputState,
       vm::bbox3d{
-        vm::min(initialHandlePosition, currentHandlePosition),
-        vm::max(initialHandlePosition, currentHandlePosition),
+        vm::min(initialGridPosition, currentGridPosition),
+        vm::max(initialGridPosition, currentGridPosition),
       });
 
     if (inputState.modifierKeysDown(ModifierKeys::Shift))
@@ -181,14 +186,16 @@ private:
       const auto lengthDiff = zLengthAxis * bounds.size() + maxLengthAxes * maxLength;
 
       // The direction in which the user is dragging per component:
-      const auto dragDir = vm::step(initialHandlePosition, currentHandlePosition);
+      const auto dragDir = vm::step(initialGridPosition, currentGridPosition);
       bounds = vm::bbox3d{
         vm::mix(bounds.min, bounds.max - lengthDiff, vm::vec3d{1, 1, 1} - dragDir),
         vm::mix(bounds.max, bounds.min + lengthDiff, dragDir),
       };
     }
 
-    return vm::intersect(bounds, m_worldBounds);
+    const auto worldToGrid =
+      vm::rotation_matrix(vm::vec3d{0.0, 0.0, 1.0}, grid.rotation());
+    return vm::intersect(bounds, m_worldBounds.transform(worldToGrid));
   }
 
   vm::bbox3d snapBounds(const InputState& inputState, vm::bbox3d bounds) const
@@ -199,11 +206,14 @@ private:
     bounds.max = vm::correct(bounds.max);
 
     const auto& grid = m_tool.grid();
-    bounds.min = grid.snapDown(bounds.min);
-    bounds.max = grid.snapUp(bounds.max);
+    for (size_t i = 0; i < 3; ++i)
+    {
+      bounds.min[i] = grid.snapDown(bounds.min[i], false);
+      bounds.max[i] = grid.snapUp(bounds.max[i], false);
+    }
 
     const auto& camera = inputState.camera();
-    const auto cameraPosition = vm::vec3d{camera.position()};
+    const auto cameraPosition = grid.toGridSpace(vm::vec3d{camera.position()});
 
     for (size_t i = 0; i < 3; i++)
     {

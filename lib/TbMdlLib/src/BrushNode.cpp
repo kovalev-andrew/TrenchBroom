@@ -109,6 +109,19 @@ Brush BrushNode::setBrush(Brush brush)
   return brush;
 }
 
+Brush BrushNode::setBrushForPreview(Brush brush)
+{
+  const auto boundsChange = NotifyPhysicalBoundsChange{*this};
+
+  using std::swap;
+  swap(m_brush, brush);
+
+  updateSelectedFaceCount();
+  invalidateVertexCache();
+
+  return brush;
+}
+
 bool BrushNode::hasSelectedFaces() const
 {
   return m_selectedFaceCount > 0u;

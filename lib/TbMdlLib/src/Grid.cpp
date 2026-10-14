@@ -82,6 +82,20 @@ double Grid::actualSize() const
   return snap() ? actualSize(m_size) : double(1);
 }
 
+double Grid::rotation() const
+{
+  return m_rotation;
+}
+
+void Grid::setRotation(const double rotation)
+{
+  if (!vm::is_equal(m_rotation, rotation, vm::Cd::almost_zero()))
+  {
+    m_rotation = rotation;
+    gridDidChangeNotifier();
+  }
+}
+
 double Grid::angle() const
 {
   return vm::to_radians(static_cast<double>(15.0));
@@ -111,22 +125,24 @@ void Grid::toggleSnap()
 
 double Grid::intersectWithRay(const vm::ray3d& ray, const size_t skip) const
 {
+  const auto gridRay = vm::ray3d{toGridSpaceXY(ray.origin), toGridSpaceXY(ray.direction)};
+
   auto planeAnchor = vm::vec3d{};
 
   for (size_t i = 0; i < 3; ++i)
   {
     planeAnchor[i] =
-      ray.direction[i] > 0.0
-        ? snapUp(ray.origin[i], true) + static_cast<double>(skip) * actualSize()
-        : snapDown(ray.origin[i], true) - static_cast<double>(skip) * actualSize();
+      gridRay.direction[i] > 0.0
+        ? snapUp(gridRay.origin[i], true) + static_cast<double>(skip) * actualSize()
+        : snapDown(gridRay.origin[i], true) - static_cast<double>(skip) * actualSize();
   }
 
   const auto distX =
-    vm::intersect_ray_plane(ray, vm::plane3d(planeAnchor, vm::vec3d{1, 0, 0}));
+    vm::intersect_ray_plane(gridRay, vm::plane3d(planeAnchor, vm::vec3d{1, 0, 0}));
   const auto distY =
-    vm::intersect_ray_plane(ray, vm::plane3d(planeAnchor, vm::vec3d{0, 1, 0}));
+    vm::intersect_ray_plane(gridRay, vm::plane3d(planeAnchor, vm::vec3d{0, 1, 0}));
   const auto distZ =
-    vm::intersect_ray_plane(ray, vm::plane3d(planeAnchor, vm::vec3d{0, 0, 1}));
+    vm::intersect_ray_plane(gridRay, vm::plane3d(planeAnchor, vm::vec3d{0, 0, 1}));
 
   auto dist = distX;
   if (distY && (!dist || std::abs(*distY) < std::abs(*dist)))
@@ -142,19 +158,26 @@ double Grid::intersectWithRay(const vm::ray3d& ray, const size_t skip) const
 
 vm::vec3d Grid::moveDeltaForPoint(const vm::vec3d& point, const vm::vec3d& delta) const
 {
-  const auto newPoint = snap(point + delta);
-  auto actualDelta = newPoint - point;
+  if (!snap())
+  {
+    return delta;
+  }
+
+  const auto gridPoint = toGridSpaceXY(point);
+  const auto gridDelta = toGridSpaceXY(delta);
+  const auto newPoint = snapLocal(gridPoint + gridDelta, SnapDir::None);
+  auto actualDelta = newPoint - gridPoint;
 
   for (size_t i = 0; i < 3; ++i)
   {
     if (
       (actualDelta[i] > static_cast<double>(0.0))
-      != (delta[i] > static_cast<double>(0.0)))
+      != (gridDelta[i] > static_cast<double>(0.0)))
     {
       actualDelta[i] = static_cast<double>(0.0);
     }
   }
-  return actualDelta;
+  return fromGridSpaceXY(actualDelta);
 }
 
 /**
@@ -200,11 +223,15 @@ vm::vec3d Grid::moveDeltaForBounds(
   const auto localX = vm::find_abs_max_component(targetPlane.normal, 1);
   const auto localY = vm::find_abs_max_component(targetPlane.normal, 2);
 
-  auto firstCorner = snapTowards(hitPoint, -ray.direction);
-  if (vm::is_equal(
-        targetPlane.normal,
-        vm::get_abs_max_component_axis(targetPlane.normal),
-        vm::Cd::almost_zero()))
+  const auto targetPlaneIsAxial = vm::is_equal(
+    targetPlane.normal,
+    vm::get_abs_max_component_axis(targetPlane.normal),
+    vm::Cd::almost_zero());
+
+  auto firstCorner = targetPlaneIsAxial
+                       ? snapTowards(hitPoint, targetPlane, -ray.direction)
+                       : snapTowards(hitPoint, -ray.direction);
+  if (targetPlaneIsAxial)
   {
     // targetPlane is axial. As a special case, only snap X and Y
     firstCorner[localZ] = hitPoint[localZ];
@@ -244,19 +271,21 @@ vm::vec3d Grid::moveDeltaForBounds(
 
 double Grid::snapToGridPlane(const vm::line3d& line, const double distance) const
 {
+  const auto gridLine =
+    vm::line3d{toGridSpaceXY(line.point), toGridSpaceXY(line.direction)};
   auto snappedDistance = std::numeric_limits<double>::max();
 
   // x is a point on the line and it is located in one grid cube
-  const auto x = vm::point_at_distance(line, distance);
+  const auto x = vm::point_at_distance(gridLine, distance);
 
   // find the corner of the grid that is closest to x:
-  const auto c = snap(x);
+  const auto c = snapLocal(x, SnapDir::None);
 
   // intersect l with every grid plane that meets at that corner
   for (size_t i = 0; i < 3; ++i)
   {
     const auto p = vm::plane3d{c, vm::vec3d::axis(i)};
-    const auto y = vm::intersect_line_plane(line, p);
+    const auto y = vm::intersect_line_plane(gridLine, p);
     if (y && vm::abs(*y - distance) < vm::abs(snappedDistance - distance))
     {
       snappedDistance = *y;

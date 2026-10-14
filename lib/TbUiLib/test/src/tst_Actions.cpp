@@ -20,6 +20,8 @@
 #include "Preferences.h"
 #include "ui/Action.h"
 #include "ui/ActionInfo.h"
+#include <QAction>
+#include "ui/ActionBuilder.h"
 #include "ui/ActionManager.h"
 #include "ui/ActionMenu.h"
 #include "ui/CatchConfig.h"
@@ -39,7 +41,7 @@ namespace tb::ui
 namespace
 {
 
-auto collectMenuActionInfos(const ActionManager& actionManager)
+auto collectMenuActions(const ActionManager& actionManager)
 {
   auto actions = std::vector<const Action*>{};
   actionManager.visitMainMenu(kdl::overload(
@@ -47,14 +49,20 @@ auto collectMenuActionInfos(const ActionManager& actionManager)
     [&](const MenuAction& actionItem) { actions.push_back(&actionItem.action); },
     [](const auto& thisLambda, const Menu& menu) { menu.visitEntries(thisLambda); }));
 
-  return actions | std::views::transform([](const auto* action) {
-           return ActionInfo{
-             ActionInfoType::Menu,
-             action->preference().path,
-             action->actionContext(),
-             action->preference(),
-           };
-         })
+  return actions;
+}
+
+auto collectMenuActionInfos(const ActionManager& actionManager)
+{
+  return collectMenuActions(actionManager)
+         | std::views::transform([](const auto* action) {
+             return ActionInfo{
+               ActionInfoType::Menu,
+               action->preference().path,
+               action->actionContext(),
+               action->preference(),
+             };
+           })
          | kdl::ranges::to<std::vector>();
 }
 
@@ -120,6 +128,23 @@ auto getActionConflicts(
 TEST_CASE("Actions")
 {
   const auto actionManager = ActionManager{};
+
+  SECTION("Tooltips contain a brief tool description after a dash")
+  {
+    for (const auto* action : collectMenuActions(actionManager))
+    {
+      const auto path = action->preference().path.generic_string();
+      if (path.find("Menu/Edit/Tools/") != 0)
+      {
+        continue;
+      }
+      REQUIRE(action->statusTip().has_value());
+      auto qtAction = QAction{};
+      updateActionKeySequence(qtAction, *action);
+      CHECK(qtAction.toolTip().contains(" - "));
+      CHECK(qtAction.toolTip().endsWith(*action->statusTip()));
+    }
+  }
 
   SECTION("Default actions have no conflicts")
   {

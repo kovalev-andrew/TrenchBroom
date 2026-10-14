@@ -140,6 +140,14 @@ public:
    */
   Notifier<const std::string&, bool, bool> transactionDoneNotifier;
   /**
+   * Notifies observers when a transaction is going to be redone.
+   */
+  Notifier<const std::string&, bool, bool> transactionRedoNotifier;
+  /**
+   * Notifies observers when a transaction was redone successfully.
+   */
+  Notifier<const std::string&, bool, bool> transactionRedoneNotifier;
+  /**
    * Notifies observers when a transaction was undone successfully.
    */
   Notifier<const std::string&, bool, bool> transactionUndoneNotifier;
@@ -175,6 +183,9 @@ public:
    * no command can be redone.
    */
   const std::string* redoCommandName() const;
+
+  bool hasOpenTransaction() const;
+
   /**
    * Starts a new transaction. If a transaction is currently executing, then the newly
    * started transaction becomes a nested transaction and will be added as a command to
@@ -184,6 +195,20 @@ public:
    * @param scope the scope of the transaction to start
    */
   void startTransaction(std::string name, TransactionScope scope);
+
+  /**
+   * Starts a new transaction and moves the topmost undo command into it as the first
+   * command. This is useful for follow-up commands that must undo atomically with the
+   * user action that caused them.
+   *
+   * Precondition: no transaction is currently executing.
+   *
+   * @param name the name of the transaction to start
+   * @param scope the scope of the transaction to start
+   * @return true if a transaction was started, and false if there is no undo command to
+   * move
+   */
+  bool startTransactionWithLastCommand(std::string name, TransactionScope scope);
 
   /**
    * Commits the currently executing transaction. If it is a nested transaction, then its

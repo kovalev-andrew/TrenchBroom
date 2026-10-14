@@ -50,6 +50,11 @@ void updateActionKeySequence(QAction& qAction, const Action& tAction)
 
   qAction.setToolTip(tooltip);
   qAction.setShortcuts(keySequences | kdl::ranges::to<QList>());
+  if (
+    const auto& description = tAction.statusTip(); description && !description->isEmpty())
+  {
+    qAction.setToolTip(qAction.toolTip() + " - " + *description);
+  }
 }
 
 namespace
@@ -95,59 +100,60 @@ PopulateMenuResult populateMenuBar(
   auto result = PopulateMenuResult{};
   QMenu* currentMenu = nullptr;
 
-  actionManager.visitMainMenu(kdl::overload(
-    [&](const MenuSeparator&) {
-      contract_assert(currentMenu != nullptr);
+  actionManager.visitMainMenu(
+    kdl::overload(
+      [&](const MenuSeparator&) {
+        contract_assert(currentMenu != nullptr);
 
-      currentMenu->addSeparator();
-    },
-    [&](const MenuAction& actionItem) {
-      contract_assert(currentMenu);
+        currentMenu->addSeparator();
+      },
+      [&](const MenuAction& actionItem) {
+        contract_assert(currentMenu);
 
-      auto& qtAction = findOrCreateQtAction(actionMap, actionItem.action, triggerFn);
-      currentMenu->addAction(&qtAction);
+        auto& qtAction = findOrCreateQtAction(actionMap, actionItem.action, triggerFn);
+        currentMenu->addAction(&qtAction);
 
-      if (actionItem.entryType == MenuEntryType::Undo)
-      {
-        result.undoAction = &qtAction;
-      }
-      else if (actionItem.entryType == MenuEntryType::Redo)
-      {
-        result.redoAction = &qtAction;
-      }
-      else if (actionItem.entryType == MenuEntryType::Paste)
-      {
-        result.pasteAction = &qtAction;
-      }
-      else if (actionItem.entryType == MenuEntryType::PasteAtOriginalPosition)
-      {
-        result.pasteAtOriginalPositionAction = &qtAction;
-      }
-      else if (actionItem.entryType == MenuEntryType::Rerun)
-      {
-        result.rerunAction = &qtAction;
-      }
-    },
-    [&](const auto& thisLambda, const Menu& menu) {
-      auto* parentMenu = currentMenu;
-      if (!currentMenu)
-      {
-        // top level menu
-        currentMenu = qtMenuBar.addMenu(QString::fromStdString(menu.name));
-      }
-      else
-      {
-        currentMenu = currentMenu->addMenu(QString::fromStdString(menu.name));
-      }
+        if (actionItem.entryType == MenuEntryType::Undo)
+        {
+          result.undoAction = &qtAction;
+        }
+        else if (actionItem.entryType == MenuEntryType::Redo)
+        {
+          result.redoAction = &qtAction;
+        }
+        else if (actionItem.entryType == MenuEntryType::Paste)
+        {
+          result.pasteAction = &qtAction;
+        }
+        else if (actionItem.entryType == MenuEntryType::PasteAtOriginalPosition)
+        {
+          result.pasteAtOriginalPositionAction = &qtAction;
+        }
+        else if (actionItem.entryType == MenuEntryType::Rerun)
+        {
+          result.rerunAction = &qtAction;
+        }
+      },
+      [&](const auto& thisLambda, const Menu& menu) {
+        auto* parentMenu = currentMenu;
+        if (!currentMenu)
+        {
+          // top level menu
+          currentMenu = qtMenuBar.addMenu(QString::fromStdString(menu.name));
+        }
+        else
+        {
+          currentMenu = currentMenu->addMenu(QString::fromStdString(menu.name));
+        }
 
-      if (menu.entryType == MenuEntryType::RecentDocuments)
-      {
-        result.recentDocumentsMenu = currentMenu;
-      }
+        if (menu.entryType == MenuEntryType::RecentDocuments)
+        {
+          result.recentDocumentsMenu = currentMenu;
+        }
 
-      menu.visitEntries(thisLambda);
-      currentMenu = parentMenu;
-    }));
+        menu.visitEntries(thisLambda);
+        currentMenu = parentMenu;
+      }));
 
   return result;
 }
@@ -158,13 +164,14 @@ void populateToolBar(
   std::unordered_map<const Action*, QAction*>& actionMap,
   const TriggerFn& triggerFn)
 {
-  actionManager.visitToolBar(kdl::overload(
-    [&](const MenuSeparator&) { qtToolBar.addSeparator(); },
-    [&](const MenuAction& actionItem) {
-      auto& qtAction = findOrCreateQtAction(actionMap, actionItem.action, triggerFn);
-      qtToolBar.addAction(&qtAction);
-    },
-    [](const auto& thisLambda, const Menu& menu) { menu.visitEntries(thisLambda); }));
+  actionManager.visitToolBar(
+    kdl::overload(
+      [&](const MenuSeparator&) { qtToolBar.addSeparator(); },
+      [&](const MenuAction& actionItem) {
+        auto& qtAction = findOrCreateQtAction(actionMap, actionItem.action, triggerFn);
+        qtToolBar.addAction(&qtAction);
+      },
+      [](const auto& thisLambda, const Menu& menu) { menu.visitEntries(thisLambda); }));
 }
 
 } // namespace tb::ui

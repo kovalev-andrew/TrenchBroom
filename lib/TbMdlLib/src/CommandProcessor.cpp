@@ -208,9 +208,30 @@ const std::string* CommandProcessor::redoCommandName() const
   return canRedo() ? &m_redoStack.back()->name() : nullptr;
 }
 
+bool CommandProcessor::hasOpenTransaction() const
+{
+  return !m_transactionStack.empty();
+}
+
 void CommandProcessor::startTransaction(std::string name, const TransactionScope scope)
 {
   m_transactionStack.emplace_back(std::move(name), scope);
+}
+
+bool CommandProcessor::startTransactionWithLastCommand(
+  std::string name, const TransactionScope scope)
+{
+  contract_pre(m_transactionStack.empty());
+
+  if (m_undoStack.empty())
+  {
+    return false;
+  }
+
+  auto command = popFromUndoStack();
+  m_transactionStack.emplace_back(std::move(name), scope);
+  m_transactionStack.back().commands.push_back(std::move(command));
+  return true;
 }
 
 void CommandProcessor::commitTransaction()
@@ -287,10 +308,17 @@ bool CommandProcessor::redo()
   contract_pre(!m_redoStack.empty());
 
   auto command = popFromRedoStack();
+  const auto commandName = command->name();
+  const auto isModification = command->isModification();
+  transactionRedoNotifier(
+    commandName, isCurrentDocumentStateObservable(), isModification);
+
   const auto result = executeCommand(*command);
   if (result)
   {
     assertResult(pushToUndoStack(std::move(command), false));
+    transactionRedoneNotifier(
+      commandName, isCurrentDocumentStateObservable(), isModification);
   }
   return result;
 }

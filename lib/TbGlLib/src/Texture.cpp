@@ -314,10 +314,11 @@ void Texture::upload(Gl& gl)
 {
   m_state = std::visit(
     kdl::overload(
-      [&](const TextureLoadedState& textureLoadedState) -> TextureState {
+      [&](TextureLoadedState&& textureLoadedState) -> TextureState {
         const auto [textureId, useMipmap] = uploadTexture(
           gl, m_format, m_mask, textureLoadedState.buffers, m_width, m_height);
-        return TextureReadyState{textureId, useMipmap};
+        return TextureReadyState{
+          textureId, useMipmap, std::move(textureLoadedState.buffers)};
       },
       [](TextureReadyState textureReadyState) -> TextureState {
         return textureReadyState;
@@ -349,7 +350,9 @@ const std::vector<TextureBuffer>& Texture::buffersIfLoaded() const
       [](const TextureLoadedState& state) -> const std::vector<TextureBuffer>& {
         return state.buffers;
       },
-      [](const TextureReadyState&) -> const std::vector<TextureBuffer>& { return empty; },
+      [](const TextureReadyState& state) -> const std::vector<TextureBuffer>& {
+        return state.buffers;
+      },
       [](const TextureDroppedState&) -> const std::vector<TextureBuffer>& {
         return empty;
       }),

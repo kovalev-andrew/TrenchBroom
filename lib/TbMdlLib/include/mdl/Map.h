@@ -407,7 +407,10 @@ public: // command processing
   void repeatCommands();
   void clearRepeatableCommands();
 
+  bool hasOpenTransaction() const;
+
   void startTransaction(std::string name, TransactionScope scope);
+  bool startTransactionWithLastCommand(std::string name);
   void rollbackTransaction();
   bool commitTransaction();
   void cancelTransaction();

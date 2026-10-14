@@ -46,6 +46,12 @@ void GlQt::viewport(
   m_gl.glViewport(x, y, width, height);
 }
 
+void GlQt::scissor(
+  const GLint x, const GLint y, const GLsizei width, const GLsizei height)
+{
+  m_gl.glScissor(x, y, width, height);
+}
+
 void GlQt::matrixMode(const GLenum mode)
 {
   m_gl.glMatrixMode(mode);

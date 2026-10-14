@@ -2107,6 +2107,17 @@ public: // Clipping
    */
   ClipResult clip(const vm::plane<T, 3>& plane);
 
+  /**
+   * Splits all faces intersected by the given plane, but keeps both sides of the
+   * polyhedron. This adds surface edges without clipping away volume.
+   *
+   * @param plane the plane to split faces with
+   * @param epsilon the epsilon value to use for point status checks
+   * @return true if any face was split
+   */
+  bool splitFacesByPlane(
+    const vm::plane<T, 3>& plane, T epsilon = vm::constants<T>::point_status_epsilon());
+
 private:
   /**
    * Checks whether this polyhedron is intersected by the given plane.

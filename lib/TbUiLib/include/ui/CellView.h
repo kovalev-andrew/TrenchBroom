@@ -24,6 +24,7 @@
 #include "ui/CellLayout.h"
 #include "ui/RenderView.h"
 
+
 class QScrollBar;
 class QDrag;
 class QMimeData;
@@ -40,6 +41,8 @@ protected:
   using Group = LayoutGroup;
   using Row = LayoutRow;
   using Cell = LayoutCell;
+
+  QRect visibleRect() const;
 
 private:
   Layout m_layout;
@@ -112,7 +115,6 @@ private:
   bool updateTooltip(QHelpEvent* event);
 
 private:
-  QRect visibleRect() const;
   void renderContents(gl::Gl& gl) override;
   void setupGL(gl::Gl& gl);
 
@@ -123,6 +125,7 @@ private:
   virtual void doReloadLayout(Layout& layout) = 0;
   virtual void doClear();
   virtual void doRender(gl::Gl& gl, Layout& layout, float y, float height) = 0;
+  virtual void doRenderTitleControls(gl::Gl& gl, Layout& layout, float y, float height);
   virtual void doLeftClick(Layout& layout, float x, float y);
   virtual void doContextMenu(Layout& layout, float x, float y, QContextMenuEvent* event);
 
