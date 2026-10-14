@@ -1,6 +1,6 @@
 # reyondboom
 
-**English (primary)** · [Русский](README.ru.md)
+**English (primary)** · [Russian](README.ru.md)
 
 reyondboom is a TrenchBroom v2026.2-based toolset for creating and placing brush rubble.
 Development happens on the [`reyondboom` branch](https://github.com/reyond9079/TrenchBroom/tree/reyondboom).
