@@ -28,8 +28,6 @@ Select a brush → **Edit → CSG → Fracture…** → **Apply**. Keep the frag
 then choose **Edit → CSG → Settle…** → **Simulate / Restart** → **Apply**.
 Create an unselected floor brush first; Settle does not add an automatic floor.
 
-English documentation is authoritative and maintained first. Russian translations
-are maintained alongside it. All source-code comments must be in English.
 See [AGENTS.md](AGENTS.md) for contributor conventions and [BUILD.md](BUILD.md) for
 build prerequisites. Fracture and Settle remain experimental; validate generated
 geometry with your game's BSP compiler. The upstream GPL license is preserved.
