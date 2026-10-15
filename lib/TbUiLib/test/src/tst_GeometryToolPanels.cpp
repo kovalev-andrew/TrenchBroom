@@ -24,6 +24,7 @@
 #include "mdl/Issue.h"
 #include "mdl/LayerNode.h"
 #include "mdl/Map.h"
+#include "mdl/Map_Groups.h"
 #include "mdl/Map_Nodes.h"
 #include "mdl/Map_Selection.h"
 #include "mdl/PickResult.h"
@@ -31,6 +32,7 @@
 #include "mdl/NodeHandles.h"
 #include "mdl/WorldNode.h"
 #include "ui/ArrayTool.h"
+#include "ui/BezierBendTool.h"
 #include "ui/CatchConfig.h"
 #include "ui/EdgeTool.h"
 #include "ui/FaceTool.h"
@@ -41,6 +43,7 @@
 #include "ui/MapDocumentFixture.h"
 #include "ui/MapViewBar.h"
 #include "ui/MapViewToolBox.h"
+#include "ui/MoveObjectsTool.h"
 #include "ui/SculptTool.h"
 #include "ui/SubdivisionTool.h"
 
@@ -307,6 +310,28 @@ TEST_CASE("Geometry tool panels - numeric input and face selection")
     CHECK_FALSE(tool.insetToolActive());
     CHECK(map.worldNode().defaultLayer()->childCount() == 1u);
   }
+}
+
+TEST_CASE("Geometry tool panels - bend suppresses ordinary object dragging")
+{
+  auto fixture = MapDocumentFixture{};
+  auto& document = fixture.create();
+  auto& map = document.map();
+  auto* source = addBox(map, vm::bbox3d{{-128, -32, 0}, {128, 32, 64}});
+  mdl::selectNodes(map, {source});
+  REQUIRE(mdl::groupSelectedNodes(map, "Bend source") != nullptr);
+  auto container = QWidget{};
+  auto* book = new QStackedLayout{&container};
+  auto toolbox = MapViewToolBox{document, book};
+
+  REQUIRE(toolbox.moveObjectsTool().active());
+  REQUIRE(toolbox.canToggleBezierBendTool());
+  toolbox.toggleBezierBendTool();
+  REQUIRE(toolbox.bezierBendToolActive());
+  CHECK_FALSE(toolbox.moveObjectsTool().active());
+  toolbox.deactivateCurrentTool();
+  CHECK_FALSE(toolbox.bezierBendToolActive());
+  CHECK(toolbox.moveObjectsTool().active());
 }
 
 TEST_CASE("Geometry tool panels - generators apply and cancel")

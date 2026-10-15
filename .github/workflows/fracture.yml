@@ -44,7 +44,7 @@ jobs:
         run: ./TbMdlLibTest.exe "BrushFracture,BrushPerforate,BrushSettle,Map_Geometry,Grid,Brush,NodeHandleManager"
       - name: Tool panels and action tests
         working-directory: build/lib/TbUiLib/test
-        run: ./TbUiLibTest.exe "FractureDialog,PerforateDialog,SettleDialog,Actions,Geometry tool panels*,Guide screenshot*,Issue browser drops*,Map view bar follows*"
+        run: ./TbUiLibTest.exe "FractureDialog,PerforateDialog,SettleDialog,Actions,MapWindow,Geometry tool panels*,Guide screenshot*,Issue browser drops*,Map view bar follows*"
       - name: Package portable editor
         shell: pwsh
         run: |
@@ -55,10 +55,23 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Qt deployment failed' }
           Copy-Item LICENSE.txt "$dir/LICENSE.txt"
           Copy-Item docs "$dir/docs" -Recurse
-          Get-ChildItem -Path README*.md, ULTIMATE*.md, FRACTURE*.md, PERFORATE*.md, SETTLE*.md, BUILD.md, AGENTS.md | Copy-Item -Destination $dir
+          Get-ChildItem -Path README*.md, ULTIMATE*.md, FRACTURE*.md, PERFORATE*.md, SETTLE*.md, THIRD_PARTY_NOTICES*.md, BUILD.md, AGENTS.md | Copy-Item -Destination $dir
           $bulletLicense = Get-ChildItem build -Filter copyright -Recurse | Where-Object { $_.FullName -match 'share[\\/]bullet3[\\/]copyright$' } | Select-Object -First 1
           if (-not $bulletLicense) { throw 'Bullet license missing' }
           Copy-Item $bulletLicense.FullName "$dir/Bullet-LICENSE.txt"
+          $share = $bulletLicense.Directory.Parent.FullName
+          foreach ($notice in Get-ChildItem $share -Filter copyright -Recurse) {
+            $destination = Join-Path "$dir/licenses/vcpkg" $notice.Directory.Name
+            New-Item -ItemType Directory -Force $destination | Out-Null
+            Copy-Item $notice.FullName "$destination/copyright"
+          }
+          $qtVersion = (& qmake -query QT_VERSION).Trim()
+          if ($LASTEXITCODE -ne 0 -or $qtVersion -notmatch '^6\.10\.\d+$') { throw 'Unexpected Qt version' }
+          New-Item -ItemType Directory -Force "$dir/licenses/Qt" | Out-Null
+          foreach ($license in @('LGPL-3.0-only.txt', 'GPL-3.0-only.txt')) {
+            Invoke-WebRequest "https://raw.githubusercontent.com/qt/qtbase/v$qtVersion/LICENSES/$license" -OutFile "$dir/licenses/Qt/$license"
+          }
+          @{ commit = $env:GITHUB_SHA; qt = $qtVersion; source = "https://github.com/$env:GITHUB_REPOSITORY/tree/$env:GITHUB_SHA" } | ConvertTo-Json | Set-Content "$dir/build-info.json"
           Compress-Archive -Path "$dir/*" -DestinationPath ReyondBroom-Windows.zip
       - uses: actions/upload-artifact@v4
         with:

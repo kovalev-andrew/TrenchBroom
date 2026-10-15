@@ -1041,11 +1041,9 @@ void MapViewToolBox::createTools(QStackedLayout* bookCtrl)
   suppressWhileActive(edgeTool(), moveObjectsTool(), extrudeTool(), drawShapeTool());
   suppressWhileActive(faceTool(), moveObjectsTool(), extrudeTool(), drawShapeTool());
   suppressWhileActive(
-    controlPointTool(),
-    bezierBendTool(),
-    moveObjectsTool(),
-    extrudeTool(),
-    drawShapeTool());
+    controlPointTool(), moveObjectsTool(), extrudeTool(), drawShapeTool());
+  suppressWhileActive(
+    bezierBendTool(), moveObjectsTool(), extrudeTool(), drawShapeTool());
   suppressWhileActive(clipTool(), moveObjectsTool(), extrudeTool(), drawShapeTool());
   suppressWhileActive(
     polygonCutTool(), moveObjectsTool(), extrudeTool(), drawShapeTool());
