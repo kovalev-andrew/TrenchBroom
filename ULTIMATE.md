@@ -44,7 +44,7 @@ project; its exported result must also be checked there.
 ## Windows build and checks
 
 Download `ReyondBroom-Windows` from a successful
-[Windows workflow](https://github.com/reyond9079/TrenchBroom/actions/workflows/fracture.yml?query=branch%3AReyondBroom).
+[Windows workflow](https://github.com/reyond9079/ReyondBroom/actions/workflows/fracture.yml?query=branch%3AReyondBroom).
 Extract both the downloaded artifact and its enclosed ZIP, then run
 `TrenchBroom.exe` with the accompanying resources and DLLs.
 

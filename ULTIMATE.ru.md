@@ -45,7 +45,7 @@ Fracture, Perforate и Bullet Settle остаются доступны. Оско
 ## Сборка Windows и проверки
 
 Архив `ReyondBroom-Windows` доступен в успешных
-[сборках Windows](https://github.com/reyond9079/TrenchBroom/actions/workflows/fracture.yml?query=branch%3AReyondBroom).
+[сборках Windows](https://github.com/reyond9079/ReyondBroom/actions/workflows/fracture.yml?query=branch%3AReyondBroom).
 Распакуйте артефакт и вложенный ZIP, затем запустите `TrenchBroom.exe`, сохранив
 рядом все ресурсы и DLL.
 

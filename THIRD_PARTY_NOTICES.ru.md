@@ -18,7 +18,7 @@ fmt и их зависимости. Собственные лицензии эт
 Компоненты среды выполнения Visual C++, если они включены, сохраняют условия Microsoft.
 
 Исходники и инструкции сборки находятся в
-[ветке ReyondBroom](https://github.com/reyond9079/TrenchBroom/tree/ReyondBroom).
+[ветке ReyondBroom](https://github.com/reyond9079/ReyondBroom/tree/ReyondBroom).
 `build-info.json` содержит ссылку на точный коммит сборки. При получении исходников
 инициализируйте подмодуль vcpkg. Перенесённые инструменты созданы в
 [dragxnd/UltimateTrenchBroom](https://github.com/dragxnd/UltimateTrenchBroom).

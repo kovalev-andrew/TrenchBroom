@@ -4,7 +4,7 @@
 
 ReyondBroom — набор инструментов для создания и размещения обломков из брашей
 на основе TrenchBroom v2026.2. Разработка ведётся в
-[ветке ReyondBroom](https://github.com/reyond9079/TrenchBroom/tree/ReyondBroom).
+[ветке ReyondBroom](https://github.com/reyond9079/ReyondBroom/tree/ReyondBroom).
 
 - **[Perforate](PERFORATE.ru.md)** создаёт случайные сквозные отверстия с заданными
   количеством, числом сторон, диапазоном размеров и промежутками. Можно оставить
@@ -17,7 +17,7 @@ ReyondBroom — набор инструментов для создания и �
 ## Быстрый запуск
 
 Скачайте артефакт `ReyondBroom-Windows` из успешной
-[Windows-сборки](https://github.com/reyond9079/TrenchBroom/actions/workflows/fracture.yml?query=branch%3AReyondBroom).
+[Windows-сборки](https://github.com/reyond9079/ReyondBroom/actions/workflows/fracture.yml?query=branch%3AReyondBroom).
 Распакуйте артефакт и вложенный `ReyondBroom-Windows.zip` в отдельную папку,
 затем запустите `TrenchBroom.exe`. Исполняемый файл сохраняет название исходного редактора.
 

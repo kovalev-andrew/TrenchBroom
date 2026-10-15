@@ -8,7 +8,7 @@ A custom modification of Trenchbroom.
 **English** · [Russian](README.ru.md)
 
 ReyondBroom is a TrenchBroom v2026.2-based toolset for creating and placing brush rubble.
-Development happens on the [`ReyondBroom` branch](https://github.com/reyond9079/TrenchBroom/tree/ReyondBroom).
+Development happens on the [`ReyondBroom` branch](https://github.com/reyond9079/ReyondBroom/tree/ReyondBroom).
 
 - **[Perforate](PERFORATE.md)** creates random polygonal through-holes, with exact
   counts, side counts, size ranges, spacing and optional selected `func_wall` plugs.
@@ -20,7 +20,7 @@ Development happens on the [`ReyondBroom` branch](https://github.com/reyond9079/
 ## Quick start
 
 Download the `ReyondBroom-Windows` artifact from a successful
-[Windows build](https://github.com/reyond9079/TrenchBroom/actions/workflows/fracture.yml?query=branch%3AReyondBroom).
+[Windows build](https://github.com/reyond9079/ReyondBroom/actions/workflows/fracture.yml?query=branch%3AReyondBroom).
 Extract the artifact and its enclosed `ReyondBroom-Windows.zip` into a separate folder,
 then run `TrenchBroom.exe`. The executable retains the upstream editor name.
 
