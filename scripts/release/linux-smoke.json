@@ -1,0 +1,16 @@
+{
+  "width": 1280,
+  "height": 800,
+  "output": "linux-smoke",
+  "steps": [
+    {"op": "reset"},
+    {"op": "brush", "id": "source", "min": [-128, -128, 0], "max": [128, 128, 128]},
+    {"op": "select", "ids": ["source"]},
+    {"op": "camera", "position": [440, -600, 420], "target": [0, 0, 64]},
+    {"op": "action", "path": "Menu/Edit/Tools/Generate Terrain"},
+    {"op": "button", "text": "Apply"},
+    {"op": "capture", "file": "terrain.png", "title": "Packaged Linux editor", "delay": 500},
+    {"op": "action", "path": "Menu/Edit/Undo"},
+    {"op": "capture", "file": "undo.png", "title": "Undo restores source", "delay": 500}
+  ]
+}

@@ -1,5 +1,9 @@
 # ReyondBroom
 
+[![Скачать для Windows x64](https://img.shields.io/badge/Скачать_для_Windows_x64-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Windows.zip)
+
+[Все загрузки и описание релиза](https://github.com/reyond9079/ReyondBroom/releases/latest) · AppImage для Linux готовится.
+
 [English (основной)](README.md) · **Русский**
 
 ReyondBroom — набор инструментов для создания и размещения обломков из брашей
@@ -16,10 +20,9 @@ ReyondBroom — набор инструментов для создания и �
 
 ## Быстрый запуск
 
-Скачайте артефакт `ReyondBroom-Windows` из успешной
-[Windows-сборки](https://github.com/reyond9079/ReyondBroom/actions/workflows/fracture.yml?query=branch%3AReyondBroom).
-Распакуйте артефакт и вложенный `ReyondBroom-Windows.zip` в отдельную папку,
-затем запустите `TrenchBroom.exe`. Исполняемый файл сохраняет название исходного редактора.
+Скачайте [ReyondBroom для Windows x64](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Windows.zip).
+Распакуйте ZIP в отдельную папку и запустите `TrenchBroom.exe`.
+Исполняемый файл сохраняет название исходного редактора.
 
 Выделите браш → **Edit → CSG → Fracture…** → **Apply**. Сохраняя выделение
 осколков, откройте **Edit → CSG → Settle…** → **Simulate / Restart** → **Apply**.

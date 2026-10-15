@@ -1,5 +1,9 @@
 # ReyondBroom
 
+[![Download for Windows x64](https://img.shields.io/badge/Download_for_Windows_x64-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Windows.zip)
+
+[All downloads and release notes](https://github.com/reyond9079/ReyondBroom/releases/latest) · Linux AppImage is being prepared.
+
 <img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/a5c4d85d-7bad-4b55-943c-c7546aa6bc71" />
 
 
@@ -19,10 +23,9 @@ Development happens on the [`ReyondBroom` branch](https://github.com/reyond9079/
 
 ## Quick start
 
-Download the `ReyondBroom-Windows` artifact from a successful
-[Windows build](https://github.com/reyond9079/ReyondBroom/actions/workflows/fracture.yml?query=branch%3AReyondBroom).
-Extract the artifact and its enclosed `ReyondBroom-Windows.zip` into a separate folder,
-then run `TrenchBroom.exe`. The executable retains the upstream editor name.
+Download [ReyondBroom for Windows x64](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Windows.zip).
+Extract the ZIP into a separate folder and run `TrenchBroom.exe`.
+The executable retains the upstream editor name.
 
 Select a brush → **Edit → CSG → Fracture…** → **Apply**. Keep the fragments selected,
 then choose **Edit → CSG → Settle…** → **Simulate / Restart** → **Apply**.

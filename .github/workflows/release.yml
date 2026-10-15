@@ -1,0 +1,108 @@
+name: Publish ReyondBroom binaries
+
+on:
+  push:
+    branches: [ReyondBroom]
+    paths:
+      - '.github/workflows/release.yml'
+      - 'scripts/release/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reyondbroom-release
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: v2026.2-reyond.1
+
+jobs:
+  windows-release:
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download verified Windows build
+        run: |
+          gh run download 38727538752 --name ReyondBroom-Windows --dir release
+          cd release
+          echo '1887bb2fa5d26e1d1059ad4d47dd1fe97e1e684721e3f27bccb014ef80b4db16  ReyondBroom-Windows.zip' | sha256sum --check
+          sha256sum ReyondBroom-Windows.zip > ReyondBroom-Windows.zip.sha256
+      - name: Publish Windows download
+        run: |
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --target 51242db7e8f0a6d86ef2f09d36b0fb485b1baa8a --title 'ReyondBroom 2026.2 — extended tools' --notes-file scripts/release/notes.md --latest
+          fi
+          gh release upload "$RELEASE_TAG" release/ReyondBroom-Windows.zip release/ReyondBroom-Windows.zip.sha256 --clobber
+
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      CC: gcc-13
+      CXX: g++-13
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+      QT_QPA_PLATFORM: offscreen
+      APPIMAGE_EXTRACT_AND_RUN: '1'
+      VCPKG_MAX_CONCURRENCY: '3'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - name: Install build and graphics dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-13 g++-13 ninja-build pandoc pkg-config autoconf automake libtool libxi-dev libxrandr-dev libxxf86vm-dev freeglut3-dev mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libxkbcommon-dev libxkbcommon-x11-0 libgtk-3-0t64 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libwayland-client0 libwayland-cursor0 libwayland-egl1 xvfb xauth patchelf zsync
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.10.*
+          cache: true
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: reyond-linux-gcc13-${{ hashFiles('vcpkg.json', '.gitmodules', 'vcpkg-overlay-ports/**') }}
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR" -DTB_ENABLE_PCH=1 -DCMAKE_INSTALL_PREFIX=/usr
+      - name: Build editor and tests
+        run: cmake --build build --target TrenchBroom TbMdlLibTest TbUiLibTest --parallel 3 -- -k 0
+      - name: Geometry tests
+        working-directory: build/lib/TbMdlLib/test
+        run: ./TbMdlLibTest 'BrushFracture,BrushPerforate,BrushSettle,Map_Geometry,Grid,Brush,NodeHandleManager'
+      - name: Interface tests
+        working-directory: build/lib/TbUiLib/test
+        run: xvfb-run -a env QT_QPA_PLATFORM=xcb LIBGL_ALWAYS_SOFTWARE=1 ./TbUiLibTest 'FractureDialog,PerforateDialog,SettleDialog,Actions,MapWindow,Geometry tool panels*,Guide screenshot*,Issue browser drops*,Map view bar follows*'
+      - name: Package and launch AppImage
+        run: bash scripts/release/package-linux.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ReyondBroom-Linux
+          path: |
+            release/ReyondBroom-Linux-x86_64.AppImage
+            release/ReyondBroom-Linux-x86_64.AppImage.sha256
+            release/linux-build-info.json
+          retention-days: 14
+
+  linux-release:
+    needs: [windows-release, linux]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ReyondBroom-Linux
+          path: release
+      - name: Publish tested Linux binary
+        run: gh release upload "$RELEASE_TAG" release/* --clobber
