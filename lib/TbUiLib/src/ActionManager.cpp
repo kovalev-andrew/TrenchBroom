@@ -2633,7 +2633,7 @@ void ActionManager::createHelpMenu()
   helpMenu.addItem(addAction(
     Action{
       "Menu/File/About Ultimate Trench Broom",
-      QObject::tr("About Ultimate Trench Broom"),
+      QObject::tr("About ReyondBroom"),
       ActionContext::Any,
       QKeySequence{},
       [](auto& context) { context.appController().showAboutDialog(); },

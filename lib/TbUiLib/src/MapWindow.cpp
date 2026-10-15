@@ -1182,7 +1182,7 @@ void MapWindow::updateTitle()
 {
   const auto& map = m_document->map();
   setWindowModified(map.modified());
-  setWindowTitle(tr("%1[*] - Ultimate Trench Broom").arg(pathAsQString(map.filename())));
+  setWindowTitle(tr("%1[*] - ReyondBroom").arg(pathAsQString(map.filename())));
   setWindowFilePath(pathAsQPath(map.path()));
 }
 
@@ -1294,7 +1294,7 @@ void MapWindow::updateRecentDocumentsMenu()
 void MapWindow::createGui()
 {
   setWindowIconTB(this);
-  setWindowTitle("Ultimate Trench Broom");
+  setWindowTitle("ReyondBroom");
 
   m_hSplitter = new Splitter{Qt::Horizontal, DrawKnob::No};
   m_hSplitter->setChildrenCollapsible(false);
@@ -2136,7 +2136,7 @@ bool MapWindow::confirmOrDiscardChanges()
 
   const auto result = QMessageBox::question(
     this,
-    "Ultimate Trench Broom",
+    "ReyondBroom",
     tr("%1 has been modified. Do you want to save the changes?")
       .arg(pathAsQString(map.filename())),
     QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
@@ -2160,7 +2160,7 @@ bool MapWindow::confirmRevertDocument()
   }
 
   auto messageBox = QMessageBox{this};
-  messageBox.setWindowTitle("Ultimate Trench Broom");
+  messageBox.setWindowTitle("ReyondBroom");
   messageBox.setIcon(QMessageBox::Question);
   messageBox.setText(tr("Revert %1 to %2?")
                        .arg(pathAsQString(map.filename()))

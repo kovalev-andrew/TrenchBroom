@@ -1308,13 +1308,13 @@ private:
     auto html = QString{
       "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\">"
       "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-      "<title>Ultimate Trench Broom - Real Screenshot Guide</title>"
+      "<title>ReyondBroom - Real Screenshot Guide</title>"
       "<style>body{margin:0;background:#eee;color:#202427;font:18px Arial}"
       "main{max-width:1600px;margin:auto;padding:24px}"
       "h1{font-size:32px}h2{font-size:22px;margin:32px 0 10px}"
       "img{width:100%;height:auto;display:block;margin:0 0 28px}"
       "nav{display:flex;flex-wrap:wrap;gap:14px}a{color:#078834}</style>"
-      "<main><h1>Ultimate Trench Broom</h1><nav>"};
+      "<main><h1>ReyondBroom</h1><nav>"};
     auto chapters = std::set<QString>{};
     for (const auto& value : m_frames)
     {
