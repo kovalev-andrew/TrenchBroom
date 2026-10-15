@@ -38,7 +38,7 @@ jobs:
           -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
           -DTB_ENABLE_PCH=1
       - name: Build editor and model tests
-        run: cmake --build build --target TrenchBroom TbMdlLibTest TbUiLibTest --parallel 4
+        run: cmake --build build --target TrenchBroom TbMdlLibTest TbUiLibTest --parallel 4 -- -k 0
       - name: Geometry and map integration tests
         working-directory: build/lib/TbMdlLib/test
         run: ./TbMdlLibTest.exe "BrushFracture,BrushPerforate,BrushSettle,Map_Geometry,Grid,Brush,NodeHandleManager"
@@ -54,6 +54,8 @@ jobs:
           windeployqt --release --no-translations $exe.FullName
           if ($LASTEXITCODE -ne 0) { throw 'Qt deployment failed' }
           Copy-Item LICENSE.txt "$dir/LICENSE.txt"
+          Copy-Item docs "$dir/docs" -Recurse
+          Get-ChildItem -Path README*.md, ULTIMATE*.md, FRACTURE*.md, PERFORATE*.md, SETTLE*.md, BUILD.md, AGENTS.md | Copy-Item -Destination $dir
           $bulletLicense = Get-ChildItem build -Filter copyright -Recurse | Where-Object { $_.FullName -match 'share[\\/]bullet3[\\/]copyright$' } | Select-Object -First 1
           if (-not $bulletLicense) { throw 'Bullet license missing' }
           Copy-Item $bulletLicense.FullName "$dir/Bullet-LICENSE.txt"

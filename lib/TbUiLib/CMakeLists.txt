@@ -552,17 +552,6 @@ target_link_libraries(TbUiLib
 
 set_target_properties(TbUiLib PROPERTIES AUTOMOC TRUE)
 
-# Create the cmake script for generating the version information
-add_custom_target(TbUiLib_GenerateVersion ${CMAKE_COMMAND}
-  -D UTILS="${CMAKE_SOURCE_DIR}/cmake/Utils.cmake"
-  -D APP_BUILD_TYPE="$<CONFIG>"
-  -D APP_RELEASE_VERSION="${PROJECT_VERSION}"
-  -D SRC="${CMAKE_CURRENT_SOURCE_DIR}/include/ui/Version.h.in"
-  -D DST="${CMAKE_CURRENT_BINARY_DIR}/generated/ui/Version.h"
-  -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
-  -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateVersion.cmake")
-add_dependencies(TbUiLib TbUiLib_GenerateVersion)
-
 if(APPLE)
     # Silence macOS OpenGL deprecation warnings
     target_compile_definitions(TbUiLib PRIVATE GL_SILENCE_DEPRECATION)

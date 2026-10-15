@@ -1676,153 +1676,177 @@ void ActionManager::createGroupsMenu()
 void ActionManager::createToolsMenu()
 {
   auto& toolsMenu = createMainMenu("Tools");
-  toolsMenu.addItem(addAction(Action{
-    "Menu/Edit/Tools/Brush Tool",
-    QObject::tr("Brush Tool"),
-    ActionContext::Any,
-    QKeySequence{Qt::Key_B},
-    [](auto& context) { context.mapWindow().toolBox().toggleAssembleBrushTool(); },
-    [](const auto& context) {
-      return context.hasDocument()
-             && context.mapWindow().toolBox().canToggleAssembleBrushTool();
-    },
-    [](const auto& context) {
-      return context.hasDocument()
-             && context.mapWindow().toolBox().assembleBrushToolActive();
-    },
-    std::filesystem::path{"BrushTool.svg"},
-  }));
-  toolsMenu.addItem(addAction(Action{
-    "Menu/Edit/Tools/Clip Tool",
-    QObject::tr("Clip Tool"),
-    ActionContext::Any,
-    QKeySequence{Qt::Key_C},
-    [](auto& context) { context.mapWindow().toolBox().toggleClipTool(); },
-    [](const auto& context) {
-      return context.hasDocument() && context.mapWindow().toolBox().canToggleClipTool();
-    },
-    [](const auto& context) {
-      return context.hasDocument() && context.mapWindow().toolBox().clipToolActive();
-    },
-    std::filesystem::path{"ClipTool.svg"},
-  }));
-  toolsMenu.addItem(addAction(Action{
-    "Menu/Edit/Tools/Rotate Tool",
-    QObject::tr("Rotate Tool"),
-    ActionContext::Any,
-    QKeySequence{Qt::Key_R},
-    [](auto& context) { context.mapWindow().toolBox().toggleRotateTool(); },
-    [](const auto& context) {
-      return context.hasDocument() && context.mapWindow().toolBox().canToggleRotateTool();
-    },
-    [](const auto& context) {
-      return context.hasDocument() && context.mapWindow().toolBox().rotateToolActive();
-    },
-    std::filesystem::path{"RotateTool.svg"},
-  }));
-  toolsMenu.addItem(addAction(Action{
-    "Menu/Edit/Tools/Sweep Tool",
-    QObject::tr("Sweep Tool"),
-    ActionContext::Any,
-    QKeySequence{Qt::Key_Y},
-    [](auto& context) { context.mapWindow().toolBox().toggleSweepTool(); },
-    [](const auto& context) {
-      return context.hasDocument() && context.mapWindow().toolBox().canToggleSweepTool();
-    },
-    [](const auto& context) {
-      return context.hasDocument() && context.mapWindow().toolBox().sweepToolActive();
-    },
-    std::filesystem::path{"SweepTool.svg"},
-  }));
-  toolsMenu.addItem(addAction(Action{
-    "Menu/Edit/Tools/Scale Tool",
-    QObject::tr("Scale Tool"),
-    ActionContext::Any,
-    QKeySequence{Qt::Key_T},
-    [](auto& context) { context.mapWindow().toolBox().toggleScaleTool(); },
-    [](const auto& context) {
-      return context.hasDocument() && context.mapWindow().toolBox().canToggleScaleTool();
-    },
-    [](const auto& context) {
-      return context.hasDocument() && context.mapWindow().toolBox().scaleToolActive();
-    },
-    std::filesystem::path{"ScaleTool.svg"},
-  }));
-  toolsMenu.addItem(addAction(Action{
-    "Menu/Edit/Tools/Shear Tool",
-    QObject::tr("Shear Tool"),
-    ActionContext::Any,
-    QKeySequence{Qt::Key_G},
-    [](auto& context) { context.mapWindow().toolBox().toggleShearTool(); },
-    [](const auto& context) {
-      return context.hasDocument() && context.mapWindow().toolBox().canToggleShearTool();
-    },
-    [](const auto& context) {
-      return context.hasDocument() && context.mapWindow().toolBox().shearToolActive();
-    },
-    std::filesystem::path{"ShearTool.svg"},
-  }));
-  toolsMenu.addItem(addAction(Action{
-    "Menu/Edit/Tools/Vertex Tool",
-    QObject::tr("Vertex Tool"),
-    ActionContext::Any,
-    QKeySequence{Qt::Key_V},
-    [](auto& context) { context.mapWindow().toolBox().toggleVertexTool(); },
-    [](const auto& context) {
-      return context.hasDocument()
-             && context.mapWindow().toolBox().canToggleAnyVertexTool();
-    },
-    [](const auto& context) {
-      return context.hasDocument() && context.mapWindow().toolBox().vertexToolActive();
-    },
-    std::filesystem::path{"VertexTool.svg"},
-  }));
-  toolsMenu.addItem(addAction(Action{
-    "Menu/Edit/Tools/Edge Tool",
-    QObject::tr("Edge Tool"),
-    ActionContext::Any,
-    QKeySequence{Qt::Key_E},
-    [](auto& context) { context.mapWindow().toolBox().toggleEdgeTool(); },
-    [](const auto& context) {
-      return context.hasDocument()
-             && context.mapWindow().toolBox().canToggleAnyVertexTool();
-    },
-    [](const auto& context) {
-      return context.hasDocument() && context.mapWindow().toolBox().edgeToolActive();
-    },
-    std::filesystem::path{"EdgeTool.svg"},
-  }));
-  toolsMenu.addItem(addAction(Action{
-    "Menu/Edit/Tools/Face Tool",
-    QObject::tr("Face Tool"),
-    ActionContext::Any,
-    QKeySequence{Qt::Key_F},
-    [](auto& context) { context.mapWindow().toolBox().toggleFaceTool(); },
-    [](const auto& context) {
-      return context.hasDocument()
-             && context.mapWindow().toolBox().canToggleAnyVertexTool();
-    },
-    [](const auto& context) {
-      return context.hasDocument() && context.mapWindow().toolBox().faceToolActive();
-    },
-    std::filesystem::path{"FaceTool.svg"},
-  }));
-  toolsMenu.addItem(addAction(Action{
-    "Menu/Edit/Tools/Control Point Tool",
-    QObject::tr("Control Point Tool"),
-    ActionContext::Any,
-    QKeySequence{Qt::Key_P},
-    [](auto& context) { context.mapWindow().toolBox().toggleControlPointTool(); },
-    [](const auto& context) {
-      return context.hasDocument()
-             && context.mapWindow().toolBox().canToggleControlPointTool();
-    },
-    [](const auto& context) {
-      return context.hasDocument()
-             && context.mapWindow().toolBox().controlPointToolActive();
-    },
-    std::filesystem::path{"ControlPointTool.svg"},
-  }));
+  toolsMenu.addItem(addAction(
+    Action{
+      "Menu/Edit/Tools/Brush Tool",
+      QObject::tr("Brush Tool"),
+      ActionContext::Any,
+      QKeySequence{Qt::Key_B},
+      [](auto& context) { context.mapWindow().toolBox().toggleAssembleBrushTool(); },
+      [](const auto& context) {
+        return context.hasDocument()
+               && context.mapWindow().toolBox().canToggleAssembleBrushTool();
+      },
+      [](const auto& context) {
+        return context.hasDocument()
+               && context.mapWindow().toolBox().assembleBrushToolActive();
+      },
+      std::filesystem::path{"BrushTool.svg"},
+      QObject::tr("Create a convex brush from points"),
+    }));
+  toolsMenu.addItem(addAction(
+    Action{
+      "Menu/Edit/Tools/Clip Tool",
+      QObject::tr("Clip Tool"),
+      ActionContext::Any,
+      QKeySequence{Qt::Key_C},
+      [](auto& context) { context.mapWindow().toolBox().toggleClipTool(); },
+      [](const auto& context) {
+        return context.hasDocument() && context.mapWindow().toolBox().canToggleClipTool();
+      },
+      [](const auto& context) {
+        return context.hasDocument() && context.mapWindow().toolBox().clipToolActive();
+      },
+      std::filesystem::path{"ClipTool.svg"},
+      QObject::tr("Split brushes with a clipping plane"),
+    }));
+  toolsMenu.addItem(addAction(
+    Action{
+      "Menu/Edit/Tools/Rotate Tool",
+      QObject::tr("Rotate Tool"),
+      ActionContext::Any,
+      QKeySequence{Qt::Key_R},
+      [](auto& context) { context.mapWindow().toolBox().toggleRotateTool(); },
+      [](const auto& context) {
+        return context.hasDocument()
+               && context.mapWindow().toolBox().canToggleRotateTool();
+      },
+      [](const auto& context) {
+        return context.hasDocument() && context.mapWindow().toolBox().rotateToolActive();
+      },
+      std::filesystem::path{"RotateTool.svg"},
+      QObject::tr("Rotate selected objects"),
+    }));
+  toolsMenu.addItem(addAction(
+    Action{
+      "Menu/Edit/Tools/Sweep Tool",
+      QObject::tr("Sweep Tool"),
+      ActionContext::Any,
+      QKeySequence{Qt::Key_Y},
+      [](auto& context) { context.mapWindow().toolBox().toggleSweepTool(); },
+      [](const auto& context) {
+        return context.hasDocument()
+               && context.mapWindow().toolBox().canToggleSweepTool();
+      },
+      [](const auto& context) {
+        return context.hasDocument() && context.mapWindow().toolBox().sweepToolActive();
+      },
+      std::filesystem::path{"SweepTool.svg"},
+      QObject::tr("Sweep a profile along a path"),
+    }));
+  toolsMenu.addItem(addAction(
+    Action{
+      "Menu/Edit/Tools/Scale Tool",
+      QObject::tr("Scale Tool"),
+      ActionContext::Any,
+      QKeySequence{Qt::Key_T},
+      [](auto& context) { context.mapWindow().toolBox().toggleScaleTool(); },
+      [](const auto& context) {
+        return context.hasDocument()
+               && context.mapWindow().toolBox().canToggleScaleTool();
+      },
+      [](const auto& context) {
+        return context.hasDocument() && context.mapWindow().toolBox().scaleToolActive();
+      },
+      std::filesystem::path{"ScaleTool.svg"},
+      QObject::tr("Scale selected objects"),
+    }));
+  toolsMenu.addItem(addAction(
+    Action{
+      "Menu/Edit/Tools/Shear Tool",
+      QObject::tr("Shear Tool"),
+      ActionContext::Any,
+      QKeySequence{Qt::Key_G},
+      [](auto& context) { context.mapWindow().toolBox().toggleShearTool(); },
+      [](const auto& context) {
+        return context.hasDocument()
+               && context.mapWindow().toolBox().canToggleShearTool();
+      },
+      [](const auto& context) {
+        return context.hasDocument() && context.mapWindow().toolBox().shearToolActive();
+      },
+      std::filesystem::path{"ShearTool.svg"},
+      QObject::tr("Shear selected brushes"),
+    }));
+  toolsMenu.addItem(addAction(
+    Action{
+      "Menu/Edit/Tools/Vertex Tool",
+      QObject::tr("Vertex Tool"),
+      ActionContext::Any,
+      QKeySequence{Qt::Key_V},
+      [](auto& context) { context.mapWindow().toolBox().toggleVertexTool(); },
+      [](const auto& context) {
+        return context.hasDocument()
+               && context.mapWindow().toolBox().canToggleAnyVertexTool();
+      },
+      [](const auto& context) {
+        return context.hasDocument() && context.mapWindow().toolBox().vertexToolActive();
+      },
+      std::filesystem::path{"VertexTool.svg"},
+      QObject::tr("Move and edit brush vertices"),
+    }));
+  toolsMenu.addItem(addAction(
+    Action{
+      "Menu/Edit/Tools/Edge Tool",
+      QObject::tr("Edge Tool"),
+      ActionContext::Any,
+      QKeySequence{Qt::Key_E},
+      [](auto& context) { context.mapWindow().toolBox().toggleEdgeTool(); },
+      [](const auto& context) {
+        return context.hasDocument()
+               && context.mapWindow().toolBox().canToggleAnyVertexTool();
+      },
+      [](const auto& context) {
+        return context.hasDocument() && context.mapWindow().toolBox().edgeToolActive();
+      },
+      std::filesystem::path{"EdgeTool.svg"},
+      QObject::tr("Move and edit brush edges"),
+    }));
+  toolsMenu.addItem(addAction(
+    Action{
+      "Menu/Edit/Tools/Face Tool",
+      QObject::tr("Face Tool"),
+      ActionContext::Any,
+      QKeySequence{Qt::Key_F},
+      [](auto& context) { context.mapWindow().toolBox().toggleFaceTool(); },
+      [](const auto& context) {
+        return context.hasDocument()
+               && context.mapWindow().toolBox().canToggleAnyVertexTool();
+      },
+      [](const auto& context) {
+        return context.hasDocument() && context.mapWindow().toolBox().faceToolActive();
+      },
+      std::filesystem::path{"FaceTool.svg"},
+      QObject::tr("Move and edit brush faces"),
+    }));
+  toolsMenu.addItem(addAction(
+    Action{
+      "Menu/Edit/Tools/Control Point Tool",
+      QObject::tr("Control Point Tool"),
+      ActionContext::Any,
+      QKeySequence{Qt::Key_P},
+      [](auto& context) { context.mapWindow().toolBox().toggleControlPointTool(); },
+      [](const auto& context) {
+        return context.hasDocument()
+               && context.mapWindow().toolBox().canToggleControlPointTool();
+      },
+      [](const auto& context) {
+        return context.hasDocument()
+               && context.mapWindow().toolBox().controlPointToolActive();
+      },
+      std::filesystem::path{"ControlPointTool.svg"},
+      QObject::tr("Move patch control points"),
+    }));
   toolsMenu.addItem(addAction(Action{
     "Controls/Map view/Deactivate current tool",
     QObject::tr("Deactivate Current Tool"),
