@@ -61,17 +61,23 @@ jobs:
       - name: Install build and graphics dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-13 g++-13 ninja-build pandoc pkg-config autoconf automake libtool libxi-dev libxrandr-dev libxxf86vm-dev freeglut3-dev mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libxkbcommon-dev libxkbcommon-x11-0 libgtk-3-0t64 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libwayland-client0 libwayland-cursor0 libwayland-egl1 xvfb xauth patchelf zsync
+          sudo apt-get install -y gcc-13 g++-13 ninja-build pandoc pkg-config autoconf automake libtool libxi-dev libxrandr-dev libxxf86vm-dev freeglut3-dev mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev libfreeimage-dev libfreetype6-dev libtinyxml2-dev libxkbcommon-dev libxkbcommon-x11-0 libgtk-3-0t64 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libwayland-client0 libwayland-cursor0 libwayland-egl1 xvfb xauth patchelf zsync
       - uses: jurplel/install-qt-action@v4
         with:
           version: 6.10.*
           cache: true
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
+        id: dependencies
         with:
           path: ~/.cache/vcpkg/archives
           key: reyond-linux-gcc13-${{ hashFiles('vcpkg.json', '.gitmodules', 'vcpkg-overlay-ports/**') }}
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR" -DTB_ENABLE_PCH=1 -DCMAKE_INSTALL_PREFIX=/usr
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/cmake/packages;$QT_ROOT_DIR" -DTB_ENABLE_PCH=1 -DCMAKE_INSTALL_PREFIX=/usr
+      - uses: actions/cache/save@v4
+        if: always() && steps.dependencies.outputs.cache-hit != 'true'
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: ${{ steps.dependencies.outputs.cache-primary-key }}
       - name: Build editor and tests
         run: cmake --build build --target TrenchBroom TbMdlLibTest TbUiLibTest --parallel 3 -- -k 0
       - name: Geometry tests
