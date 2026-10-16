@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/release.yml'
       - 'scripts/release/**'
+      - 'app/TrenchBroom/cmake/AppImageGenerator.cmake.in'
   workflow_dispatch:
 
 permissions:
@@ -88,6 +89,16 @@ jobs:
         run: xvfb-run -a env QT_QPA_PLATFORM=xcb LIBGL_ALWAYS_SOFTWARE=1 ./TbUiLibTest 'FractureDialog,PerforateDialog,SettleDialog,Actions,MapWindow,Geometry tool panels*,Guide screenshot*,Issue browser drops*,Map view bar follows*'
       - name: Package and launch AppImage
         run: bash scripts/release/package-linux.sh
+      - name: Preserve packaging diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Linux-packaging-diagnostics
+          path: |
+            build/_CPack_Packages/Linux/External/*.log
+            scripts/release/linux-smoke/
+          if-no-files-found: ignore
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         with:
           name: ReyondBroom-Linux

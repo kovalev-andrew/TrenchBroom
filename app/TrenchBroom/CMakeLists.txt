@@ -253,7 +253,9 @@ endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD")
     # Make executable name conventional lowercase on linux
     string(TOLOWER TrenchBroom APP_TARGET_NAME_LOWER)
-    set_target_properties(TrenchBroom PROPERTIES OUTPUT_NAME ${APP_TARGET_NAME_LOWER})
+    set_target_properties(TrenchBroom PROPERTIES
+        OUTPUT_NAME ${APP_TARGET_NAME_LOWER}
+        RUNTIME_OUTPUT_NAME ${APP_TARGET_NAME_LOWER})
 endif()
 
 function(tb_add_post_build_copy_directory target source destination)
