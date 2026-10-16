@@ -1,8 +1,9 @@
 # ReyondBroom
 
 [![Скачать для Windows x64](https://img.shields.io/badge/Скачать_для_Windows_x64-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Windows.zip)
+[![Скачать для Linux x86_64](https://img.shields.io/badge/Скачать_для_Linux_x86__64-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Linux-x86_64.AppImage)
 
-[Все загрузки и описание релиза](https://github.com/reyond9079/ReyondBroom/releases/latest) · AppImage для Linux готовится.
+[Все загрузки, контрольные суммы SHA-256 и описание релиза](https://github.com/reyond9079/ReyondBroom/releases/latest)
 
 [English (основной)](README.md) · **Русский**
 
@@ -23,6 +24,17 @@ ReyondBroom — набор инструментов для создания и �
 Скачайте [ReyondBroom для Windows x64](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Windows.zip).
 Распакуйте ZIP в отдельную папку и запустите `TrenchBroom.exe`.
 Исполняемый файл сохраняет название исходного редактора.
+
+Для **Linux x86_64** скачайте [AppImage](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Linux-x86_64.AppImage).
+Он собран и проверен на Ubuntu 24.04, Qt включён; старые дистрибутивы не проверены.
+Разрешите запуск файла и откройте редактор:
+
+```sh
+chmod +x ReyondBroom-Linux-x86_64.AppImage
+./ReyondBroom-Linux-x86_64.AppImage
+```
+
+Если FUSE недоступен, добавьте при запуске `--appimage-extract-and-run`.
 
 Выделите браш → **Edit → CSG → Fracture…** → **Apply**. Сохраняя выделение
 осколков, откройте **Edit → CSG → Settle…** → **Simulate / Restart** → **Apply**.

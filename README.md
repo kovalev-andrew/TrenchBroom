@@ -1,8 +1,9 @@
 # ReyondBroom
 
 [![Download for Windows x64](https://img.shields.io/badge/Download_for_Windows_x64-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Windows.zip)
+[![Download for Linux x86_64](https://img.shields.io/badge/Download_for_Linux_x86__64-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Linux-x86_64.AppImage)
 
-[All downloads and release notes](https://github.com/reyond9079/ReyondBroom/releases/latest) · Linux AppImage is being prepared.
+[All downloads, SHA-256 checksums and release notes](https://github.com/reyond9079/ReyondBroom/releases/latest)
 
 <img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/a5c4d85d-7bad-4b55-943c-c7546aa6bc71" />
 
@@ -26,6 +27,17 @@ Development happens on the [`ReyondBroom` branch](https://github.com/reyond9079/
 Download [ReyondBroom for Windows x64](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Windows.zip).
 Extract the ZIP into a separate folder and run `TrenchBroom.exe`.
 The executable retains the upstream editor name.
+
+For **Linux x86_64**, download the [AppImage](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Linux-x86_64.AppImage).
+It is built and tested on Ubuntu 24.04 with Qt included; older distributions are not verified.
+Make it executable and launch it:
+
+```sh
+chmod +x ReyondBroom-Linux-x86_64.AppImage
+./ReyondBroom-Linux-x86_64.AppImage
+```
+
+If FUSE is unavailable, launch with `--appimage-extract-and-run`.
 
 Select a brush → **Edit → CSG → Fracture…** → **Apply**. Keep the fragments selected,
 then choose **Edit → CSG → Settle…** → **Simulate / Restart** → **Apply**.
