@@ -391,7 +391,7 @@ public:
     : QObject{&controller}
     , m_controller{controller}
     , m_script{std::move(script)}
-    , m_steps{m_script.value("steps").toArray()}
+    , m_steps(m_script.value("steps").toArray())
     , m_output{std::move(output)}
   {
   }
