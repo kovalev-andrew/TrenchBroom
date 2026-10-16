@@ -295,6 +295,62 @@ TEST_CASE("Geometry tool panels - numeric input and face selection")
     CHECK(map.worldNode().defaultLayer()->childCount() == 1u);
   }
 
+  SECTION("Bevel face boundary previews on scene and cancels exactly")
+  {
+    const auto original = source->brush();
+    mdl::deselectAll(map);
+    mdl::selectBrushFaces(map, {{source, *original.findFace(vm::vec3d{0, 0, 1})}});
+    REQUIRE(toolbox.canToggleBevelTool());
+    toolbox.toggleBevelTool();
+    auto& tool = toolbox.edgeTool();
+    CHECK(tool.bevelMode() == 1);
+    tool.setBevelWidth(16);
+    REQUIRE(tool.bevelPreviewValid());
+    CHECK(source->brush().faceCount() > original.faceCount());
+    tool.setBevelWidth(24);
+    tool.setBevelWidth(16);
+    CHECK(tool.bevelPreviewValid());
+    tool.cancelBevelTool();
+    CHECK(source->brush() == original);
+  }
+
+  SECTION("Bevel vertex selection survives tool switching and commits one Undo")
+  {
+    const auto original = source->brush();
+    toolbox.toggleVertexTool();
+    const auto vertex = *map.nodeHandles().allHandles<mdl::VertexHandle>().begin();
+    map.nodeHandles().selectHandle(vertex);
+    toolbox.toggleBevelTool();
+    auto& tool = toolbox.edgeTool();
+    REQUIRE(tool.bevelMode() == 2);
+    tool.setBevelWidth(16);
+    REQUIRE(tool.bevelPreviewValid());
+    const auto preview = source->brush();
+    tool.applyBevelTool();
+    CHECK(source->brush() == preview);
+    CHECK_FALSE(tool.bevelToolActive());
+    map.undoCommand();
+    CHECK(source->brush() == original);
+    map.redoCommand();
+    CHECK(source->brush() == preview);
+  }
+
+  SECTION("Invalid unclamped bevel restores the source and disables Apply")
+  {
+    const auto original = source->brush();
+    mdl::deselectAll(map);
+    mdl::selectBrushFaces(map, {{source, *original.findFace(vm::vec3d{0, 0, 1})}});
+    toolbox.toggleBevelTool();
+    auto& tool = toolbox.edgeTool();
+    tool.setBevelWidth(4096);
+    tool.setBevelClamp(false);
+    CHECK_FALSE(tool.bevelPreviewValid());
+    CHECK(source->brush() == original);
+    tool.applyBevelTool();
+    CHECK(source->brush() == original);
+    tool.cancelBevelTool();
+  }
+
   SECTION("Inset can pick the face surface and update its amount")
   {
     toolbox.toggleInsetTool();

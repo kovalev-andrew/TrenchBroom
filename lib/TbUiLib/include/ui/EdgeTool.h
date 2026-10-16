@@ -20,6 +20,8 @@
 #pragma once
 
 #include "mdl/Brush.h"
+#include "mdl/BrushBevel.h"
+#include "mdl/BrushFaceHandle.h"
 #include "ui/BrushHandleToolBase.h"
 
 #include <optional>
@@ -80,6 +82,15 @@ public:
   void setBevelCurve(double curve);
   void setBevelProportion(double proportion);
   void setBevelKeepCutGeometry(bool keepCutGeometry);
+  void prepareBevelSelection();
+  int bevelMode() const;
+  void setBevelMode(int mode);
+  bool bevelClamp() const;
+  void setBevelClamp(bool enabled);
+  bool bevelRadius() const;
+  void setBevelRadius(bool enabled);
+  const std::string& bevelStatus() const;
+  bool bevelPreviewValid() const;
 
   Notifier<EdgeTool&> bevelSettingsDidChangeNotifier;
 
@@ -122,6 +133,24 @@ private:
   std::optional<ChamferState> m_chamfer;
   BevelSettings m_bevelSettings;
   bool m_bevelToolActive = false;
+  struct ConvexTarget
+  {
+    mdl::BrushNode* node;
+    mdl::Brush source;
+    mdl::BevelSelection selection;
+  };
+  std::vector<ConvexTarget> m_convexTargets;
+  std::vector<mdl::BrushFaceHandle> m_bevelFaces;
+  std::vector<vm::vec3d> m_bevelVertices;
+  std::vector<vm::segment3d> m_bevelEdges;
+  int m_bevelMode = 0;
+  bool m_bevelClamp = true;
+  bool m_bevelRadius = true;
+  bool m_bevelTransaction = false;
+  bool m_bevelPreviewValid = false;
+  std::string m_bevelStatus;
+  void cancelConvexPreview();
+  bool applyConvexPreview();
 
   bool beginChamfer();
   bool applyChamferPreview(

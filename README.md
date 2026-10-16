@@ -17,6 +17,8 @@ Development happens on the [`ReyondBroom` branch](https://github.com/reyond9079/
 
 - **[Perforate](PERFORATE.md)** creates random polygonal through-holes, with exact
   counts, side counts, size ranges, spacing and optional selected `func_wall` plugs.
+- **[Bevel](BEVEL.md)** rounds selected face boundaries, edges or vertices with a
+  scene preview, radius, segments, convex profiles and independent per-brush Clamp.
 - **[Fracture](FRACTURE.md)** splits one brush into 2–128 convex Voronoi fragments,
   with a seed, cut material, wireframe preview and a single Undo operation.
 - **[Settle](SETTLE.md)** simulates gravity and collisions for 1–128 selected brushes,

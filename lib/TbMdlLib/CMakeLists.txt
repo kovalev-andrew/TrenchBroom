@@ -8,6 +8,7 @@ target_sources(TbMdlLib
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BasicShapes.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BezierPatch.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Brush.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushBevel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushBuilder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushFace.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BrushFaceAttributes.cpp

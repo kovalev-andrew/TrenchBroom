@@ -1,0 +1,78 @@
+name: ReyondBroom Linux build and tests
+on:
+  push:
+    branches: [ReyondBroom]
+    paths-ignore:
+      - '**/*.md'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      CC: gcc-13
+      CXX: g++-13
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+      QT_QPA_PLATFORM: offscreen
+      APPIMAGE_EXTRACT_AND_RUN: '1'
+      VCPKG_MAX_CONCURRENCY: '3'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - name: Install build and graphics dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-13 g++-13 ninja-build pandoc pkg-config autoconf automake libtool libxi-dev libxrandr-dev libxxf86vm-dev freeglut3-dev mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev libfreeimage-dev libfreetype6-dev libtinyxml2-dev libxkbcommon-dev libxkbcommon-x11-0 libgtk-3-0t64 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libwayland-client0 libwayland-cursor0 libwayland-egl1 xvfb xauth patchelf zsync
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.10.*
+          cache: true
+      - uses: actions/cache/restore@v4
+        id: dependencies
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: reyond-linux-gcc13-${{ hashFiles('vcpkg.json', '.gitmodules', 'vcpkg-overlay-ports/**') }}
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/cmake/packages;$QT_ROOT_DIR" -DTB_ENABLE_PCH=1 -DCMAKE_INSTALL_PREFIX=/usr
+      - uses: actions/cache/save@v4
+        if: always() && steps.dependencies.outputs.cache-hit != 'true'
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: ${{ steps.dependencies.outputs.cache-primary-key }}
+      - name: Build editor and tests
+        run: cmake --build build --target TrenchBroom TbMdlLibTest TbUiLibTest --parallel 3 -- -k 0
+      - name: Geometry tests
+        working-directory: build/lib/TbMdlLib/test
+        run: ./TbMdlLibTest 'BrushBevel,BrushFracture,BrushPerforate,BrushSettle,Map_Geometry,Grid,Brush,NodeHandleManager'
+      - name: Interface tests
+        working-directory: build/lib/TbUiLib/test
+        run: xvfb-run -a env QT_QPA_PLATFORM=xcb LIBGL_ALWAYS_SOFTWARE=1 ./TbUiLibTest 'FractureDialog,PerforateDialog,SettleDialog,Actions,MapWindow,Geometry tool panels*,Guide screenshot*,Issue browser drops*,Map view bar follows*'
+      - name: Package and launch AppImage
+        run: bash scripts/release/package-linux.sh
+      - name: Preserve packaging diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Linux-packaging-diagnostics
+          path: |
+            build/_CPack_Packages/Linux/External/*.log
+            scripts/release/linux-smoke/
+            release/ReyondBroom-Linux-x86_64.AppImage
+            release/linux-build-info.json
+          if-no-files-found: ignore
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ReyondBroom-Linux
+          path: |
+            release/ReyondBroom-Linux-x86_64.AppImage
+            release/ReyondBroom-Linux-x86_64.AppImage.sha256
+            release/linux-build-info.json
+          retention-days: 14
+

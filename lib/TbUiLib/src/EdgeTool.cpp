@@ -20,6 +20,8 @@
 #include "ui/EdgeTool.h"
 
 #include <QCheckBox>
+#include <QComboBox>
+#include <QVBoxLayout>
 #include <QDoubleSpinBox>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -42,6 +44,7 @@
 #include "mdl/Map_Nodes.h"
 #include "mdl/Map_Selection.h"
 #include "mdl/NodeContents.h"
+#include "mdl/Selection.h"
 #include "mdl/TransactionScope.h"
 #include "mdl/WorldNode.h"
 #include "ui/MapDocument.h"
@@ -82,157 +85,115 @@ constexpr auto MaxChamferProportion = 0.95;
 
 class EdgeBevelToolPage : public QWidget
 {
-private:
   EdgeTool& m_tool;
-  NotifierConnection m_notifierConnection;
-  QSpinBox* m_segments = nullptr;
-  QDoubleSpinBox* m_width = nullptr;
-  QDoubleSpinBox* m_curve = nullptr;
-  QDoubleSpinBox* m_proportion = nullptr;
-  QCheckBox* m_keepCutGeometry = nullptr;
-  QWidget* m_content = nullptr;
-  QPushButton* m_default = nullptr;
-  QPushButton* m_apply = nullptr;
+  NotifierConnection m_connection;
+  QComboBox* m_mode;
+  QComboBox* m_sizeType;
+  QDoubleSpinBox* m_size;
+  QDoubleSpinBox* m_profile;
+  QSpinBox* m_segments;
+  QCheckBox* m_clamp;
+  QLabel* m_status;
+  QPushButton* m_apply;
 
 public:
-  explicit EdgeBevelToolPage(EdgeTool& tool, QWidget* parent)
+  EdgeBevelToolPage(EdgeTool& tool, QWidget* parent)
     : QWidget{parent}
     , m_tool{tool}
   {
-    createGui();
-  }
-
-private:
-  void createGui()
-  {
-    auto* label = new QLabel{tr("Bevel")};
-
+    auto* layout = new QVBoxLayout{this};
+    auto* row = new QHBoxLayout{};
+    layout->addLayout(row);
+    row->addWidget(new QLabel{tr("Bevel")});
+    m_mode = new QComboBox{};
+    m_mode->setObjectName("BevelMode");
+    m_mode->addItems({tr("Edges"), tr("Face boundary"), tr("Vertices")});
+    m_mode->setToolTip(tr(
+      "Select faces or vertices before opening Bevel. Edges can also be selected before "
+      "preview."));
+    row->addWidget(m_mode);
+    m_sizeType = new QComboBox{};
+    m_sizeType->addItems({tr("Radius"), tr("Offset")});
+    row->addWidget(m_sizeType);
+    m_size = new QDoubleSpinBox{};
+    m_size->setObjectName("BevelSize");
+    m_size->setRange(0, 131072);
+    m_size->setDecimals(3);
+    m_size->setKeyboardTracking(false);
+    m_size->setToolTip(tr("Bevel width"));
+    row->addWidget(m_size);
+    row->addWidget(new QLabel{tr("Segments")});
     m_segments = new QSpinBox{};
+    m_segments->setRange(1, 16);
     m_segments->setKeyboardTracking(false);
-    m_segments->setRange(0, static_cast<int>(MaxChamferSegments));
-    m_segments->setToolTip(tr("Number of bevel segments"));
-
-    m_width = new QDoubleSpinBox{};
-    m_width->setKeyboardTracking(false);
-    m_width->setRange(0.0, 131072.0);
-    m_width->setDecimals(3);
-    m_width->setSingleStep(1.0);
-    m_width->setToolTip(tr("Bevel width"));
-
-    m_curve = new QDoubleSpinBox{};
-    m_curve->setKeyboardTracking(false);
-    m_curve->setRange(-1.0, 1.0);
-    m_curve->setDecimals(3);
-    m_curve->setSingleStep(0.05);
-    m_curve->setToolTip(tr("Bevel curve, negative values create an inward bevel"));
-
-    m_proportion = new QDoubleSpinBox{};
-    m_proportion->setKeyboardTracking(false);
-    m_proportion->setRange(-MaxChamferProportion, MaxChamferProportion);
-    m_proportion->setDecimals(3);
-    m_proportion->setSingleStep(0.05);
-    m_proportion->setToolTip(tr("Move the bevel proportion toward either side"));
-
-    m_keepCutGeometry = new QCheckBox{tr("Keep cut geometry")};
-    m_keepCutGeometry->setToolTip(
-      tr("Keep the geometry removed by the bevel as separate brushes"));
-
-    m_default = new QPushButton{tr("Default")};
+    row->addWidget(m_segments);
+    row->addWidget(new QLabel{tr("Profile")});
+    m_profile = new QDoubleSpinBox{};
+    m_profile->setObjectName("BevelProfile");
+    m_profile->setRange(0, 0.99);
+    m_profile->setDecimals(3);
+    m_profile->setSingleStep(0.05);
+    m_profile->setKeyboardTracking(false);
+    m_profile->setToolTip(tr(
+      "Convex profile: 0 = flat chamfer, 0.5 = round, toward 1 = square. Radius refers "
+      "to the round reference profile."));
+    row->addWidget(m_profile);
+    m_clamp = new QCheckBox{tr("Clamp per brush")};
+    row->addWidget(m_clamp);
+    row->addStretch();
+    auto* second = new QHBoxLayout{};
+    layout->addLayout(second);
+    m_status = new QLabel{};
+    m_status->setWordWrap(true);
+    second->addWidget(m_status, 1);
     m_apply = new QPushButton{tr("Apply")};
-
+    second->addWidget(m_apply);
+    auto* cancel = new QPushButton{tr("Cancel")};
+    second->addWidget(cancel);
     connect(
-      m_segments,
-      QOverload<int>::of(&QSpinBox::valueChanged),
-      this,
-      [&](const int value) { m_tool.setBevelSegments(static_cast<size_t>(value)); });
+      m_mode, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [&](int i) {
+        m_tool.setBevelMode(i);
+      });
     connect(
-      m_width,
+      m_sizeType, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [&](int i) {
+        m_tool.setBevelRadius(i == 0);
+      });
+    connect(
+      m_size, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [&](double v) {
+        m_tool.setBevelWidth(v);
+      });
+    connect(
+      m_profile,
       QOverload<double>::of(&QDoubleSpinBox::valueChanged),
       this,
-      [&](const double value) { m_tool.setBevelWidth(value); });
-    connect(
-      m_curve,
-      QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-      this,
-      [&](const double value) { m_tool.setBevelCurve(value); });
-    connect(
-      m_proportion,
-      QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-      this,
-      [&](const double value) { m_tool.setBevelProportion(value); });
-    connect(m_keepCutGeometry, &QCheckBox::toggled, this, [&](const bool checked) {
-      m_tool.setBevelKeepCutGeometry(checked);
+      [&](double v) { m_tool.setBevelCurve(v); });
+    connect(m_segments, QOverload<int>::of(&QSpinBox::valueChanged), this, [&](int v) {
+      m_tool.setBevelSegments(size_t(v));
     });
-    connect(m_default, &QPushButton::clicked, this, [&] { m_tool.resetBevelSettings(); });
+    connect(m_clamp, &QCheckBox::toggled, this, [&](bool v) { m_tool.setBevelClamp(v); });
     connect(m_apply, &QPushButton::clicked, this, [&] { m_tool.applyBevelTool(); });
-
-    m_notifierConnection +=
-      m_tool.bevelSettingsDidChangeNotifier.connect([&](auto&) { updateControls(); });
-    m_notifierConnection +=
-      m_tool.toolActivatedNotifier.connect([&](auto&) { updateControls(); });
-    m_notifierConnection +=
-      m_tool.toolDeactivatedNotifier.connect([&](auto&) { updateControls(); });
-
-    auto* controlsLayout = new QHBoxLayout{};
-    controlsLayout->setContentsMargins(0, 0, 0, 0);
-    controlsLayout->setSpacing(LayoutConstants::MediumHMargin);
-    controlsLayout->addWidget(label, 0, Qt::AlignVCenter);
-    controlsLayout->addWidget(new QLabel{tr("Segments")}, 0, Qt::AlignVCenter);
-    controlsLayout->addWidget(m_segments, 0, Qt::AlignVCenter);
-    controlsLayout->addWidget(new QLabel{tr("Width")}, 0, Qt::AlignVCenter);
-    controlsLayout->addWidget(m_width, 0, Qt::AlignVCenter);
-    controlsLayout->addWidget(new QLabel{tr("Curve")}, 0, Qt::AlignVCenter);
-    controlsLayout->addWidget(m_curve, 0, Qt::AlignVCenter);
-    controlsLayout->addWidget(new QLabel{tr("Proportion")}, 0, Qt::AlignVCenter);
-    controlsLayout->addWidget(m_proportion, 0, Qt::AlignVCenter);
-    controlsLayout->addWidget(m_keepCutGeometry, 0, Qt::AlignVCenter);
-    controlsLayout->addWidget(m_default, 0, Qt::AlignVCenter);
-    controlsLayout->addWidget(m_apply, 0, Qt::AlignVCenter);
-    controlsLayout->addStretch(1);
-
-    m_content = new QWidget{this};
-    m_content->setLayout(controlsLayout);
-
-    auto* outerLayout = new QHBoxLayout{};
-    outerLayout->setContentsMargins(0, 0, 0, 0);
-    outerLayout->addWidget(m_content);
-    setLayout(outerLayout);
+    connect(cancel, &QPushButton::clicked, this, [&] { m_tool.cancelBevelTool(); });
+    m_connection +=
+      tool.bevelSettingsDidChangeNotifier.connect([&](auto&) { updateControls(); });
     updateControls();
   }
-
   void updateControls()
   {
-    const auto active = m_tool.bevelToolActive();
-    m_content->setVisible(active);
-
-    {
-      const auto blocker = QSignalBlocker{m_segments};
-      m_segments->setValue(static_cast<int>(m_tool.bevelSegments()));
-    }
-    {
-      const auto blocker = QSignalBlocker{m_width};
-      m_width->setValue(m_tool.bevelWidth());
-    }
-    {
-      const auto blocker = QSignalBlocker{m_curve};
-      m_curve->setValue(m_tool.bevelCurve());
-    }
-    {
-      const auto blocker = QSignalBlocker{m_proportion};
-      m_proportion->setValue(m_tool.bevelProportion());
-    }
-    {
-      const auto blocker = QSignalBlocker{m_keepCutGeometry};
-      m_keepCutGeometry->setChecked(m_tool.bevelKeepCutGeometry());
-    }
-
-    m_segments->setEnabled(active);
-    m_width->setEnabled(active);
-    m_curve->setEnabled(active);
-    m_proportion->setEnabled(active);
-    m_keepCutGeometry->setEnabled(active);
-    m_default->setEnabled(active);
-    m_apply->setEnabled(active);
+    const auto a = QSignalBlocker{m_mode};
+    const auto b = QSignalBlocker{m_sizeType};
+    const auto c = QSignalBlocker{m_size};
+    const auto d = QSignalBlocker{m_profile};
+    const auto e = QSignalBlocker{m_segments};
+    const auto f = QSignalBlocker{m_clamp};
+    m_mode->setCurrentIndex(m_tool.bevelMode());
+    m_sizeType->setCurrentIndex(m_tool.bevelRadius() ? 0 : 1);
+    m_size->setValue(m_tool.bevelWidth());
+    m_profile->setValue(m_tool.bevelCurve());
+    m_segments->setValue(int(m_tool.bevelSegments()));
+    m_clamp->setChecked(m_tool.bevelClamp());
+    m_status->setText(QString::fromStdString(m_tool.bevelStatus()));
+    m_apply->setEnabled(m_tool.bevelPreviewValid());
+    setVisible(m_tool.bevelToolActive());
   }
 };
 
@@ -1516,6 +1477,8 @@ void EdgeTool::pick(
   const double handleRadius,
   mdl::PickResult& pickResult) const
 {
+  if (m_bevelTransaction)
+    return;
   m_document.map().nodeHandles().pick<mdl::EdgeHandle>(
     pickResult, mdl::EdgeHandle::HandleHitType, pickRay, camera, handleRadius);
 }
@@ -1533,6 +1496,8 @@ std::tuple<vm::vec3d, vm::vec3d> EdgeTool::handlePositionAndHitPoint(
 
 EdgeTool::MoveResult EdgeTool::move(const vm::vec3d& delta)
 {
+  if (m_bevelToolActive)
+    return MoveResult::Deny;
   auto& map = m_document.map();
 
   const auto edgePositions =
@@ -1554,6 +1519,8 @@ std::string EdgeTool::actionName() const
 
 void EdgeTool::removeSelection()
 {
+  if (m_bevelToolActive)
+    return;
   auto& map = m_document.map();
 
   auto handles = map.nodeHandles().selectedHandles<mdl::EdgeHandle>();
@@ -1594,106 +1561,231 @@ bool EdgeTool::bevelKeepCutGeometry() const
   return m_bevelSettings.keepCutGeometry;
 }
 
+void EdgeTool::prepareBevelSelection()
+{
+  if (m_chamfer)
+    cancelChamfer();
+  auto& map = m_document.map();
+  m_bevelFaces = map.selection().brushFaces;
+  const auto selectedFaces =
+    mdl::FaceHandle::getPositions(map.nodeHandles().selectedHandles<mdl::FaceHandle>());
+  for (auto* node : map.selection().brushes)
+    for (const auto& polygon : selectedFaces)
+      if (const auto face = node->brush().findFace(polygon))
+        m_bevelFaces.emplace_back(node, *face);
+  m_bevelVertices = mdl::VertexHandle::getPositions(
+    map.nodeHandles().selectedHandles<mdl::VertexHandle>());
+  m_bevelEdges =
+    mdl::EdgeHandle::getPositions(map.nodeHandles().selectedHandles<mdl::EdgeHandle>());
+  m_bevelMode = !m_bevelFaces.empty() ? 1 : !m_bevelVertices.empty() ? 2 : 0;
+  m_convexTargets.clear();
+  auto nodes = map.selection().brushes;
+  for (const auto& face : m_bevelFaces)
+    if (std::ranges::find(nodes, face.node()) == nodes.end())
+      nodes.push_back(face.node());
+  for (auto* node : nodes)
+    m_convexTargets.push_back({node, node->brush(), {}});
+  if (!m_bevelFaces.empty())
+  {
+    mdl::deselectAll(map);
+    mdl::selectNodes(map, std::vector<mdl::Node*>{nodes.begin(), nodes.end()});
+  }
+}
+
 void EdgeTool::activateBevelTool()
 {
   if (m_bevelToolActive)
-  {
-    notifyBevelSettingsChanged();
     return;
-  }
-
   if (m_chamfer)
-  {
     cancelChamfer();
-  }
-
   m_bevelToolActive = true;
-  m_bevelSettings.segments = 0u;
+  m_bevelSettings.segments = 4;
   m_bevelSettings.width = std::max(1.0, grid().actualSize());
-  m_bevelSettings.curve = 1.0;
-  m_bevelSettings.proportion = 0.0;
-  m_bevelSettings.keepCutGeometry = false;
-  geometryHandles().deselectAll();
-
-  refreshViews();
+  m_bevelSettings.curve = 0.5;
+  m_bevelClamp = true;
+  applyConvexPreview();
   notifyBevelSettingsChanged();
+}
+
+void EdgeTool::cancelConvexPreview()
+{
+  if (m_bevelTransaction)
+  {
+    m_document.map().cancelTransaction();
+    m_bevelTransaction = false;
+  }
+  m_bevelPreviewValid = false;
 }
 
 void EdgeTool::cancelBevelTool()
 {
+  cancelConvexPreview();
   if (m_chamfer)
-  {
-    m_document.map().cancelTransaction();
-    m_chamfer = std::nullopt;
-  }
-
+    cancelChamfer();
   m_bevelToolActive = false;
-  m_bevelSettings.segments = 0u;
-  m_bevelSettings.width = std::max(1.0, grid().actualSize());
-  m_bevelSettings.curve = 1.0;
-  m_bevelSettings.proportion = 0.0;
-  m_bevelSettings.keepCutGeometry = false;
   geometryHandles().deselectAll();
-
   refreshViews();
   notifyBevelSettingsChanged();
 }
 
 void EdgeTool::applyBevelTool()
 {
-  if (!m_bevelToolActive)
+  if (!m_bevelToolActive || !m_bevelPreviewValid)
+    return;
+  auto& map = m_document.map();
+  if (!map.commitTransaction())
   {
+    m_bevelStatus = "Could not commit Bevel";
+    notifyBevelSettingsChanged();
     return;
   }
-
-  if (!m_chamfer && m_bevelSettings.segments > 0u)
-  {
-    applyBevelSettingsPreview();
-  }
-
-  finishChamfer();
-
-  auto& map = m_document.map();
-  geometryHandles().deselectAll();
-  mdl::deselectAll(map);
-
+  m_bevelTransaction = false;
+  m_bevelPreviewValid = false;
   m_bevelToolActive = false;
-  m_bevelSettings.segments = 0u;
-  m_bevelSettings.width = std::max(1.0, grid().actualSize());
-  m_bevelSettings.curve = 1.0;
-  m_bevelSettings.proportion = 0.0;
-  m_bevelSettings.keepCutGeometry = false;
-
+  geometryHandles().deselectAll();
   refreshViews();
   notifyBevelSettingsChanged();
 }
 
 void EdgeTool::resetBevelSettings()
 {
-  auto selectedEdges = geometryHandles().selectedHandles();
-  if (m_chamfer)
-  {
-    selectedEdges = m_chamfer->originalEdges;
-    m_document.map().cancelTransaction();
-    m_chamfer = std::nullopt;
-  }
-
-  m_bevelSettings.segments = 0u;
+  m_bevelSettings.segments = 4;
   m_bevelSettings.width = std::max(1.0, grid().actualSize());
-  m_bevelSettings.curve = 1.0;
-  m_bevelSettings.proportion = 0.0;
-  m_bevelSettings.keepCutGeometry = false;
-
-  geometryHandles().deselectAll();
-  geometryHandles().select(selectedEdges);
-
-  refreshViews();
+  m_bevelSettings.curve = 0.5;
+  m_bevelClamp = true;
+  applyConvexPreview();
   notifyBevelSettingsChanged();
+}
+int EdgeTool::bevelMode() const
+{
+  return m_bevelMode;
+}
+void EdgeTool::setBevelMode(int mode)
+{
+  m_bevelMode = std::clamp(mode, 0, 2);
+  applyConvexPreview();
+  notifyBevelSettingsChanged();
+}
+bool EdgeTool::bevelClamp() const
+{
+  return m_bevelClamp;
+}
+void EdgeTool::setBevelClamp(bool enabled)
+{
+  m_bevelClamp = enabled;
+  applyConvexPreview();
+  notifyBevelSettingsChanged();
+}
+bool EdgeTool::bevelRadius() const
+{
+  return m_bevelRadius;
+}
+void EdgeTool::setBevelRadius(bool enabled)
+{
+  m_bevelRadius = enabled;
+  applyConvexPreview();
+  notifyBevelSettingsChanged();
+}
+const std::string& EdgeTool::bevelStatus() const
+{
+  return m_bevelStatus;
+}
+bool EdgeTool::bevelPreviewValid() const
+{
+  return m_bevelPreviewValid;
+}
+
+bool EdgeTool::applyConvexPreview()
+{
+  if (!m_bevelToolActive)
+    return false;
+  auto& map = m_document.map();
+  if (!m_bevelTransaction && m_bevelMode == 0)
+  {
+    const auto handles = geometryHandles().selectedHandles();
+    if (!handles.empty())
+      m_bevelEdges = handles;
+  }
+  cancelConvexPreview();
+  auto updates = std::vector<std::pair<mdl::Node*, mdl::NodeContents>>{};
+  auto status = std::string{};
+  size_t index = 0;
+  for (auto& target : m_convexTargets)
+  {
+    ++index;
+    auto selected = mdl::BevelSelection{};
+    if (m_bevelMode == 1)
+    {
+      auto faces = std::vector<size_t>{};
+      for (const auto& face : m_bevelFaces)
+        if (face.node() == target.node)
+          faces.push_back(face.faceIndex());
+      selected.edges = mdl::bevelFaceBoundary(target.source, faces);
+    }
+    else if (m_bevelMode == 2)
+    {
+      for (const auto& v : m_bevelVertices)
+        if (target.source.hasVertex(v, 1e-5))
+          selected.vertices.push_back(v);
+    }
+    else
+      for (const auto& edge : m_bevelEdges)
+        if (target.source.hasEdge(edge, 1e-5))
+          selected.edges.push_back(edge);
+    if (selected.edges.empty() && selected.vertices.empty())
+      continue;
+    const auto parameters = mdl::BevelParameters{
+      m_bevelSettings.width,
+      m_bevelSettings.segments,
+      m_bevelSettings.curve,
+      m_bevelRadius ? mdl::BevelSize::Radius : mdl::BevelSize::Offset,
+      m_bevelClamp};
+    auto result = mdl::bevelBrush(
+      target.source,
+      map.worldBounds(),
+      map.worldNode().mapFormat(),
+      selected,
+      parameters);
+    if (!result)
+    {
+      (void)(result | kdl::if_error([&](const auto& error) {
+               m_bevelStatus = "Brush " + std::to_string(index) + ": " + error.msg;
+             }));
+      refreshViews();
+      return false;
+    }
+    auto value = std::move(result).value();
+    if (value.clamped)
+      status += "Brush " + std::to_string(index) + ": "
+                + std::to_string(value.appliedSize) + " (clamped). ";
+    updates.emplace_back(target.node, mdl::NodeContents{std::move(value.brush)});
+  }
+  if (updates.empty())
+  {
+    m_bevelStatus =
+      "Select face boundaries or vertices before opening Bevel, or select edges and "
+      "change a parameter.";
+    refreshViews();
+    return false;
+  }
+  map.startTransaction("Bevel", mdl::TransactionScope::LongRunning);
+  m_bevelTransaction = true;
+  if (!mdl::updateNodeContents(map, "Bevel", std::move(updates)))
+  {
+    cancelConvexPreview();
+    m_bevelStatus = "Could not update the selected brushes";
+    return false;
+  }
+  m_bevelPreviewValid = true;
+  m_bevelStatus =
+    status.empty() ? "Preview on scene. Apply to keep, Cancel to restore." : status;
+  refreshViews();
+  return true;
 }
 
 void EdgeTool::setBevelSegments(const size_t segments)
 {
-  m_bevelSettings.segments = std::min(segments, MaxChamferSegments);
+  m_bevelSettings.segments = std::clamp(segments, size_t{1}, MaxChamferSegments);
   if (!applyBevelSettingsPreview())
   {
     notifyBevelSettingsChanged();
@@ -1711,7 +1803,7 @@ void EdgeTool::setBevelWidth(const double width)
 
 void EdgeTool::setBevelCurve(const double curve)
 {
-  m_bevelSettings.curve = std::clamp(curve, -1.0, 1.0);
+  m_bevelSettings.curve = std::clamp(curve, 0.0, 0.99);
   if (!applyBevelSettingsPreview())
   {
     notifyBevelSettingsChanged();
@@ -2093,6 +2185,11 @@ bool EdgeTool::applyChamferPreview(
 
 bool EdgeTool::adjustChamferSegments(const int delta)
 {
+  if (m_bevelToolActive)
+  {
+    setBevelSegments(size_t(std::clamp(int(bevelSegments()) + delta, 1, 16)));
+    return true;
+  }
   if (delta == 0 || !beginChamfer())
   {
     return false;
@@ -2139,6 +2236,11 @@ bool EdgeTool::adjustChamferSegments(const int delta)
 
 bool EdgeTool::adjustChamferWidth(const int delta)
 {
+  if (m_bevelToolActive)
+  {
+    setBevelWidth(std::max(0.0, bevelWidth() + delta * grid().actualSize()));
+    return true;
+  }
   if (delta == 0 || !beginChamfer())
   {
     return false;
@@ -2258,49 +2360,9 @@ void EdgeTool::cancelChamfer()
 
 bool EdgeTool::applyBevelSettingsPreview()
 {
-  if (!m_bevelToolActive)
-  {
-    return false;
-  }
-
-  if (m_bevelSettings.segments == 0u)
-  {
-    if (!m_chamfer)
-    {
-      return false;
-    }
-
-    const auto originalEdges = m_chamfer->originalEdges;
-    m_document.map().cancelTransaction();
-    m_chamfer = std::nullopt;
-    geometryHandles().deselectAll();
-    geometryHandles().select(originalEdges);
-    refreshViews();
-    notifyBevelSettingsChanged();
-    return true;
-  }
-
-  if (!m_chamfer && m_bevelSettings.segments > 0u && !beginChamfer())
-  {
-    return false;
-  }
-
-  if (!m_chamfer)
-  {
-    return false;
-  }
-
-  const auto didApply = applyChamferPreview(
-    m_bevelSettings.segments,
-    m_bevelSettings.width,
-    m_bevelSettings.curve,
-    m_bevelSettings.proportion,
-    m_bevelSettings.keepCutGeometry);
-  if (didApply)
-  {
-    updateBevelSettingsFromChamfer();
-  }
-  return didApply;
+  const auto result = applyConvexPreview();
+  notifyBevelSettingsChanged();
+  return result;
 }
 
 void EdgeTool::updateBevelSettingsFromChamfer()
@@ -2325,6 +2387,7 @@ void EdgeTool::notifyBevelSettingsChanged()
 
 bool EdgeTool::doDeactivate()
 {
+  cancelConvexPreview();
   if (m_chamfer)
   {
     m_document.map().cancelTransaction();

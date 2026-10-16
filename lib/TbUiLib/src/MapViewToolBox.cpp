@@ -360,6 +360,8 @@ void MapViewToolBox::performPolygonSpawn()
 
 bool MapViewToolBox::undoActiveToolStep()
 {
+  if (bevelToolActive())
+    return true;
   if (anyGeneratorToolActive())
   {
     // A generator owns its source brushes until Apply or Cancel.
@@ -751,6 +753,7 @@ void MapViewToolBox::toggleBevelTool()
   }
   else
   {
+    m_edgeTool->prepareBevelSelection();
     if (!m_edgeTool->active())
     {
       toggleTool(edgeTool());
@@ -764,7 +767,8 @@ void MapViewToolBox::toggleBevelTool()
 
 bool MapViewToolBox::canToggleBevelTool() const
 {
-  return m_edgeTool->bevelToolActive() || m_document.map().selection().hasOnlyBrushes();
+  return m_edgeTool->bevelToolActive() || m_document.map().selection().hasOnlyBrushes()
+         || m_document.map().selection().hasBrushFaces();
 }
 
 bool MapViewToolBox::bevelToolActive() const
