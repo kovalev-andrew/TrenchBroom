@@ -1,148 +1,56 @@
 # ReyondBroom
 
+**A standalone 3D level editor for brush-based games.** Build spaces, shape architecture, texture surfaces and place gameplay entities in one workspace—from a first room to a detailed playable map.
+
 [![Download for Windows x64](https://img.shields.io/badge/Download_for_Windows_x64-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Windows.zip)
 [![Download for Linux x86_64](https://img.shields.io/badge/Download_for_Linux_x86__64-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Linux-x86_64.AppImage)
 
-[All downloads, SHA-256 checksums and release notes](https://github.com/reyond9079/ReyondBroom/releases/latest)
+**English** · [Русский](README.ru.md) · [Illustrated handbook](https://reyond9079.github.io/ReyondBroom/) · [Full reference](https://reyond9079.github.io/ReyondBroom/reference.html) · [Releases and checksums](https://github.com/reyond9079/ReyondBroom/releases/latest)
 
-<img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/a5c4d85d-7bad-4b55-943c-c7546aa6bc71" />
+![ReyondBroom: convex Bevel preview in the map viewport](docs/captures/reyond/bevel-preview.png)
 
+## Build the whole level
 
-A custom modification of Trenchbroom.
+- **Edit in 3D and 2D.** Create brush primitives, move vertices, edges and faces, clip, extrude, sweep, scale and shear. Work with Quake 3 patches and control points in supported map formats.
+- **Shape architecture and terrain.** Draw polygon cuts and volumes, inset faces, bend groups, extrude curved chains, subdivide surfaces, sculpt terrain and generate rocks.
+- **Round and break geometry.** Bevel face boundaries, edges or vertices with radius, segments, convex profiles and Clamp. Fracture solids into seeded fragments, perforate surfaces and settle pieces with gravity and collisions.
+- **Repeat and align.** Place linear, radial or random arrays, synchronize symmetric copies, rotate the grid, snap vertices to integers and enter exact XYZ coordinates.
+- **Texture and organize.** Edit UV alignment, browse materials, load texture folders, choose WAD export palettes, place prefabs and navigate with EntityList. Groups, linked groups and layers keep large maps manageable.
+- **Preview and export.** Inspect approximate Quake lighting, sky, moving entities and train routes. Configure external compilers, inspect issues and leak traces, launch the game or synchronize geometry and textures to Unity.
 
-**English** · [Russian](README.ru.md)
+ReyondBroom is independently maintained, with its own releases and documentation. It installs as a complete application; another editor is not required.
 
-ReyondBroom is a TrenchBroom v2026.2-based toolset for creating and placing brush rubble.
-Development happens on the [`ReyondBroom` branch](https://github.com/reyond9079/ReyondBroom/tree/ReyondBroom).
+## Get started
 
-- **[Perforate](PERFORATE.md)** creates random polygonal through-holes, with exact
-  counts, side counts, size ranges, spacing and optional selected `func_wall` plugs.
-- **[Bevel](BEVEL.md)** rounds selected face boundaries, edges or vertices with a
-  scene preview, radius, segments, convex profiles and independent per-brush Clamp.
-- **[Fracture](FRACTURE.md)** splits one brush into 2–128 convex Voronoi fragments,
-  with a seed, cut material, wireframe preview and a single Undo operation.
-- **[Settle](SETTLE.md)** simulates gravity and collisions for 1–128 selected brushes,
-  with friction, bounce, an initial kick, Pause/Resume and undoable placement.
+1. **Install.** On Windows, extract the entire ZIP and run `TrenchBroom.exe`—the current executable filename. Keep its resources and DLLs. On Linux, make the AppImage executable and launch it; use `--appimage-extract-and-run` if FUSE is unavailable.
+2. **Choose your game.** Create a map, select a compatible format, and configure the game directory, mod and entity definitions. Game data and compilation tools are supplied separately.
+3. **Build a room.** Start with a floor, four walls and a ceiling. Add a player start and a light, apply materials and save.
+4. **Compile and test.** Configure **Run → Compile** with your game's tools. Inspect the result in the engine before adding detail.
 
-## Quick start
+[Follow the illustrated first-map walkthrough →](https://reyond9079.github.io/ReyondBroom/#first-room)
 
-Download [ReyondBroom for Windows x64](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Windows.zip).
-Extract the ZIP into a separate folder and run `TrenchBroom.exe`.
-The executable retains the upstream editor name.
+Windows x64 and Linux x86_64 binaries are available. The Linux AppImage is built and tested on Ubuntu 24.04; older distributions are not verified. A macOS binary is not provided in the current release.
 
-For **Linux x86_64**, download the [AppImage](https://github.com/reyond9079/ReyondBroom/releases/latest/download/ReyondBroom-Linux-x86_64.AppImage).
-It is built and tested on Ubuntu 24.04 with Qt included; older distributions are not verified.
-Make it executable and launch it:
+## Learn the tools
 
-```sh
-chmod +x ReyondBroom-Linux-x86_64.AppImage
-./ReyondBroom-Linux-x86_64.AppImage
-```
+| What you want to do | Guide |
+| --- | --- |
+| Navigate, select, build and texture | [Start here](https://reyond9079.github.io/ReyondBroom/#start) |
+| Round edges and corners | [Bevel](https://reyond9079.github.io/ReyondBroom/#bevel) |
+| Break a wall and place rubble | [Fracture](https://reyond9079.github.io/ReyondBroom/#fracture) · [Settle](https://reyond9079.github.io/ReyondBroom/#settle) |
+| Cut random through-holes | [Perforate](https://reyond9079.github.io/ReyondBroom/#perforate) |
+| Generate terrain and curved structures | [Terrain](https://reyond9079.github.io/ReyondBroom/#terrain) · [Bezier Bend](https://reyond9079.github.io/ReyondBroom/#bezier-bend) · [Spin](https://reyond9079.github.io/ReyondBroom/#spin) |
+| Repeat modules and reuse assets | [Array](https://reyond9079.github.io/ReyondBroom/#array-line) · [Symmetry](https://reyond9079.github.io/ReyondBroom/#symmetry) · [Prefabs](https://reyond9079.github.io/ReyondBroom/#prefabs) |
+| Compile, diagnose and export | [Compilation](https://reyond9079.github.io/ReyondBroom/#compile) · [Unity Sync](https://reyond9079.github.io/ReyondBroom/#unity-sync) |
 
-If FUSE is unavailable, launch with `--appimage-extract-and-run`.
+The handbook has matching English and Russian chapters, screenshots, searchable navigation, steps and limitations. The full technical reference covers the core editor, expressions and game configuration in English. [Documentation sources and local build instructions](docs/README.md) are included.
 
-Select a brush → **Edit → CSG → Fracture…** → **Apply**. Keep the fragments selected,
-then choose **Edit → CSG → Settle…** → **Simulate / Restart** → **Apply**.
-Create an unselected floor brush first; Settle does not add an automatic floor.
+## Games and formats
 
-See [AGENTS.md](AGENTS.md) for contributor conventions and [BUILD.md](BUILD.md) for
-build prerequisites. Fracture and Settle remain experimental; validate generated
-geometry with your game's BSP compiler. The upstream GPL license is preserved.
+Game configurations cover Quake, Quake 2, Quake 3, Hexen 2, Daikatana and custom engines. Map formats, materials, entity classes and patch support depend on the selected configuration. Quake Standard and Valve 220 workflows are supported. Choose a format your compiler accepts; a viewport preview does not replace testing the compiled map.
 
-## Extended editing tools
+## Development and reference
 
-This branch integrates the supported features of
-[UltimateTrenchBroom](https://github.com/dragxnd/UltimateTrenchBroom), authored by
-dragxnd and based on TrenchBroom. See [the integration guide](ULTIMATE.md)
-([Russian](ULTIMATE.ru.md)) for the feature inventory and compatibility notes.
+Development takes place on **ReyondBroom**. See [BUILD.md](BUILD.md), [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) for build instructions and repository conventions.
 
-## Contributors and license
-
-- dragxnd: UltimateTrenchBroom tools, workflow design and documentation.
-- Kristian Duske and the TrenchBroom contributors: original editor and infrastructure.
-
-ReyondBroom retains upstream copyright notices and the
-[GPL-3.0-or-later license](LICENSE.txt).
-
-## Upstream TrenchBroom
-
-
-
-[![Original TrenchBroom Icon](docs/assets/upstream-icon.png)](https://www.youtube.com/watch?v=shcAvnYp9ow)
-
-TrenchBroom is a modern cross-platform level editor for Quake-engine based games.
-
-- Trailer:   https://www.youtube.com/watch?v=shcAvnYp9ow
-- Website:   https://github.com/TrenchBroom/TrenchBroom
-- Discord:   https://discord.gg/WGf9uve
-- Mastodon:  https://mastodon.gamedev.place/@trenchbroom
-- Bluesky:   https://bsky.app/profile/trenchbroom.bsky.social
-- Video Tutorial Series:  https://www.youtube.com/playlist?list=PLgDKRPte5Y0AZ_K_PZbWbgBAEt5xf74aE
-- Manual:    https://trenchbroom.github.io/manual/latest
-
-## Features
-* **General**
-  - Full support for editing in 3D and in up to three 2D views
-  - High performance renderer with support for huge maps
-  - Unlimited Undo and Redo
-  - Macro-like command repetition
-  - Issue browser with automatic quick fixes
-  - Point file support
-  - Automatic backups
-  - .obj file export
-  - Free and cross platform
-* **Brush Editing**
-  - Robust vertex editing with edge and face splitting and manipulating multiple vertices together
-  - Clipping tool with two and three points
-  - Scaling and shearing tools
-  - CSG operations: merge, subtract, intersect
-  - UV view for easy texture manipulations
-  - Precise texture lock for all brush editing operations
-  - Multiple material collections
-* **Entity Editing**
-  - Entity browser with drag and drop support
-  - Support for FGD and DEF files for entity definitions
-  - Mod support
-  - Entity link visualization
-  - Displays 3D models in the editor
-  - Smart entity property editors
-* **Supported Games**
-  - Quake (Standard and Valve 220 file formats)
-  - Quake 2
-  - Quake 3 (partial, no patches or brush primitives yet)
-  - Hexen 2
-  - Daikatana
-  - Generic (for custom engines)
-  - More games can be supported with custom game configurations
-
-
-## Releases
-
-Binary builds are available from [releases](https://github.com/kduske/TrenchBroom/releases).
-
-## Compiling
-
-Read [BUILD.md](BUILD.md) for instructions.
-
-# Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
-
-# Credits
-- [Qt](https://www.qt.io/)
-- [FreeType](https://www.freetype.org/)
-- [FreeImage](https://freeimage.sourceforge.io/)
-- [TinyXML](http://www.grinninglizard.com/tinyxml/)
-- miniz
-- [Assimp](https://www.assimp.org/)
-- [Catch2](https://github.com/catchorg/Catch2)
-- [CMake](https://cmake.org/)
-- [vcpkg](https://www.vcpkg.io/)
-- [Pandoc](https://www.pandoc.org/)
-- Quake icons by [Th3 ProphetMan](https://www.deviantart.com/th3-prophetman)
-- Hexen 2 icon by [thedoctor45](https://www.deviantart.com/thedoctor45)
-- [Source Sans Pro](https://fonts.google.com/specimen/Source+Sans+Pro) font
-
-## Changes
-
-See [releases](https://github.com/TrenchBroom/TrenchBroom/releases) for latest changes.
+Source projects and image provenance are recorded once in [Sources and licenses](https://reyond9079.github.io/ReyondBroom/sources.html). The editor is distributed under [GPL-3.0-or-later](LICENSE.txt); source notices and [third-party licenses](THIRD_PARTY_NOTICES.md) are retained.

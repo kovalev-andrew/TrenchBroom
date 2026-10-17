@@ -2,7 +2,7 @@
 
 [English (основной)](FRACTURE.md) · **Русский** · [Обзор](README.ru.md)
 
-Экспериментальный инструмент основан на TrenchBroom **v2026.2**.
+Fracture — встроенный геометрический инструмент ReyondBroom.
 
 1. Выделите ровно один браш и завершите активный инструмент редактирования.
 2. Откройте **Edit → CSG → Fracture…**.
@@ -64,3 +64,5 @@ TrenchBroom корректирует координаты, близкие к ц�
 
 Windows-процесс сборки создаёт редактор, запускает тесты и публикует архив
 в GitHub Actions. Требования к локальной сборке описаны в [BUILD.md](BUILD.md).
+
+[Illustrated handbook / Руководство с иллюстрациями](https://reyond9079.github.io/ReyondBroom/index.ru.html#fracture)

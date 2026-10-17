@@ -1,9 +1,9 @@
-name: Visual Guide
+name: ReyondBroom Documentation
 
 on:
   push:
-    branches: [ultimate]
-    paths: [docs/**, .github/workflows/docs.yml]
+    branches: [ReyondBroom]
+    paths: [docs/**, scripts/build-handbook.py, app/TrenchBroom/resources/documentation/manual/**, .github/workflows/docs.yml]
   workflow_dispatch:
 
 permissions:
@@ -15,9 +15,10 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.repository == 'dragxnd/UltimateTrenchBroom'
+    if: github.repository == 'reyond9079/ReyondBroom'
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
@@ -25,9 +26,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build and validate the bilingual handbook
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+          python -m pip install -r docs/requirements.txt
+          python scripts/build-handbook.py --output _site
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

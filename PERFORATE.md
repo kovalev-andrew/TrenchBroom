@@ -25,7 +25,7 @@ the map unchanged. Plugs retain normal Settle collisions, just like other brushe
 
 Random angular samples on a rotated ellipse produce convex contours. Each contour
 is extruded through the source and clipped to it, producing one plug brush. The
-plugs are subtracted using TrenchBroom CSG. Since a brush is convex, material around
+plugs are subtracted using the editor’s CSG. Since a brush is convex, material around
 holes becomes multiple convex brushes. Existing exterior face attributes are
 retained; hole sides inherit the selected face's attributes and material.
 
@@ -42,3 +42,5 @@ through direction, nonintersection, reproducibility, invalid layouts, selection,
 func_wall wrapping and Undo/Redo. `TbUiLibTest "PerforateDialog"` tests preview
 invalidation, Keep plugs and failure recovery. Standard, Valve and Quake 3 geometry
 are covered; game support for `func_wall` depends on the selected game/mod.
+
+[Illustrated handbook / Руководство с иллюстрациями](https://reyond9079.github.io/ReyondBroom/index.html#perforate)

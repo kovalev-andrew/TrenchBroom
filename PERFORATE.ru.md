@@ -42,3 +42,5 @@ seed, меньший размер, меньше отверстий/сторон 
 `TbUiLibTest "PerforateDialog"` проверяет сброс предпросмотра, Keep plugs и ошибки.
 Проверяется геометрия Standard, Valve и Quake 3. Поддержка `func_wall` в игре зависит
 от выбранной игры или мода.
+
+[Illustrated handbook / Руководство с иллюстрациями](https://reyond9079.github.io/ReyondBroom/index.ru.html#perforate)

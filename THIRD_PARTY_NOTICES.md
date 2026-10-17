@@ -13,3 +13,7 @@ Other dependencies include Assimp, FreeImage, FreeType, TinyXML2, miniz, cpptrac
 Microsoft Visual C++ runtime components, when included, are redistributed from the Visual Studio x64 release CRT. They retain Microsoft's license terms.
 
 Source code and build instructions are available on the [ReyondBroom branch](https://github.com/reyond9079/ReyondBroom/tree/ReyondBroom). `build-info.json` links to the exact source commit used for the archive. Initialize the vcpkg submodule when building from Git. Imported tools originate from [dragxnd/UltimateTrenchBroom](https://github.com/dragxnd/UltimateTrenchBroom).
+
+## Bundled artwork and documentation
+
+Core editor/manual: Kristian Duske and contributors. Extended tools/visual guide: dragxnd. Quake icons: Th3 ProphetMan. Hexen 2 icons: thedoctor45. Source Sans Pro retains its bundled font license. Original source notices remain authoritative.

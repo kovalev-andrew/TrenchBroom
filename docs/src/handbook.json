@@ -1,0 +1,1423 @@
+[
+  {
+    "id": "start",
+    "group": "Start here",
+    "route": "",
+    "images": [
+      "reference/images/WelcomeWindow.png",
+      "reference/images/GameSelectionDialog.png"
+    ],
+    "en": {
+      "title": "Install and create your first map",
+      "intro": "ReyondBroom is a standalone level editor for brush-based games. You create geometry, place entities, apply materials and run your game’s build tools from one workspace. Game data, BSP compilers and the game engine are separate installations.",
+      "steps": [
+        "Download the Windows x64 ZIP from Releases, extract the entire archive and run TrenchBroom.exe. Keep its DLLs and resource folders beside the executable. This executable filename is intentional.",
+        "On Linux x86_64, download the AppImage, run chmod +x ReyondBroom-Linux-x86_64.AppImage and launch it. If FUSE is unavailable, add --appimage-extract-and-run. Published builds are checked on Ubuntu 24.04; older distributions are not verified.",
+        "Create a new map, choose the target game and a map format supported by its compiler. Set the game directory in Preferences so materials and entity models can be found. For Quake, Valve 220 offers more flexible texture alignment if your tools support it.",
+        "Save the .map file in your project. Configure the mod and entity definitions in the Map inspector. Choose a coarse grid such as 16 or 32 for the initial layout. Build with a real scale reference, such as a player start."
+      ],
+      "notes": "Update from ReyondBroom Releases. Keep a copy of your maps outside the application folder. Windows and Linux binaries are published; a macOS binary is not supplied by this release."
+    },
+    "ru": {
+      "title": "Установка и первая карта",
+      "intro": "ReyondBroom — самостоятельный редактор уровней для игр с брашевой геометрией. В одном рабочем пространстве можно строить геометрию, размещать сущности, назначать материалы и запускать сборку карты. Ресурсы игры, BSP-компиляторы и движок устанавливаются отдельно.",
+      "steps": [
+        "Скачайте Windows ZIP из Releases, распакуйте весь архив и запустите TrenchBroom.exe. DLL и каталоги ресурсов должны оставаться рядом с программой. Это фактическое имя исполняемого файла.",
+        "Для Linux x86_64 скачайте AppImage, выполните chmod +x ReyondBroom-Linux-x86_64.AppImage и запустите файл. Если FUSE недоступен, добавьте --appimage-extract-and-run. Опубликованные сборки проверяются на Ubuntu 24.04; старые дистрибутивы не проверены.",
+        "Создайте карту, выберите игру и формат, который понимает ваш компилятор. В Preferences укажите каталог игры, чтобы редактор нашёл материалы и модели сущностей. Для Quake формат Valve 220 даёт более гибкую развёртку текстур, если его поддерживает ваш набор инструментов.",
+        "Сохраните .map в проекте. Укажите мод и определения сущностей в инспекторе Map. Начните планировку на сетке 16 или 32. Используйте точку старта игрока как ориентир масштаба."
+      ],
+      "notes": "Обновляйте редактор через Releases ReyondBroom. Храните карты отдельно от каталога программы. Опубликованы бинарные сборки Windows и Linux; готового macOS-билда в этом релизе нет."
+    }
+  },
+  {
+    "id": "workspace",
+    "group": "Start here",
+    "route": "",
+    "images": [
+      "reference/images/MainWindow.png",
+      "reference/images/BrushFaceSelection.png",
+      "reference/images/DrillSelection.gif"
+    ],
+    "en": {
+      "title": "Workspace, camera and selection",
+      "intro": "The viewports are your editing area. The inspector holds Map, Entity and Face settings, plus Prefabs and EntityList. Tool controls appear above the scene. The lower information bar reports the current selection and grid.",
+      "steps": [
+        "In 3D, hold the right mouse button to look around; use the wheel to move forward/backward. Middle-drag pans. Alt + right-drag orbits around the point under the cursor. In 2D, right- or middle-drag pans and the wheel zooms.",
+        "Left-click selects an object. Ctrl-click adds or removes objects. Ctrl + wheel drills through objects under the pointer. Use View → Camera → Focus on Selection when you lose your selection.",
+        "Shift-click selects a surface. Ctrl + Shift-click adds surfaces. These surface selections differ from the vertex/edge/face handles inside geometry tools. Before opening Perforate or face-boundary Bevel, select the required surfaces.",
+        "Use Escape to back out of an unfinished action or active tool. Use Ctrl+Z / Ctrl+Shift+Z for Undo/Redo after committing an operation. Keyboard shortcuts can be changed in Preferences; menu labels and the current tool state are authoritative."
+      ],
+      "notes": "Reference screenshots may show an earlier title bar, theme or menu arrangement. The instructions describe ReyondBroom 2026.2-reyond.2. On macOS builds, modifier names can differ."
+    },
+    "ru": {
+      "title": "Интерфейс, камера и выделение",
+      "intro": "Основная область — окна карты. Инспектор содержит Map, Entity, Face, Prefabs и EntityList. Параметры активного инструмента появляются над сценой. Нижняя строка показывает состояние выделения и сетки.",
+      "steps": [
+        "В 3D удерживайте правую кнопку мыши для обзора; колесо перемещает вперёд и назад. Средняя кнопка с перетаскиванием сдвигает камеру. Alt + правая кнопка вращает камеру вокруг точки под курсором. В 2D правая или средняя кнопка сдвигает вид, колесо меняет масштаб.",
+        "Левая кнопка выделяет объект. Ctrl-клик добавляет или исключает объекты. Ctrl + колесо перебирает объекты под указателем. View → Camera → Focus on Selection возвращает камеру к выделению.",
+        "Shift-клик выделяет поверхность, Ctrl + Shift-клик добавляет поверхности. Это отличается от выбора ручек вершин, рёбер и граней внутри геометрических инструментов. Для Perforate и Bevel по контуру сначала выделите нужные поверхности.",
+        "Escape отменяет незавершённое действие или закрывает активный инструмент. После применения операции используйте Ctrl+Z / Ctrl+Shift+Z для Undo/Redo. Сочетания меняются в Preferences; ориентируйтесь на меню и состояние инструмента."
+      ],
+      "notes": "На справочных снимках могут отличаться заголовок, тема и расположение меню. Инструкции описывают ReyondBroom 2026.2-reyond.2. В сборках для macOS модификаторы клавиш могут отличаться."
+    }
+  },
+  {
+    "id": "first-room",
+    "group": "Start here",
+    "route": "",
+    "images": [
+      "reference/images/DrawBrush.gif",
+      "reference/images/EntityBrowser.png"
+    ],
+    "en": {
+      "title": "Build, texture and test a room",
+      "intro": "A brush is one closed convex solid. A room is empty space surrounded by solid brushes, not one solid box containing the player. Start with simple pieces before adding detail.",
+      "steps": [
+        "Create a floor using the shape tool or a drag in an empty area of a 2D viewport. Set a useful thickness, for example 16 units. Draw four wall brushes and a ceiling around an interior space, for example 512 × 512 × 256 units.",
+        "Select each brush and resize or move it on the grid so neighbouring walls meet. Use the 2D views to inspect seams. Keep the player’s interior space empty.",
+        "Shift-click a surface, open Face and choose a material. Adjust offset, scale and rotation in the UV editor. Apply wall and floor materials separately.",
+        "Drag a player start and a light from the Entity browser into the room. Keep their origins inside the empty space. Save, configure Run → Compile and build with your game’s tools. Launch the map in the game and check size, lighting and collision."
+      ],
+      "notes": "This is a workflow example, not a universal compiler preset. Entity classes, player dimensions and sealing requirements depend on the game. Decorative entities do not necessarily seal a BSP world."
+    },
+    "ru": {
+      "title": "Построить, затекстурить и проверить комнату",
+      "intro": "Браш — один замкнутый выпуклый объём. Комната — пустое пространство, окружённое твёрдыми брашами, а не сплошной куб с игроком внутри. Начните с простой геометрии.",
+      "steps": [
+        "Создайте пол инструментом примитивов или перетаскиванием в пустой области 2D-вида. Задайте толщину, например 16 единиц. Постройте четыре стены и потолок вокруг свободного объёма, например 512 × 512 × 256 единиц.",
+        "Передвигайте и изменяйте размер брашей по сетке, чтобы стены сходились. Проверьте стыки в 2D-видах. Внутри должно остаться свободное пространство для игрока.",
+        "Выделите поверхность Shift-кликом, откройте Face и выберите материал. Настройте сдвиг, масштаб и поворот в UV-редакторе. Назначьте стенам и полу разные материалы.",
+        "Перетащите точку старта и источник света из Entity browser внутрь комнаты. Их центры должны быть в пустом пространстве. Сохраните карту, настройте Run → Compile, соберите её инструментами игры и проверьте в движке масштаб, свет и коллизии."
+      ],
+      "notes": "Это пример рабочего процесса, а не универсальный пресет компилятора. Классы сущностей, габариты игрока и требования к герметичности зависят от игры. Декоративные сущности не обязательно герметизируют BSP-мир."
+    }
+  },
+  {
+    "id": "geometry",
+    "group": "Core editing",
+    "route": "",
+    "images": [
+      "reference/images/RotateTool.gif",
+      "reference/images/VertexToolHandles.png",
+      "reference/images/SweepTool.gif"
+    ],
+    "en": {
+      "title": "Shapes, transforms and brush editing",
+      "intro": "Use a small number of predictable convex pieces for the structural layout. More detailed operations can be applied after scale and proportions are established.",
+      "steps": [
+        "Create cuboids, cylinders, cones, spheres or arches with the shape controls. Set the axis and number of sides before drawing the bounding region. Scalable circle modes favour integer-aligned vertices.",
+        "Move objects by dragging. Use the Rotate, Scale and Shear tools for transformations. Check the pivot and axes before rotating or scaling; use numeric controls when exact dimensions matter.",
+        "Use the vertex, edge or face tool to edit handles. Select multiple handles to reshape connected regions. The editor must still be able to represent the result as convex closed brushes.",
+        "Extrude a face to resize a solid or split off a new section. Clip with a plane defined by two or three points and choose the side to keep. Sweep a profile along a path when the shape is better described by a cross-section."
+      ],
+      "notes": "The full reference covers extrusion modifiers, handle splitting, clipping planes, pivots, texture locking and Sweep. Reduce grid size only as much as the detail requires."
+    },
+    "ru": {
+      "title": "Примитивы, трансформации и правка брашей",
+      "intro": "Для основы уровня используйте небольшое количество понятных выпуклых деталей. Детализируйте их после проверки масштаба и пропорций.",
+      "steps": [
+        "Создавайте параллелепипеды, цилиндры, конусы, сферы и арки через панель примитивов. Выберите ось и число сторон до задания габаритов. Scalable-режимы окружности ориентированы на целочисленные вершины.",
+        "Перетаскивайте объекты для перемещения. Rotate, Scale и Shear отвечают за поворот, масштаб и скос. До операции проверьте центр и оси; точные размеры задавайте численно.",
+        "Инструменты вершин, рёбер и граней редактируют соответствующие ручки. Выделяйте несколько ручек для совместного изменения области. Результат должен оставаться набором замкнутых выпуклых брашей.",
+        "Экструзия изменяет грань или отделяет новый участок. Clipping отсекает объём плоскостью по двум или трём точкам с выбором сохраняемой стороны. Sweep проводит профиль вдоль пути."
+      ],
+      "notes": "Полный справочник описывает модификаторы экструзии, разделение ручек, плоскости отсечения, центры трансформаций, фиксацию текстур и Sweep. Уменьшайте шаг сетки только по необходимости."
+    }
+  },
+  {
+    "id": "csg",
+    "group": "Core editing",
+    "route": "",
+    "images": [
+      "reference/images/CSGSubtractArch.gif",
+      "reference/images/CSGIntersect.gif"
+    ],
+    "en": {
+      "title": "CSG and convex decomposition",
+      "intro": "CSG combines or subtracts solids. Holes and concave silhouettes are represented by multiple convex brushes. Expect a topology change, not just a surface edit.",
+      "steps": [
+        "For subtraction, create a cutter that passes through the target. Select the cutter and run Edit → CSG → Subtract. Inspect the remaining fragments before continuing.",
+        "Use Intersect when only the common volume of selected brushes is needed. Merge produces a convex result; it cannot preserve arbitrary concave unions as one brush.",
+        "Hollow creates walls from a solid using the current grid thickness. Check openings and seams rather than assuming a hollowed result is ready for play.",
+        "Undo and simplify the cutters if you get many thin fragments. Use Polygon Cut for a hand-drawn outline or Perforate for multiple randomly placed holes."
+      ],
+      "notes": "Check the map in its BSP compiler after large CSG operations. High brush counts can make compilation slower even when the editor accepts the geometry."
+    },
+    "ru": {
+      "title": "CSG и разбиение на выпуклые объёмы",
+      "intro": "CSG объединяет и вычитает объёмы. Отверстия и вогнутые силуэты представляются несколькими выпуклыми брашами. Это изменение структуры геометрии, а не только её поверхности.",
+      "steps": [
+        "Создайте режущий браш, проходящий через целевой объём. Выделите резак и выполните Edit → CSG → Subtract. Проверьте оставшиеся части.",
+        "Intersect оставляет общий объём выделенных брашей. Merge создаёт выпуклый результат и не сохраняет произвольное вогнутое объединение одним брашем.",
+        "Hollow создаёт стенки из сплошного объёма с толщиной по текущей сетке. Проверьте проёмы и стыки: результат ещё не обязательно готов для игры.",
+        "Если получилось много тонких частей, отмените действие и упростите резаки. Для нарисованного контура используйте Polygon Cut, для нескольких случайных отверстий — Perforate."
+      ],
+      "notes": "После крупных CSG-операций проверяйте карту BSP-компилятором. Большое количество брашей может замедлять сборку даже при корректной геометрии в редакторе."
+    }
+  },
+  {
+    "id": "materials",
+    "group": "Core editing",
+    "route": "",
+    "images": [
+      "reference/images/UVEditor.png",
+      "reference/images/FaceAttribsEditor.png"
+    ],
+    "en": {
+      "title": "Materials and UV alignment",
+      "intro": "Material names and projection settings belong to brush faces. The Face inspector combines a material browser with UV controls. Texture lock helps preserve alignment while geometry moves.",
+      "steps": [
+        "Load material collections for the selected game. Filter by name in the material browser, select a face with Shift-click and click the desired material.",
+        "Use offset to shift the texture, scale to change its density and rotation to turn it. Inspect adjacent surfaces in 3D and use the UV view for precise placement.",
+        "Enable the appropriate texture/alignment lock before transforming geometry. Valve 220 projections can represent rotations that the classic format cannot represent exactly.",
+        "Use Replace Materials to change a material across the intended scope. Refresh the material browser after changing external texture files. Texture Folders and export palettes are described below."
+      ],
+      "notes": "New cut faces need a projection of their own. Preserving source scales does not imply seamless wrapping over every generated curved face."
+    },
+    "ru": {
+      "title": "Материалы и UV-развёртка",
+      "intro": "Материал и параметры проекции относятся к поверхности браша. Инспектор Face объединяет браузер материалов и UV-настройки. Texture lock помогает сохранять привязку при изменении геометрии.",
+      "steps": [
+        "Подключите коллекции материалов для выбранной игры. Отфильтруйте список по имени, выделите поверхность Shift-кликом и нажмите на нужный материал.",
+        "Offset сдвигает текстуру, Scale меняет её плотность, Rotation поворачивает. Сравнивайте соседние поверхности в 3D и используйте UV-вид для точного совмещения.",
+        "Перед трансформацией включите нужную фиксацию текстур или выравнивания. Проекция Valve 220 умеет описывать повороты, которые классический формат не всегда представляет точно.",
+        "Replace Materials заменяет материал в выбранной области действия. После изменения внешних изображений обновляйте браузер. Работа с Texture Folders и палитрой описана ниже."
+      ],
+      "notes": "У новых поверхностей среза должна быть собственная проекция. Сохранение исходных масштабов не означает бесшовную развёртку всех сгенерированных скруглений."
+    }
+  },
+  {
+    "id": "entities",
+    "group": "Core editing",
+    "route": "",
+    "images": [
+      "reference/images/EntityPropertyEditor.png",
+      "reference/images/LinkedGroups.png",
+      "reference/images/LayerEditor.png"
+    ],
+    "en": {
+      "title": "Entities, groups and layers",
+      "intro": "Point entities represent items such as lights and spawn points. Brush entities attach game behaviour to geometry. Groups and layers organize editing; they are not interchangeable with gameplay entities.",
+      "steps": [
+        "Load the game’s FGD, DEF or ENT definitions. Place point entities from the Entity browser. To make a brush entity, select its brushes and choose a supported entity class in the context menu.",
+        "Edit key/value properties in Entity. Use the smart editors for flags, colours and choices. Connect target and targetname properties according to the game’s rules and inspect the link visualization.",
+        "Group related objects to move them as a unit. Use linked groups for repeated assemblies that should share edits; protect per-instance entity properties when necessary.",
+        "Create layers for parts of the level. Hide, isolate or lock sections while editing. Omit From Export is useful for construction references, but check that your compile profile actually uses an exported map."
+      ],
+      "notes": "func_wall is a class name, not a universal “no collision” command. Its runtime behaviour comes from the game/mod. Settle still collides with func_wall brushes."
+    },
+    "ru": {
+      "title": "Сущности, группы и слои",
+      "intro": "Точечные сущности — например, источники света и точки появления. Брашевые сущности задают поведение геометрии в игре. Группы и слои организуют редактирование и не равнозначны игровым сущностям.",
+      "steps": [
+        "Подключите FGD, DEF или ENT игры. Размещайте точечные сущности из Entity browser. Для брашевой сущности выделите её браши и выберите поддерживаемый класс в контекстном меню.",
+        "Меняйте пары ключ/значение в Entity. Используйте специальные редакторы флагов, цветов и вариантов. Связывайте target и targetname по правилам игры и проверяйте отображение связей.",
+        "Объединяйте связанные детали в группы. Linked groups подходят для повторяющихся конструкций с общими изменениями; при необходимости защищайте свойства отдельных экземпляров.",
+        "Разделяйте уровень на слои, скрывайте, изолируйте и блокируйте области. Omit From Export позволяет исключать вспомогательную геометрию, если профиль сборки использует экспортированную карту."
+      ],
+      "notes": "func_wall — имя класса, а не универсальная команда отключения коллизий. Поведение в игре определяется модом и движком. В Settle браши func_wall продолжают сталкиваться."
+    }
+  },
+  {
+    "id": "patches",
+    "group": "Core editing",
+    "route": "",
+    "images": [
+      "reference/images/CreatePatches_Square.gif",
+      "reference/images/ControlPointTool.png"
+    ],
+    "en": {
+      "title": "Quake 3 patches",
+      "intro": "Patches are curved surfaces controlled by a grid of points. They are distinct from convex brushes and are available in the appropriate Quake 3 map format.",
+      "steps": [
+        "Select brush surfaces and use Convert Selection to Patches. Each surface becomes one or more patches, and the source brushes are removed: use Undo if you intended to keep them.",
+        "Activate the Control Point Tool and move its handles. Coincident handles can be edited together across adjoining patches.",
+        "Change the number of control rows and columns with the tool’s spin boxes. Increasing resolution retains the surface; decreasing it can approximate and change the shape.",
+        "Keep patches unselected when using Settle: visible patches are static collision surfaces. Bevel, Fracture and Perforate operate on brushes, not on patch control grids."
+      ],
+      "notes": "Patch support does not imply every game or brush tool accepts patches. Test seams, material projection and collision in the target engine."
+    },
+    "ru": {
+      "title": "Патчи Quake 3",
+      "intro": "Патчи — криволинейные поверхности с сеткой управляющих точек. Они отличаются от выпуклых брашей и доступны в соответствующем формате карт Quake 3.",
+      "steps": [
+        "Выделите поверхности и выполните Convert Selection to Patches. Каждая поверхность станет одним или несколькими патчами, а исходные браши будут удалены; при необходимости верните их через Undo.",
+        "Включите Control Point Tool и двигайте ручки. Совпадающие точки соседних патчей можно изменять совместно.",
+        "Число строк и столбцов управляющей сетки меняется счётчиками панели. Увеличение сохраняет поверхность, уменьшение может изменить её форму из-за аппроксимации.",
+        "Для Settle оставляйте патчи невыделенными: видимые патчи служат неподвижными препятствиями. Bevel, Fracture и Perforate работают с брашами, а не с управляющими сетками патчей."
+      ],
+      "notes": "Наличие патчей не означает, что их поддерживает каждая игра или брашевый инструмент. Проверяйте стыки, текстуры и коллизии в целевом движке."
+    }
+  },
+  {
+    "id": "compile",
+    "group": "Core editing",
+    "route": "",
+    "images": [
+      "reference/images/CompilationDialog.png",
+      "reference/images/IssueBrowserFilter.png",
+      "reference/images/MoveTrace.png"
+    ],
+    "en": {
+      "title": "Compile, diagnose and recover",
+      "intro": "The editor saves editable maps and can launch external compilers. It does not include a universal BSP compiler or guarantee that every accepted brush will work in every game.",
+      "steps": [
+        "Open Run → Compile and create a profile. Set the working directory. Add Export Map when you need to omit construction layers or strip editor properties.",
+        "Add Run Tool tasks for your compiler stages in the correct order. Set executable paths and arguments, and stop on nonzero exit codes. Add Copy Files or Launch Engine only when the output paths and engine profile are ready.",
+        "Inspect compiler output. Load its point file to trace a leak and its portal file to inspect visibility partitioning. Use the Issue Browser for editor-detected problems and inspect a proposed quick fix before applying it.",
+        "Save regularly. If the editor crashes, look beside the map for the crash report and recovered map. Keep the original and compare the recovered version before replacing it. Include the exact version, minimal map and reproduction steps when reporting a problem."
+      ],
+      "notes": "The full reference includes compilation variables, expressions, game configurations, model expressions and file operations. Keep tool paths local to your own installation."
+    },
+    "ru": {
+      "title": "Компиляция, диагностика и восстановление",
+      "intro": "Редактор сохраняет исходные карты и запускает внешние компиляторы. Универсальный BSP-компилятор не входит в комплект; принятую редактором геометрию всё равно нужно проверять в игре.",
+      "steps": [
+        "Откройте Run → Compile и создайте профиль. Задайте рабочий каталог. Добавьте Export Map, если нужно исключить вспомогательные слои или убрать свойства редактора.",
+        "Добавьте Run Tool для стадий компиляции в правильном порядке. Укажите программы и аргументы, включите остановку при ненулевом коде выхода. Copy Files и Launch Engine добавляйте после настройки путей и профиля движка.",
+        "Читайте вывод компилятора. Загрузите point file для поиска утечки и portal file для просмотра разбиения видимости. Issue Browser показывает проблемы редактора; изучите исправление перед его применением.",
+        "Регулярно сохраняйтесь. При аварии ищите отчёт и восстановленную карту рядом с исходником. Сравните восстановленную копию до замены файла. При сообщении о баге приложите точную версию, минимальную карту и шаги воспроизведения."
+      ],
+      "notes": "В полном справочнике описаны переменные сборки, выражения, конфигурации игр, выражения моделей и файловые операции. Пути к инструментам задавайте для своей установки."
+    }
+  },
+  {
+    "id": "terrain",
+    "group": "Shape and generate",
+    "route": "Tools > Generate Terrain | Shift + T",
+    "images": [
+      "screenshots/terrain-01.png",
+      "screenshots/terrain-02.png",
+      "screenshots/terrain-03.png"
+    ],
+    "en": {
+      "title": "Terrain",
+      "intro": "Turns a flat brush into adjustable terrain with a live height preview.",
+      "steps": [
+        "Select a wide, flat brush.",
+        "Press Shift + T. Start with U / V = 10.",
+        "Adjust Height and Seed. Apply keeps the result; Esc cancels."
+      ],
+      "notes": "U and V set subdivision density. Height controls relief size; Frequency and Roughness change the noise structure, and Seed selects a repeatable variant. Side chooses the surface direction. Triangular grid changes the subdivision layout; Create group keeps the generated pieces together. Start with low density: more cells increase brush count. Inspect the edges where terrain meets walls or another terrain tile. Undo the result if the silhouette or compile cost is unsuitable."
+    },
+    "ru": {
+      "title": "Рельеф — Terrain",
+      "intro": "Создаёт рельеф из браша с предпросмотром высот на сцене.",
+      "steps": [
+        "Выделите широкий плоский браш, который задаёт габариты участка.",
+        "Откройте Tools → Generate Terrain или нажмите Shift+T. Начните с U / V = 10.",
+        "Выберите Side — направление поверхности. Настройте Height, Intensity, Frequency, Roughness и Seed. Нажмите Apply; Cancel или Escape возвращает исходник."
+      ],
+      "notes": "U и V задают плотность разбиения. Height управляет величиной рельефа; Frequency и Roughness меняют структуру шума, Seed — повторяемый вариант. Side выбирает направление поверхности. Triangular grid меняет структуру разбиения; Create group объединяет части. Начните с небольшой плотности: больше ячеек — больше брашей. Проверяйте примыкание к стенам и соседним участкам; неподходящий результат можно отменить."
+    }
+  },
+  {
+    "id": "polygon-cut",
+    "group": "Shape and generate",
+    "route": "Tools > Polygon Cut Tool | Shift + C",
+    "images": [
+      "captures/polygon-cut/polygon-cut-01.png",
+      "captures/polygon-cut/polygon-cut-02.png",
+      "captures/polygon-cut/polygon-cut-03.png"
+    ],
+    "en": {
+      "title": "Polygon Cut",
+      "intro": "Cuts a closed, hand-drawn shape out of the selected brush.",
+      "steps": [
+        "Select the brush. Press Shift + C.",
+        "Click points on the brush. Click the first point to close.",
+        "Press Enter to cut. Depth 0 cuts through; Keep cutout preserves the piece."
+      ],
+      "notes": "Use a simple, non-self-intersecting outline on the intended surface. Depth is measured into the brush; verify its direction before cutting. A concave outline is represented by multiple convex pieces. Keep cutout is useful for creating a matching plug, but a retained plug still occupies the hole until moved or removed. Escape cancels the unfinished outline; Undo restores a completed cut. Choose Perforate for multiple randomly distributed holes."
+    },
+    "ru": {
+      "title": "Вырез по контуру — Polygon Cut",
+      "intro": "Вырезает вручную нарисованный замкнутый контур из выделенного браша.",
+      "steps": [
+        "Выделите браш и включите Tools → Polygon Cut Tool, Shift+C.",
+        "Нажимайте на поверхности, задавая точки контура. Нажмите первую точку для замыкания.",
+        "Задайте Depth: 0 означает сквозной вырез. Keep cutout сохраняет вырезанную часть. Нажмите Enter и проверьте обе стороны выреза."
+      ],
+      "notes": "Рисуйте простой контур без самопересечений на нужной поверхности. Глубина направлена внутрь браша — проверьте её перед вырезом. Вогнутый контур представляется несколькими выпуклыми частями. Keep cutout полезен для заглушки, но она занимает отверстие, пока её не убрать или не переместить. Escape отменяет незаконченный контур, Undo возвращает выполненный вырез. Для случайного набора отверстий используйте Perforate."
+    }
+  },
+  {
+    "id": "polygon-spawn",
+    "group": "Shape and generate",
+    "route": "Tools > Polygon Spawn Tool | Shift + F",
+    "images": [
+      "captures/polygon-spawn/polygon-spawn-01.png",
+      "captures/polygon-spawn/polygon-spawn-02.png",
+      "captures/polygon-spawn/polygon-spawn-03.png"
+    ],
+    "en": {
+      "title": "Polygon Spawn",
+      "intro": "Builds new brushes from a closed outline drawn on a brush surface.",
+      "steps": [
+        "Select the base brush. Press Shift + F.",
+        "Click an outline and close it manually.",
+        "Press Enter. New brush height equals the grid size."
+      ],
+      "notes": "Set the grid before creating the volume: it controls the initial height. The existing surface is the drawing reference. Keep the outline planar and simple; complex silhouettes may require several convex brushes. Use this for panels, trim and small architectural forms. It creates geometry rather than a texture decal. Escape clears an unfinished operation; use Undo after creation."
+    },
+    "ru": {
+      "title": "Объём по контуру — Polygon Spawn",
+      "intro": "Создаёт новые браши из замкнутого контура на поверхности существующего браша.",
+      "steps": [
+        "Выделите опорный браш и включите Tools → Polygon Spawn Tool, Shift+F.",
+        "Задайте точки и замкните контур нажатием первой точки.",
+        "Нажмите Enter. Высота нового объёма равна шагу сетки. Проверьте толщину и при необходимости измените её инструментами геометрии."
+      ],
+      "notes": "Задайте сетку заранее: она определяет начальную высоту. Поверхность служит опорой для рисования. Контур должен быть плоским и простым; сложный силуэт может потребовать нескольких выпуклых брашей. Инструмент подходит для панелей, окантовок и небольших архитектурных деталей. Создаётся геометрия, а не декаль. Escape отменяет незаконченную операцию; после создания используйте Undo."
+    }
+  },
+  {
+    "id": "inset",
+    "group": "Shape and generate",
+    "route": "Tools > Inset Tool | Shift + I",
+    "images": [
+      "captures/inset/inset-01.png",
+      "captures/inset/inset-02.png",
+      "captures/inset/inset-03.png"
+    ],
+    "en": {
+      "title": "Inset Tool",
+      "intro": "Creates a smaller face inside one selected face, surrounded by a brush border.",
+      "steps": [
+        "Select one brush. Press Shift + I.",
+        "Select exactly one face. Amount starts at zero.",
+        "Increase Amount to create the centre and border. Snap to grid uses grid-sized steps. Apply."
+      ],
+      "notes": "Amount is the inward border width. Begin with a small value on a broad face. A large inset on a narrow or acute face can leave too little room for the centre. The result consists of geometry, so its new boundaries can receive materials independently. Inset alone does not make a recessed hole; move or extrude the resulting centre afterward. Cancel restores the source."
+    },
+    "ru": {
+      "title": "Внутренняя рамка — Inset",
+      "intro": "Делит одну поверхность на центральную часть и окружающую брашевую рамку.",
+      "steps": [
+        "Выделите один браш и откройте Tools → Inset Tool, Shift+I.",
+        "В инструменте выберите ровно одну поверхность. Amount начинается с нуля.",
+        "Увеличьте Amount, чтобы получить центр и рамку. Snap to grid задаёт шаг по сетке. Проверьте углы и нажмите Apply."
+      ],
+      "notes": "Amount — ширина рамки внутрь поверхности. Начните с малого значения на широкой грани. У узкой или остроугольной грани большой отступ может не оставить места для центра. Результат — геометрия с отдельно текстурируемыми поверхностями. Сам Inset не создаёт углубление: затем сдвиньте или выдавите центр. Cancel восстанавливает исходник."
+    }
+  },
+  {
+    "id": "spin",
+    "group": "Shape and generate",
+    "route": "Tools > Spin Tool",
+    "images": [
+      "captures/spin/spin-01.png",
+      "captures/spin/spin-02.png",
+      "captures/spin/spin-03.png"
+    ],
+    "en": {
+      "title": "Spin Tool",
+      "intro": "Extrudes selected faces into a segmented chain that follows a movable end handle.",
+      "steps": [
+        "Open Spin and select one or more faces.",
+        "Drag the end cube or an axis arrow to bend the chain.",
+        "Set Flex and End scale. Rings rotate the end. Apply; Esc cancels; Ctrl + Z undoes."
+      ],
+      "notes": "Use the end position for direction, the rotation rings for end orientation and End scale for taper. Flex changes the chain’s bending behaviour. Inspect both the inside and outside of a tight bend: a plausible silhouette does not guarantee clean joints. Start with a broad profile and gentle curve, then add complexity. Do not confuse Spin with rotating the original object around a pivot."
+    },
+    "ru": {
+      "title": "Цепочка экструзий — Spin",
+      "intro": "Продолжает выбранные грани сегментированной цепочкой, форма которой задаётся конечной ручкой.",
+      "steps": [
+        "Откройте Tools → Spin Tool и выберите одну или несколько граней.",
+        "Двигайте конечный куб или стрелки осей, чтобы сформировать изгиб цепочки.",
+        "Настройте Flex и End scale. Кольца поворачивают конец цепочки. Apply сохраняет результат, Escape отменяет предпросмотр, Undo отменяет применённую операцию."
+      ],
+      "notes": "Положение конца задаёт направление, кольца — его ориентацию, End scale — сужение или расширение. Flex меняет характер изгиба. Проверяйте внутреннюю и внешнюю стороны тесного поворота: красивый силуэт ещё не гарантирует правильные стыки. Начните с широкого профиля и плавного изгиба. Spin отличается от обычного вращения объекта вокруг центра."
+    }
+  },
+  {
+    "id": "bezier-bend",
+    "group": "Shape and generate",
+    "route": "Tools > Bezier Bend Tool",
+    "images": [
+      "captures/bezier-bend/bezier-bend-01.png",
+      "captures/bezier-bend/bezier-bend-02.png",
+      "captures/bezier-bend/bezier-bend-03.png"
+    ],
+    "en": {
+      "title": "Bezier Bend",
+      "intro": "Bends a brush group along an editable curve, with position, rotation and scale handles.",
+      "steps": [
+        "Group the brushes. Select one group and open Bezier Bend.",
+        "Choose Axis and Segments. Keep joints holds neighbouring pieces together.",
+        "Drag handles. Move, Scale and Rotate affect the group; Subdiv adds cuts. Apply."
+      ],
+      "notes": "The selected axis is the group’s longitudinal direction. More segments give the bend more geometric resolution and increase brush count. Keep joints is intended for connected pieces, not a guarantee for arbitrary intersecting solids. Avoid a curve that folds back through itself. Verify doors, entities and textures after bending an assembly. Cancel returns to the unbent group."
+    },
+    "ru": {
+      "title": "Изгиб группы — Bezier Bend",
+      "intro": "Изгибает группу брашей вдоль кривой с ручками положения, поворота и масштаба.",
+      "steps": [
+        "Объедините браши в группу. Выделите одну группу и откройте Tools → Bezier Bend Tool.",
+        "Выберите Axis и Segments. Keep joints помогает сохранять соединения соседних деталей.",
+        "Перемещайте ручки кривой. Move, Scale и Rotate меняют группу, Subdiv добавляет разрезы. Проверьте форму и нажмите Apply."
+      ],
+      "notes": "Axis задаёт продольное направление группы. Больше сегментов повышает детализацию изгиба и количество брашей. Keep joints предназначен для соединённых деталей и не гарантирует корректность произвольных пересекающихся объёмов. Не загибайте кривую сквозь саму себя. После изгиба проверьте сущности и текстуры. Cancel возвращает исходную группу."
+    }
+  },
+  {
+    "id": "subdivision",
+    "group": "Shape and generate",
+    "route": "Tools > Subdivision Tool",
+    "images": [
+      "captures/subdivision/subdivision-01.png",
+      "captures/subdivision/subdivision-02.png",
+      "captures/subdivision/subdivision-03.png"
+    ],
+    "en": {
+      "title": "Subdivision",
+      "intro": "Splits brushes into smaller pieces by segment count or grid size.",
+      "steps": [
+        "Select brushes, a face or one group. Open Subdivision.",
+        "Segments divides the brush into U x V cells.",
+        "Grid size uses Cell spacing. Choose World grid or Texture pivot, then Apply."
+      ],
+      "notes": "World grid uses global cell boundaries, including the editor grid rotation; cells at a brush boundary may be shorter. Texture alignment follows the selected face’s projection, including its offset and scale. Use subdivision before local deformation or sculpting when the surface needs more vertices. Excessive cell counts create unnecessary compile work. Subdivision adds resolution; it does not smooth the surface by itself."
+    },
+    "ru": {
+      "title": "Разбиение — Subdivision",
+      "intro": "Делит браши на ячейки по числу сегментов или заданному расстоянию.",
+      "steps": [
+        "Выделите браши, поверхность или одну группу и откройте Tools → Subdivision Tool.",
+        "В Segments задайте U × V — количество частей в двух направлениях.",
+        "В Grid size задайте Cell. World grid привязывает разрезы к мировой сетке, Texture pivot — к проекции текстуры. Проверьте предпросмотр и нажмите Apply."
+      ],
+      "notes": "World grid использует глобальные границы ячеек с учётом поворота сетки; крайние части могут быть короче. Выравнивание по текстуре учитывает проекцию выбранной поверхности, её сдвиг и масштаб. Разбивайте поверхность перед деформацией или скульптингом, если нужны дополнительные вершины. Избыточная плотность усложняет сборку. Разбиение само по себе не сглаживает форму."
+    }
+  },
+  {
+    "id": "subtract-2",
+    "group": "Shape and generate",
+    "route": "Edit > CSG > Subtract 2",
+    "images": [
+      "captures/subtract-2/subtract-2-01.png",
+      "captures/subtract-2/subtract-2-02.png",
+      "captures/subtract-2/subtract-2-03.png"
+    ],
+    "en": {
+      "title": "Subtract 2",
+      "intro": "Subtracts cutter brushes while preferring straight, clean boundaries between the remaining pieces.",
+      "steps": [
+        "Place a cutter through the target brush.",
+        "Select the cutter, not the target.",
+        "Edit > CSG > Subtract 2. The result prefers straight chunk boundaries. Ctrl + Z undoes."
+      ],
+      "notes": "Use it when ordinary subtraction creates an inconvenient partition around an opening. Compare the resulting pieces in a 2D view. It is a different partitioning strategy, not a guarantee of fewer brushes for every input. Thin cutters, near-coplanar surfaces and acute intersections still deserve inspection. The surrounding material remains a set of convex solids."
+    },
+    "ru": {
+      "title": "Вычитание — Subtract 2",
+      "intro": "Вычитает резаки с предпочтением прямых границ между оставшимися частями.",
+      "steps": [
+        "Разместите режущий браш так, чтобы он пересекал целевой объём.",
+        "Выделите резак, а не целевой браш.",
+        "Выполните Edit → CSG → Subtract 2. Проверьте границы оставшихся частей; Ctrl+Z возвращает исходное состояние."
+      ],
+      "notes": "Полезно, когда обычное вычитание даёт неудобное разбиение вокруг проёма. Сравните результат в 2D-виде. Это другая стратегия разбиения, а не гарантия меньшего числа брашей при любом вводе. Тонкие резаки, почти совпадающие поверхности и острые пересечения всё равно требуют проверки. Окружающая геометрия остаётся набором выпуклых объёмов."
+    }
+  },
+  {
+    "id": "convert-triang",
+    "group": "Shape and generate",
+    "route": "Edit > Convert Triang Brushes | Ctrl + Shift + B",
+    "images": [
+      "captures/convert-triang/convert-triang-01.png",
+      "captures/convert-triang/convert-triang-02.png",
+      "captures/convert-triang/convert-triang-03.png"
+    ],
+    "en": {
+      "title": "Convert Triang Brushes",
+      "intro": "Rebuilds triangulated brush faces into simpler surfaces while preserving the overall shape.",
+      "steps": [
+        "Select triangulated brushes.",
+        "Edit > Convert Triang Brushes, or Ctrl + Shift + B.",
+        "Inspect the shape. Each brush is rebuilt separately; difficult shapes may only convert approximately."
+      ],
+      "notes": "Make a copy before converting an important detailed assembly. This command is not a general mesh importer and does not promise to merge a complete triangle mesh into a few watertight solids. Compare boundaries, materials and compiler output. If the result loses a necessary feature, undo and simplify a smaller selection."
+    },
+    "ru": {
+      "title": "Преобразование треугольных брашей",
+      "intro": "Перестраивает триангулированные браши в более простую геометрию.",
+      "steps": [
+        "Выделите триангулированные браши.",
+        "Выполните Edit → Convert Triang Brushes или Ctrl+Shift+B.",
+        "Сравните силуэт с исходником. Каждый браш обрабатывается отдельно; сложная форма может передаваться приблизительно."
+      ],
+      "notes": "Для важной конструкции сначала сделайте копию. Команда не является универсальным импортом мешей и не обещает превратить целую треугольную сетку в несколько герметичных объёмов. Сравните контуры, материалы и результат компиляции. Если важная деталь исчезла, отмените действие и обрабатывайте меньший участок."
+    }
+  },
+  {
+    "id": "rock",
+    "group": "Shape and generate",
+    "route": "Tools > Generate Rock",
+    "images": [
+      "captures/rock/rock-01.png",
+      "captures/rock/rock-02.png",
+      "captures/rock/rock-03.png"
+    ],
+    "en": {
+      "title": "Generate Rock",
+      "intro": "Turns a brush into a seeded rock shape, optionally hollow or grouped.",
+      "steps": [
+        "Select a size-defining brush. Open Generate Rock.",
+        "Segments controls detail. Seed changes the shape.",
+        "Hollow enables Thickness. Create group keeps the rock together. Apply; Esc cancels."
+      ],
+      "notes": "Try several seeds at a moderate segment count before increasing detail. Hollow is useful for shell-like structures but needs adequate thickness; very thin walls can become unstable in geometry operations. Check the footprint against the floor, then use ordinary placement or Settle to arrange brush pieces. Rock generation does not add game physics."
+    },
+    "ru": {
+      "title": "Камни — Generate Rock",
+      "intro": "Создаёт случайную каменную форму в заданных габаритах, с опцией полости и группировки.",
+      "steps": [
+        "Выделите браш, задающий размер камня, и откройте Tools → Generate Rock.",
+        "Настройте Segments — детализацию, Seed — вариант формы.",
+        "Hollow включает Thickness для толщины стенок. Create group собирает результат в группу. Apply сохраняет, Escape отменяет."
+      ],
+      "notes": "Сначала попробуйте несколько Seed при умеренной детализации. Hollow подходит для оболочек, но требует достаточной толщины: слишком тонкие стенки могут плохо переносить геометрические операции. Проверьте основание относительно пола, затем разместите детали вручную или через Settle. Генератор не добавляет физику в игру."
+    }
+  },
+  {
+    "id": "sculpt",
+    "group": "Shape and generate",
+    "route": "Tools > Sculpt Tool",
+    "images": [
+      "captures/sculpt/sculpt-01.png",
+      "captures/sculpt/sculpt-02.png",
+      "captures/sculpt/sculpt-03.png"
+    ],
+    "en": {
+      "title": "Sculpt Tool",
+      "intro": "Raises, lowers or smooths brush surfaces while keeping shared vertices together.",
+      "steps": [
+        "Open Sculpt. Choose Raise, Lower or Smooth; set Width and Intensity.",
+        "Hold the left mouse button to shape the surface. Shared vertices stay joined.",
+        "Smooth softens the shape. Prevent collapse protects the back surface. Esc exits; Ctrl + Z undoes."
+      ],
+      "notes": "Width is the brush footprint; Intensity controls the effect of a stroke. A surface needs enough existing vertices to show local detail, so subdivide first when necessary. Prevent collapse limits displacement according to available thickness, including connected pieces. It is not permission to create concave brush geometry. Small strokes are easier to inspect and undo than one long aggressive stroke."
+    },
+    "ru": {
+      "title": "Скульптинг — Sculpt",
+      "intro": "Поднимает, опускает и сглаживает поверхности брашей, сохраняя совместное движение общих вершин.",
+      "steps": [
+        "Откройте Tools → Sculpt Tool. Выберите Raise, Lower или Smooth, задайте Width и Intensity.",
+        "Удерживайте левую кнопку над поверхностью и ведите кисть. Общие вершины перемещаются совместно.",
+        "Smooth сглаживает рельеф. Prevent collapse защищает противоположную поверхность от схлопывания. Escape закрывает инструмент, Undo отменяет мазок."
+      ],
+      "notes": "Width — размер области кисти, Intensity — сила мазка. Для локальных деталей нужны существующие вершины; при необходимости сначала сделайте Subdivision. Prevent collapse ограничивает смещение по доступной толщине, в том числе у соединённых деталей. Он не разрешает создавать вогнутые браши. Короткие аккуратные мазки проще проверять и отменять."
+    }
+  },
+  {
+    "id": "array-line",
+    "group": "Repeat and align",
+    "route": "Tools > Array Tool",
+    "images": [
+      "captures/array-line/array-line-01.png",
+      "captures/array-line/array-line-02.png",
+      "captures/array-line/array-line-03.png"
+    ],
+    "en": {
+      "title": "Array: Line",
+      "intro": "Places copies in one or more lines with adjustable spacing and offsets.",
+      "steps": [
+        "Select one object or group. Open Array and choose Line.",
+        "Set Count, Spacing and Offset. Lines + Cross center creates a star.",
+        "Inspect the live preview, then Apply. Default resets settings; Ctrl + Z undoes."
+      ],
+      "notes": "Use a grouped source for a multi-brush module such as a pillar with trim. Spacing controls repeated placement; Offset shifts the arrangement. Copies are not automatically checked against surrounding walls. Inspect the first and last elements before applying. Use linked groups separately if future edits should propagate between instances."
+    },
+    "ru": {
+      "title": "Массив по линии — Array Line",
+      "intro": "Размещает копии объекта или группы по одной или нескольким линиям.",
+      "steps": [
+        "Выделите объект или группу, откройте Tools → Array Tool и выберите Line.",
+        "Настройте Count, Spacing и Offset. Lines вместе с Cross center создаёт звездообразное расположение.",
+        "Проверьте расстояния в предпросмотре, затем Apply. Default сбрасывает параметры, Undo отменяет применённый массив."
+      ],
+      "notes": "Для составного модуля, например колонны с декором, используйте группу. Spacing задаёт размещение повторений, Offset сдвигает схему. Автоматической проверки пересечений с окружающими стенами нет. Проверьте первый и последний элементы. Если будущие правки должны повторяться в экземплярах, отдельно используйте linked groups."
+    }
+  },
+  {
+    "id": "array-radial",
+    "group": "Repeat and align",
+    "route": "Tools > Array Tool",
+    "images": [
+      "captures/array-radial/array-radial-01.png",
+      "captures/array-radial/array-radial-02.png",
+      "captures/array-radial/array-radial-03.png"
+    ],
+    "en": {
+      "title": "Array: Radial",
+      "intro": "Arranges copies around a circle or across multiple concentric rings.",
+      "steps": [
+        "Select one object or group. Open Array and choose Radial.",
+        "Set Count, Rings and Ring spacing. Face center adjusts orientation.",
+        "Inspect the live preview, then Apply. Default resets settings; Ctrl + Z undoes."
+      ],
+      "notes": "Use a narrow source when building a ring of columns or teeth. Increase radius or reduce count if neighbours overlap. Multiple rings can produce many copies rapidly, so inspect the total scene cost. Face center changes orientation, not the source geometry. The placement is independent of Bevel’s per-brush Clamp."
+    },
+    "ru": {
+      "title": "Круговой массив — Array Radial",
+      "intro": "Расставляет копии по окружности или нескольким концентрическим кольцам.",
+      "steps": [
+        "Выделите объект или группу, откройте Array и выберите Radial.",
+        "Задайте Count, Rings и Ring spacing. Face center меняет ориентацию выбранной стороны к центру.",
+        "Проверьте зазоры между копиями и нажмите Apply. Default сбрасывает параметры."
+      ],
+      "notes": "Для кольца колонн или зубцов удобен узкий исходник. Если копии пересекаются, увеличьте радиус или уменьшите количество. Несколько колец быстро увеличивают число объектов. Face center меняет ориентацию, а не геометрию исходника. Размещение не связано с Clamp инструмента Bevel."
+    }
+  },
+  {
+    "id": "array-random",
+    "group": "Repeat and align",
+    "route": "Tools > Array Tool",
+    "images": [
+      "captures/array-random/array-random-01.png",
+      "captures/array-random/array-random-02.png",
+      "captures/array-random/array-random-03.png"
+    ],
+    "en": {
+      "title": "Array: RandomRadius",
+      "intro": "Scatters copies of one object or group within a seeded random radius.",
+      "steps": [
+        "Select one object or group. Open Array and choose RandomRadius.",
+        "Set Count, Radius and Seed. Face center turns a chosen side inward.",
+        "Inspect the live preview, then Apply. Default resets settings; Ctrl + Z undoes."
+      ],
+      "notes": "This is random placement, not packing or a gravity simulation. Copies can overlap and can float above a floor. Use Settle afterward for supported brush selections when you want a pile resting on geometry. Keep the seed to reproduce a layout in the same build; changing the source also changes the result."
+    },
+    "ru": {
+      "title": "Случайный массив — RandomRadius",
+      "intro": "Разбрасывает копии в заданном радиусе с повторяемым Seed.",
+      "steps": [
+        "Выделите объект или группу, откройте Array и выберите RandomRadius.",
+        "Настройте Count, Radius и Seed. Face center разворачивает выбранную сторону внутрь.",
+        "Посмотрите на результат со всех сторон и нажмите Apply. Для другого распределения измените Seed."
+      ],
+      "notes": "Это случайное размещение, а не упаковка без пересечений и не гравитация. Копии могут накладываться и висеть над полом. Для допустимого набора брашей затем используйте Settle. Сохранённый Seed воспроизводит распределение в той же сборке; изменение исходника также меняет результат."
+    }
+  },
+  {
+    "id": "symmetry",
+    "group": "Repeat and align",
+    "route": "Tools > Symmetry Tool",
+    "images": [
+      "captures/symmetry/symmetry-01.png",
+      "captures/symmetry/symmetry-02.png",
+      "captures/symmetry/symmetry-03.png"
+    ],
+    "en": {
+      "title": "Symmetry",
+      "intro": "Repeats edits around one chosen centre object across matching sectors.",
+      "steps": [
+        "Select the centre object and open Symmetry.",
+        "Choose 2, 4 or 8 sides. Pink lines mark the active axis.",
+        "Edit any side. To stop, select the axis and choose Off. Existing copies stay."
+      ],
+      "notes": "Decide the centre before building detailed symmetric geometry. Rotation changes the sector orientation. This is a live editing relationship; turning it off does not delete the copies. Check asymmetric entity properties and materials separately. Avoid overlapping symmetry setups until the behaviour is clear on a simple test assembly."
+    },
+    "ru": {
+      "title": "Симметрия",
+      "intro": "Повторяет правки вокруг выбранного центра по нескольким секторам.",
+      "steps": [
+        "Выделите центральный объект и откройте Tools → Symmetry Tool.",
+        "Выберите 2, 4 или 8 сторон. Розовые линии показывают активную ось.",
+        "Редактируйте сторону и проверяйте соответствующие копии. Для отключения выделите ось и выберите Off; созданные копии остаются."
+      ],
+      "notes": "Определите центр до детальной работы. Поворот меняет ориентацию секторов. Это связь для редактирования: отключение не удаляет копии. Асимметричные свойства сущностей и материалы проверяйте отдельно. Сначала изучите поведение на простой конструкции, прежде чем совмещать несколько схем симметрии."
+    }
+  },
+  {
+    "id": "grid-rotation",
+    "group": "Repeat and align",
+    "route": "Tools > Grid Rotation",
+    "images": [
+      "captures/grid-rotation/grid-rotation-01.png",
+      "captures/grid-rotation/grid-rotation-02.png",
+      "captures/grid-rotation/grid-rotation-03.png"
+    ],
+    "en": {
+      "title": "Grid Rotation",
+      "intro": "Rotates the brush surface grid and its snapping direction.",
+      "steps": [
+        "Open Grid Rotation to change the editor grid.",
+        "Change Angle. Unified brush face grid joins the grid across faces.",
+        "Snapping follows the angle. Apply saves it; Esc restores the old settings."
+      ],
+      "notes": "The angle is an editor grid setting, not an object rotation. World-grid subdivision follows it. If drawing suddenly follows an unexpected diagonal, inspect this setting before changing geometry. Return to zero for an axis-aligned layout. Texture-aligned subdivision uses the texture’s projection instead."
+    },
+    "ru": {
+      "title": "Поворот сетки",
+      "intro": "Поворачивает сетку поверхностей и направление привязки.",
+      "steps": [
+        "Откройте Tools → Grid Rotation.",
+        "Измените Angle. Unified brush face grid согласует сетку поверхностей.",
+        "Проверьте направление привязки. Apply сохраняет настройку, Escape возвращает прежние значения."
+      ],
+      "notes": "Угол — настройка сетки редактора, а не поворот объекта. Разбиение по мировой сетке учитывает его. Если построение неожиданно идёт по диагонали, проверьте настройку до изменения геометрии. Для осевого построения верните ноль. Разбиение по текстуре использует её проекцию."
+    }
+  },
+  {
+    "id": "snap-integer",
+    "group": "Repeat and align",
+    "route": "Toolbar > Snap Int",
+    "images": [
+      "captures/snap-integer/snap-integer-01.png",
+      "captures/snap-integer/snap-integer-02.png",
+      "captures/snap-integer/snap-integer-03.png"
+    ],
+    "en": {
+      "title": "Auto Integer Snap",
+      "intro": "Automatically snaps new and edited brush vertices to whole-number coordinates.",
+      "steps": [
+        "Select a brush. Snap Int sits left of Grid.",
+        "Turn on Snap Int. New and edited vertices snap to whole numbers.",
+        "Edit normally. Integer snap is not grid snap; click Snap Int again to disable."
+      ],
+      "notes": "Integer snap differs from snapping to the current grid step. It can alter small details and rotated shapes. Do not manually snap a settled rubble pile afterward if exact contact matters: that deforms the pieces. Use the coarsest practical grid for structure and disable integer snapping when a curved or rotated operation needs fractional coordinates."
+    },
+    "ru": {
+      "title": "Целочисленные вершины — Snap Int",
+      "intro": "Привязывает создаваемые и редактируемые вершины к целым координатам.",
+      "steps": [
+        "Найдите Snap Int слева от Grid на панели.",
+        "Включите Snap Int для целочисленных координат новых и изменяемых вершин.",
+        "Редактируйте геометрию и проверяйте результат. Повторное нажатие выключает режим."
+      ],
+      "notes": "Целочисленная привязка отличается от шага текущей сетки. Она может менять мелкие детали и повёрнутые формы. Не привязывайте вручную уже уложенную Settle кучу, если важны контакты: это деформирует детали. Для основы используйте крупную сетку, а для кривых и поворотов при необходимости разрешайте дробные координаты."
+    }
+  },
+  {
+    "id": "xyz",
+    "group": "Repeat and align",
+    "route": "Viewport > XYZ panel",
+    "images": [
+      "captures/xyz/xyz-01.png",
+      "captures/xyz/xyz-02.png",
+      "captures/xyz/xyz-03.png"
+    ],
+    "en": {
+      "title": "Edit XYZ Coordinates",
+      "intro": "Moves a selected brush, face, edge or vertex by entering exact coordinates.",
+      "steps": [
+        "Select one brush, face, edge or vertex. Its XYZ position appears at the bottom right.",
+        "Click the XYZ panel. Type a coordinate; the selection moves immediately.",
+        "Click elsewhere to close the editor. Ctrl + Z undoes the move."
+      ],
+      "notes": "The displayed position belongs to the selected element; it is not necessarily the brush minimum corner. Check the label before entering a value. Use one coordinate at a time for alignment and inspect the change in a 2D view. This is position editing, not a size input."
+    },
+    "ru": {
+      "title": "Точные координаты XYZ",
+      "intro": "Перемещает выбранный браш, грань, ребро или вершину по числовым координатам.",
+      "steps": [
+        "Выделите один браш или геометрический элемент. Его положение появится внизу справа.",
+        "Нажмите панель XYZ и измените нужную координату. Выделение перемещается сразу.",
+        "Нажмите вне панели, чтобы закрыть редактор. Undo отменяет перемещение."
+      ],
+      "notes": "Координаты относятся к выделенному элементу и не обязательно совпадают с минимальным углом браша. Перед вводом проверьте подпись. Для выравнивания меняйте одну координату за раз и смотрите результат в 2D. Панель задаёт положение, а не размер."
+    }
+  },
+  {
+    "id": "prefabs",
+    "group": "Assets and export",
+    "route": "Right inspector > Prefabs",
+    "images": [
+      "captures/prefabs/prefabs-01.png",
+      "captures/prefabs/prefabs-02.png",
+      "captures/prefabs/prefabs-03.png"
+    ],
+    "en": {
+      "title": "Prefab Collections",
+      "intro": "Loads named groups from map collections and places them as reusable objects.",
+      "steps": [
+        "Open Prefabs. Add Collection loads named groups from a .map file.",
+        "Each named group becomes a prefab card. Use the arrow to collapse its collection.",
+        "Drag a card into the viewport. Each placed group receives a unique name. Ctrl + Z undoes."
+      ],
+      "notes": "Prepare a small collection map with clear group names and consistent origins. Keep textures and entity definitions available in the destination game. A prefab is reusable map content, not a promise that every game supports its entities. Update the collection when you change its source; previously placed geometry should be inspected separately."
+    },
+    "ru": {
+      "title": "Коллекции префабов",
+      "intro": "Загружает именованные группы из .map и размещает их как повторно используемые конструкции.",
+      "steps": [
+        "Откройте Prefabs в инспекторе. Add Collection загружает .map с именованными группами.",
+        "Каждая именованная группа становится карточкой. Стрелка сворачивает коллекцию.",
+        "Перетащите карточку в сцену. Группа получает уникальное имя. Проверьте высоту и привязку; Undo отменяет размещение."
+      ],
+      "notes": "Подготовьте карту-коллекцию с понятными именами групп и согласованными центрами. В целевой игре должны быть доступны материалы и определения сущностей. Префаб — повторно используемое содержимое карты; его сущности не обязательно поддерживаются любой игрой. При изменении источника обновляйте коллекцию и отдельно проверяйте уже размещённую геометрию."
+    }
+  },
+  {
+    "id": "entity-list",
+    "group": "Assets and export",
+    "route": "Right inspector > EntityList",
+    "images": [
+      "captures/entity-list/entity-list-01.png",
+      "captures/entity-list/entity-list-02.png",
+      "captures/entity-list/entity-list-03.png"
+    ],
+    "en": {
+      "title": "EntityList",
+      "intro": "Finds named entities and groups, then focuses the viewport on a chosen result.",
+      "steps": [
+        "Open EntityList to see named entities and groups.",
+        "Type part of a name to filter the list.",
+        "Double-click a result to select it and focus the camera."
+      ],
+      "notes": "Give reusable groups and linked gameplay objects meaningful names. EntityList is useful for navigating a large map and tracing target chains. It is not a replacement for the full Entity browser or the Issue Browser. If an object is missing, check whether it has a name and whether your search text matches."
+    },
+    "ru": {
+      "title": "Поиск EntityList",
+      "intro": "Находит именованные сущности и группы и переводит камеру к результату.",
+      "steps": [
+        "Откройте вкладку EntityList.",
+        "Введите часть имени для фильтрации.",
+        "Дважды нажмите результат, чтобы выделить объект и сфокусировать камеру."
+      ],
+      "notes": "Давайте повторяющимся группам и связанным игровым объектам понятные имена. EntityList удобен для навигации по большой карте и цепочкам target. Он не заменяет полный Entity browser или Issue Browser. Если объект не найден, проверьте наличие имени и строку поиска."
+    }
+  },
+  {
+    "id": "material-browser",
+    "group": "Assets and export",
+    "route": "Right inspector > Face",
+    "images": [
+      "captures/material-browser/material-browser-01.png",
+      "captures/material-browser/material-browser-02.png",
+      "captures/material-browser/material-browser-03.png"
+    ],
+    "en": {
+      "title": "Material Browser Controls",
+      "intro": "Changes texture preview size and collapses or expands material collections.",
+      "steps": [
+        "Open Face > Material Browser. Group organizes textures into collections.",
+        "Ctrl + wheel up enlarges previews; down makes them smaller. The + and - buttons do the same.",
+        "Use Hide / Show in a collection header to collapse or expand it. Refresh reloads texture folders."
+      ],
+      "notes": "Use filtering and collapsed collections to keep a large library manageable. Thumbnail size changes only the browser display; it does not rescale textures on map faces. After refreshing, inspect missing or renamed material references. A folder containing images still needs the correct export settings for a paletted game."
+    },
+    "ru": {
+      "title": "Браузер материалов",
+      "intro": "Настраивает размер превью и видимость коллекций материалов.",
+      "steps": [
+        "Откройте Face → Material Browser. Group группирует материалы по коллекциям.",
+        "Ctrl + колесо меняет размер превью; кнопки + и − делают то же самое.",
+        "Hide / Show сворачивает или разворачивает коллекцию. Refresh перечитывает папки текстур."
+      ],
+      "notes": "Фильтр и сворачивание коллекций помогают работать с большой библиотекой. Размер превью влияет только на браузер и не меняет масштаб текстуры на карте. После обновления проверьте отсутствующие или переименованные материалы. Для игры с палитрой папке изображений нужны правильные настройки экспорта."
+    }
+  },
+  {
+    "id": "texture-folder",
+    "group": "Assets and export",
+    "route": "Material Browser > Settings > Add Texture Folder",
+    "images": [
+      "captures/textures/texture-folder-01.png",
+      "captures/textures/texture-folder-02.png",
+      "captures/textures/texture-folder-03.png"
+    ],
+    "en": {
+      "title": "Add a Texture Folder",
+      "intro": "Loads PNG and JPG folders as usable textures and generates their compile WAD.",
+      "steps": [
+        "In Material Browser Settings, click Add Texture Folder.",
+        "Choose a PNG or JPG folder. The folder icon in Enabled identifies it.",
+        "Apply its textures to faces. Refresh reloads new files and rebuilds the compile WAD."
+      ],
+      "notes": "Keep the source folder in a stable project location. Choose the palette before judging exported colours. Check that the compile tool can find the generated WAD; editor previews alone do not prove the game has the textures. Renaming a source image can break existing face references. Avoid ambiguous duplicate material names."
+    },
+    "ru": {
+      "title": "Папки текстур",
+      "intro": "Подключает PNG/JPG как материалы и формирует WAD для компиляции.",
+      "steps": [
+        "Откройте Settings браузера материалов и нажмите Add Texture Folder.",
+        "Выберите каталог PNG/JPG. В Enabled он отмечается значком папки.",
+        "Назначьте материалы поверхностям. Refresh перечитывает файлы и обновляет WAD для компиляции."
+      ],
+      "notes": "Храните исходную папку в постоянном месте проекта. Выберите палитру до оценки экспортируемых цветов. Проверьте, что компилятор находит сгенерированный WAD: отображение в редакторе ещё не означает доступность в игре. Переименование изображения может нарушить ссылки поверхностей. Избегайте неоднозначных одинаковых имён материалов."
+    }
+  },
+  {
+    "id": "palette",
+    "group": "Assets and export",
+    "route": "Material Browser > Settings > Pallete",
+    "images": [
+      "captures/textures/palette-01.png",
+      "captures/textures/palette-02.png",
+      "captures/textures/palette-03.png"
+    ],
+    "en": {
+      "title": "Choose an Export Palette",
+      "intro": "Chooses and previews the colour palette used when exporting texture folders to WAD.",
+      "steps": [
+        "Open Material Browser Settings. Click Pallete to choose the WAD export palette.",
+        "Choose a palette file and check its colour preview.",
+        "OK stores the palette. PNG and JPG folders can now generate a compile WAD."
+      ],
+      "notes": "A paletted export reduces images to the game’s available colours. The preview helps spot the wrong palette, but it cannot guarantee the same appearance as in-game lighting. Keep the palette with the project’s asset settings. The UI spelling “Pallete” is retained here so the control can be found."
+    },
+    "ru": {
+      "title": "Палитра экспорта",
+      "intro": "Выбирает палитру для преобразования папок текстур в WAD.",
+      "steps": [
+        "Откройте Settings браузера материалов и нажмите Pallete — так подписана кнопка.",
+        "Выберите файл палитры и проверьте образец цветов.",
+        "Нажмите OK. Обновите экспорт текстур и сравните их в целевой игре."
+      ],
+      "notes": "Экспорт с палитрой ограничивает изображение доступными цветами игры. Превью помогает заметить ошибочную палитру, но не воспроизводит игровое освещение. Храните палитру с настройками ресурсов проекта. Написание Pallete сохранено в инструкции, чтобы кнопку было легко найти."
+    }
+  },
+  {
+    "id": "entity-browser",
+    "group": "Assets and export",
+    "route": "Right inspector > Entity",
+    "images": [
+      "captures/entity-browser/entity-browser-01.png",
+      "captures/entity-browser/entity-browser-02.png",
+      "captures/entity-browser/entity-browser-03.png"
+    ],
+    "en": {
+      "title": "Entity Browser Zoom",
+      "intro": "Changes entity model preview size for easier browsing and selection.",
+      "steps": [
+        "Open Entity > Entity Browser.",
+        "Hover the browser. Ctrl + wheel up enlarges models; down shrinks them.",
+        "Use the + and - buttons below the models to change preview size."
+      ],
+      "notes": "This changes the browser scale, not the dimensions of placed entities. If a model is missing, check game assets and entity definitions rather than zooming further. Use EntityList to find already placed named objects."
+    },
+    "ru": {
+      "title": "Размер превью сущностей",
+      "intro": "Меняет размер моделей в Entity browser.",
+      "steps": [
+        "Откройте Entity → Entity Browser.",
+        "Наведите указатель на браузер и используйте Ctrl + колесо.",
+        "Кнопки + и − под моделями также меняют размер карточек. Перетащите нужную сущность в карту."
+      ],
+      "notes": "Это масштаб браузера, а не размер размещённых сущностей. Если модель отсутствует, проверьте игровые ресурсы и определения вместо дальнейшего увеличения. Для поиска уже размещённых именованных объектов используйте EntityList."
+    }
+  },
+  {
+    "id": "unity-sync",
+    "group": "Assets and export",
+    "route": "Unity > Sync Map...",
+    "images": [
+      "captures/unity-sync/unity-sync-01.png",
+      "captures/unity-sync/unity-sync-02.png",
+      "captures/unity-sync/unity-sync-03.png"
+    ],
+    "en": {
+      "title": "Sync a Map to Unity",
+      "intro": "Exports map geometry and textures into a Unity prefab with an adjustable scale.",
+      "steps": [
+        "Unity > Sync Map. Choose a Unity project or its Assets folder.",
+        "Keep brushes separate preserves individual brush objects inside one prefab. Default scale is 0.1.",
+        "Sync exports geometry and textures. Existing materials and textures are kept."
+      ],
+      "notes": "Keep a stable destination and naming scheme when syncing repeatedly. Check the root scale against your Unity world units and inspect texture alignment. Existing material reuse means a sync is not a blanket overwrite of your art setup. Gameplay scripts, lighting and collisions need their own Unity-side setup; map export does not recreate a Quake game runtime."
+    },
+    "ru": {
+      "title": "Экспорт в Unity",
+      "intro": "Экспортирует геометрию и текстуры карты в Unity-префаб с заданным масштабом.",
+      "steps": [
+        "Откройте Unity → Sync Map… и выберите проект Unity или его каталог Assets.",
+        "Keep brushes separate сохраняет отдельные объекты брашей внутри префаба. Масштаб по умолчанию — 0.1.",
+        "Выполните Sync. Существующие материалы и текстуры сохраняются; проверьте префаб в Unity."
+      ],
+      "notes": "При повторной синхронизации сохраняйте назначение и схему имён. Сопоставьте масштаб корня с единицами Unity и проверьте текстуры. Повторное использование материалов не означает полную перезапись настроек графики. Игровые скрипты, свет и коллизии настраиваются отдельно в Unity; экспорт карты не воссоздаёт игровую логику Quake."
+    }
+  },
+  {
+    "id": "lighting",
+    "group": "Game previews",
+    "route": "View > Preview Quake Lighting",
+    "images": [
+      "captures/lighting/lighting-01.png",
+      "captures/lighting/lighting-02.png",
+      "captures/lighting/lighting-03.png"
+    ],
+    "en": {
+      "title": "Quake Lighting & Sky Preview",
+      "intro": "Shows an approximate Quake lighting and animated sky preview inside the editor.",
+      "steps": [
+        "Add light entities and sky-textured faces.",
+        "Enable the lighting icon. Lights and animated Quake sky are shown in the viewport.",
+        "Move a light to inspect its reach. Toggle the icon off to return to normal editing."
+      ],
+      "notes": "Use the preview for composition and rough placement. It is not your light compiler: baked shadows, bounce lighting and engine-specific effects may differ. The selected game and assets must support the expected Quake conventions. Always compare with a compiled map before finalizing lighting."
+    },
+    "ru": {
+      "title": "Предпросмотр света и неба Quake",
+      "intro": "Показывает приблизительное освещение и анимированное небо в сцене редактора.",
+      "steps": [
+        "Добавьте источники света и поверхности с материалом неба.",
+        "Включите View → Preview Quake Lighting или соответствующий значок.",
+        "Передвигайте свет и оценивайте область освещения. Выключите режим для обычного отображения."
+      ],
+      "notes": "Используйте режим для композиции и предварительной расстановки. Он не заменяет light-компилятор: запечённые тени, переотражения и эффекты движка могут отличаться. Игра и ресурсы должны поддерживать ожидаемые соглашения Quake. Финальный свет оценивайте в скомпилированной карте."
+    }
+  },
+  {
+    "id": "entity-animation",
+    "group": "Game previews",
+    "route": "Select entity > Play above XYZ",
+    "images": [
+      "captures/entity-animation/entity-animation-01.png",
+      "captures/entity-animation/entity-animation-02.png",
+      "captures/entity-animation/entity-animation-03.png"
+    ],
+    "en": {
+      "title": "Door, Button & Lift Preview",
+      "intro": "Previews door, button and lift movement using their current entity settings.",
+      "steps": [
+        "Select a func_door, func_button or func_plat. Play appears above XYZ.",
+        "Click Play. Green means active; the motion loops forward and backward.",
+        "Edit speed, height or other movement properties to update the preview live. Deselect or stop to restore."
+      ],
+      "notes": "Check travel direction and clearance against nearby geometry. The preview visualizes motion, not every trigger condition or game-code interaction. Test linked doors and multiplayer behaviour in the actual game. Stopping the preview should return the object to its editing position."
+    },
+    "ru": {
+      "title": "Предпросмотр дверей, кнопок и платформ",
+      "intro": "Проверяет движение func_door, func_button и func_plat по текущим свойствам.",
+      "steps": [
+        "Выделите поддерживаемую сущность. Над XYZ появится Play.",
+        "Нажмите Play: зелёный цвет означает активный циклический предпросмотр.",
+        "Меняйте speed, height и другие свойства движения. Остановите режим или снимите выделение для возврата исходной геометрии."
+      ],
+      "notes": "Проверьте направление и свободное место вокруг объекта. Предпросмотр показывает движение, но не все условия срабатывания и взаимодействия игрового кода. Связанные двери и сетевое поведение проверяйте в игре. После остановки объект возвращается в позицию редактирования."
+    }
+  },
+  {
+    "id": "train",
+    "group": "Game previews",
+    "route": "Select func_train > Play above XYZ",
+    "images": [
+      "captures/train/train-01.png",
+      "captures/train/train-02.png",
+      "captures/train/train-03.png"
+    ],
+    "en": {
+      "title": "func_train Preview",
+      "intro": "Previews a func_train moving through its linked path_corner route.",
+      "steps": [
+        "Give func_train a target matching the first path_corner targetname.",
+        "Connect path_corner targets in order. Click Play to preview the route.",
+        "Change speed while playing. Stop or deselect to return to the original geometry."
+      ],
+      "notes": "Name route points clearly and inspect every link. Missing targets or an unintended loop can produce a route different from the one you expect. Use the preview to check spatial clearance, then test timing and trigger behaviour in the game. EntityList helps navigate the named route points."
+    },
+    "ru": {
+      "title": "Маршрут func_train",
+      "intro": "Показывает движение func_train по цепочке path_corner.",
+      "steps": [
+        "Задайте target поезда, совпадающий с targetname первого path_corner.",
+        "Соедините последующие точки через target и targetname, затем нажмите Play.",
+        "Меняйте speed и наблюдайте движение. Stop или снятие выделения возвращает исходное положение."
+      ],
+      "notes": "Давайте точкам понятные имена и проверяйте каждую связь. Отсутствующая цель или случайное кольцо изменят маршрут. В предпросмотре оценивайте свободное пространство, а задержки и условия запуска — в игре. EntityList помогает переходить между именованными точками."
+    }
+  },
+  {
+    "id": "intermission",
+    "group": "Game previews",
+    "route": "Select info_intermission",
+    "images": [
+      "captures/intermission/intermission-01.png",
+      "captures/intermission/intermission-02.png",
+      "captures/intermission/intermission-03.png"
+    ],
+    "en": {
+      "title": "Intermission Camera Preview",
+      "intro": "Shows the view from a selected info_intermission camera before compiling the map.",
+      "steps": [
+        "Place and select an info_intermission entity.",
+        "The live camera view appears above XYZ. Set position and mangle to frame the shot.",
+        "Move the entity and inspect the preview before compiling."
+      ],
+      "notes": "The entity’s angle convention belongs to the game definition. Keep the camera outside solid geometry and inspect the near foreground as well as the distant view. The editor preview is useful for framing, but the engine may use different field-of-view or transition behaviour."
+    },
+    "ru": {
+      "title": "Камера intermission",
+      "intro": "Показывает кадр выбранной info_intermission до сборки карты.",
+      "steps": [
+        "Разместите и выделите info_intermission.",
+        "Над XYZ появится изображение камеры. Настройте положение и mangle для композиции кадра.",
+        "Перемещайте сущность и сравнивайте кадр; затем проверьте камеру в игре."
+      ],
+      "notes": "Соглашение об углах задаётся игрой. Не помещайте камеру внутрь твёрдой геометрии; проверяйте передний план и дальний вид. Предпросмотр удобен для кадрирования, но движок может использовать другой угол обзора и переход камеры."
+    }
+  },
+  {
+    "id": "spawn-master",
+    "group": "Game previews",
+    "route": "Tools > Spawn Master",
+    "images": [
+      "captures/spawn-master/spawn-master-01.png",
+      "captures/spawn-master/spawn-master-02.png",
+      "captures/spawn-master/spawn-master-03.png"
+    ],
+    "en": {
+      "title": "Spawn Master",
+      "intro": "Builds a reusable teleport closet that spawns a chosen entity when a trigger activates.",
+      "steps": [
+        "Select a trigger or button with a target property.",
+        "Choose an existing destination targetname and the entity to spawn. Selected models have a red border.",
+        "OK builds a teleport closet in empty space below the trigger. Later additions reuse and expand the closet."
+      ],
+      "notes": "This is a Quake entity setup, not an engine-independent spawning system. Inspect the generated closet, teleporter destination and target links. Ensure the closet fits within world bounds and is sealed as required by the compiler. Compile and trigger it in the game; editor geometry alone cannot verify monster behaviour."
+    },
+    "ru": {
+      "title": "Spawn Master",
+      "intro": "Создаёт телепортационную комнату для появления выбранной сущности по сигналу триггера.",
+      "steps": [
+        "Выделите триггер или кнопку с заданным target.",
+        "Выберите существующий targetname назначения и сущность для появления. Выбранные модели отмечаются красной рамкой.",
+        "Нажмите OK. Инструмент создаёт комнату в пустом месте ниже триггера; последующие добавления используют и расширяют её."
+      ],
+      "notes": "Это схема сущностей Quake, а не универсальная система спавна. Проверьте созданную комнату, точку телепортации и связи target. Комната должна помещаться в границы мира и соответствовать требованиям компилятора к герметичности. Соберите карту и активируйте механизм в игре: геометрия редактора не проверяет поведение монстров."
+    }
+  },
+  {
+    "id": "bevel-gestures",
+    "group": "Shape and generate",
+    "route": "Edge Tool | E",
+    "images": [
+      "captures/bevel-gestures/bevel-gestures-01.png",
+      "captures/bevel-gestures/bevel-gestures-02.png",
+      "captures/bevel-gestures/bevel-gestures-03.png"
+    ],
+    "en": {
+      "title": "Bevel Mouse Controls",
+      "intro": "Adjusts an edge bevel directly with mouse gestures and modifier keys.",
+      "steps": [
+        "Edge Tool: select edges. Ctrl + wheel changes segments.",
+        "Ctrl + Shift + wheel changes width.",
+        "Ctrl + right-drag adjusts curvature. Ctrl + middle-drag adjusts proportion."
+      ],
+      "notes": "These screenshots describe the separate legacy edge-chamfer interaction. For the convex-only workflow with Radius, Profile and per-brush Clamp, use the Bevel chapter below. Do not transfer the numeric curvature/proportion settings from this interaction to the new Profile control: they are different parameterizations."
+    },
+    "ru": {
+      "title": "Фаска жестами в Edge Tool",
+      "intro": "Быстро меняет фаску выделенных рёбер непосредственно жестами мыши.",
+      "steps": [
+        "Включите Edge Tool (E) и выделите рёбра. Ctrl + колесо меняет число сегментов.",
+        "Ctrl + Shift + колесо меняет ширину.",
+        "Ctrl + правая кнопка с перетаскиванием меняет кривизну; Ctrl + средняя кнопка — пропорцию."
+      ],
+      "notes": "Эти снимки описывают отдельный прежний режим фаски в Edge Tool. Для выпуклого Bevel с Radius, Profile и Clamp используйте главу ниже. Числа кривизны и пропорции из жестового режима нельзя напрямую переносить в новый Profile: это разные параметризации."
+    }
+  },
+  {
+    "id": "bevel",
+    "group": "Bevel and destruction",
+    "route": "Tools → Bevel Tool | Shift+B",
+    "images": [
+      "captures/reyond/bevel-preview.png",
+      "captures/reyond/bevel-clamp.png"
+    ],
+    "en": {
+      "title": "Convex Bevel",
+      "intro": "Round selected edges, the outside boundary of selected surfaces, or selected vertices. Each source remains one convex brush. The preview is displayed directly in the map views.",
+      "steps": [
+        "For Face boundary, Shift-click the required surfaces first; add more with Ctrl+Shift-click. Open Tools → Bevel Tool (Shift+B). Edges shared by two selected faces are excluded. Selecting every surface of a closed brush leaves no boundary.",
+        "For Vertices, select the corners with the vertex tool before opening Bevel. For Edges, select edges first, or open Bevel, select edges and then change a parameter. The tool captures its target selection; cancel and reopen to choose new faces or vertices.",
+        "Choose Radius or Offset. Radius measures the circular reference profile; Offset measures setback on adjacent surfaces. Set Segments from 1 to 16: 1 gives a flat chamfer, higher values approximate a curve.",
+        "Set Profile: 0 is flat, 0.5 is round, and values approaching 0.99 are squarer. Concave profiles are not supported. This slider is not numerically identical to Blender’s.",
+        "Enable Clamp per brush to reduce excessive size independently for each brush. Other scene objects do not limit it. Read the status for the actual limited size. With Clamp disabled, overlapping bevels are rejected rather than forced.",
+        "Inspect the scene, then Apply. Cancel/Escape restores the source. Apply commits one Undo step; the resulting brushes remain selected. If a setting fails, the original geometry returns and Apply is disabled."
+      ],
+      "notes": "Clamp leaves a small precision margin at contact. Original surface attributes and UV systems are retained; new faces inherit a neighbouring material but seamless wrapping is not guaranteed. At corners with more than three incident edges, the reference centre is approximate and equal tangency is not guaranteed. This is a convex brush implementation, not full Blender BMesh/miter parity. Reduce segments for very small details or complex corners."
+    },
+    "ru": {
+      "title": "Выпуклый Bevel",
+      "intro": "Скругляйте рёбра, внешний контур выбранных поверхностей или выбранные вершины. Каждый исходник остаётся одним выпуклым брашем. Предпросмотр отображается непосредственно в окнах карты.",
+      "steps": [
+        "Для Face boundary сначала выберите поверхности Shift-кликом, добавляя остальные Ctrl+Shift-кликом. Откройте Tools → Bevel Tool (Shift+B). Рёбра между двумя выбранными гранями не скругляются. Если выбраны все поверхности замкнутого браша, внешнего контура нет.",
+        "Для Vertices сначала выделите углы инструментом вершин. Для Edges выделите рёбра до открытия Bevel либо после открытия выделите их и измените параметр. Набор целей запоминается при открытии: для новых граней или вершин отмените операцию и откройте инструмент заново.",
+        "Выберите Radius или Offset. Radius задаёт радиус кругового опорного профиля, Offset — отступ по соседним поверхностям. Segments принимает 1–16: 1 даёт плоскую фаску, большие значения приближают кривую.",
+        "Profile: 0 — плоский профиль, 0.5 — круговой, ближе к 0.99 — более квадратный. Вогнутых профилей нет. Числовая шкала не совпадает с Blender.",
+        "Clamp per brush уменьшает чрезмерный размер отдельно для каждого браша. Другие объекты сцены не ограничивают скругление. Фактический размер показывается в статусе. Без Clamp пересекающиеся скругления отклоняются.",
+        "Проверьте сцену и нажмите Apply. Cancel/Escape возвращает исходник. Apply создаёт один шаг Undo и оставляет браши выделенными. При неудачных параметрах возвращается исходная геометрия и Apply блокируется."
+      ],
+      "notes": "Clamp оставляет небольшой запас точности у касания. Исходные поверхности сохраняют атрибуты и UV; новые наследуют соседний материал без гарантии бесшовной развёртки. Для углов с более чем тремя рёбрами центр опорной поверхности приближённый, равное касание не гарантируется. Это реализация для выпуклых брашей, а не полный аналог BMesh и стыков Blender. Для мелких деталей и сложных углов уменьшайте число сегментов."
+    },
+    "captions": {
+      "en": [
+        "Face boundary: Radius 32, 6 segments, Profile 0.5",
+        "Clamp reduces an excessive radius within the source brush"
+      ],
+      "ru": [
+        "Внешний контур: Radius 32, 6 сегментов, Profile 0.5",
+        "Clamp уменьшает чрезмерный радиус внутри исходного браша"
+      ]
+    }
+  },
+  {
+    "id": "fracture",
+    "group": "Bevel and destruction",
+    "route": "Edit → CSG → Fracture…",
+    "images": [
+      "captures/reyond/fracture-preview.png",
+      "captures/reyond/fracture-applied.png"
+    ],
+    "en": {
+      "title": "Fracture",
+      "intro": "Split one convex brush into an exact number of seeded Voronoi fragments. Use this for broken masonry, rubble or a cracked object that will be arranged later.",
+      "steps": [
+        "Finish other active tools and select exactly one brush. Open Edit → CSG → Fracture….",
+        "Choose Fragments (2–128), Seed and Cut material. Click Generate Preview. Another Variant increments the seed and generates another arrangement.",
+        "Separation starts at 0, so pieces retain their original shared boundaries. Increase it for gaps: 100 adds an outward displacement equal to each fragment’s original centre offset. Preview and Apply use the same separated geometry.",
+        "Enable No collide only when you want a separate func_wall entity around each fragment. The flag does not disable collisions between fragments or with the environment in Settle.",
+        "Click Apply to replace the source with the previewed fragments; the fragment brushes are selected. Undo restores the source and selection. Cancel leaves the map unchanged."
+      ],
+      "notes": "Changing geometry settings invalidates the preview until regenerated. Exterior materials and UV scales are preserved. New interior faces use the cut material. A failed partition is rejected as a whole: the tool does not silently drop pieces. If a small or thin brush fails, reduce the count or try another seed. The result is static map geometry, not runtime destruction."
+    },
+    "ru": {
+      "title": "Разрушение — Fracture",
+      "intro": "Разделяет один выпуклый браш на точное число осколков Вороного по Seed. Подходит для разрушенной кладки, обломков и расколотых объектов.",
+      "steps": [
+        "Завершите другие инструменты, выделите ровно один браш и откройте Edit → CSG → Fracture….",
+        "Задайте Fragments (2–128), Seed и Cut material. Нажмите Generate Preview. Another Variant увеличивает Seed и строит другой вариант.",
+        "Separation по умолчанию равен 0: общие границы частей остаются на месте. Увеличьте значение для зазоров; 100 добавляет смещение наружу, равное исходному смещению центра каждого осколка. Предпросмотр и Apply используют одну геометрию.",
+        "Включайте No collide, если нужен отдельный func_wall для каждого осколка. Флаг не отключает столкновения между осколками и с окружением в Settle.",
+        "Apply заменяет исходник показанными частями и выделяет сами браши осколков. Undo возвращает исходник и выделение. Cancel оставляет карту без изменений."
+      ],
+      "notes": "Изменение геометрических параметров требует нового предпросмотра. Наружные материалы и UV-масштабы сохраняются, внутренние поверхности получают материал среза. Неудачное разбиение отклоняется целиком — части не пропускаются молча. Для маленького или тонкого браша уменьшите число осколков либо смените Seed. Результат — статическая геометрия карты, а не разрушение во время игры."
+    },
+    "captions": {
+      "en": [
+        "Fracture parameters and preview",
+        "Applied result in the map"
+      ],
+      "ru": [
+        "Параметры и предпросмотр: Разрушение — Fracture",
+        "Результат в карте после Apply"
+      ]
+    }
+  },
+  {
+    "id": "perforate",
+    "group": "Bevel and destruction",
+    "route": "Edit → CSG → Perforate…",
+    "images": [
+      "captures/reyond/perforate-preview.png",
+      "captures/reyond/perforate-applied.png"
+    ],
+    "en": {
+      "title": "Perforate",
+      "intro": "Create random convex polygonal through-holes perpendicular to one selected surface. Optionally keep a matching brush plug in each opening.",
+      "steps": [
+        "Select exactly one brush surface with Shift-click. Open Edit → CSG → Perforate…. The surface normal defines the direction through the entire brush.",
+        "Set Holes (1–64) and Contour sides (3–32). The side count describes the 2D outline, not the total faces of the resulting plug.",
+        "Set Minimum / maximum diameter (at least 4 units, minimum ≤ maximum). Diameter is the greatest distance between two contour vertices. Equal endpoints fix the size; otherwise each hole receives its own size.",
+        "Set Minimum spacing / edge margin (at least 1 unit), then Seed. Generate preview and inspect the orange outlines. All requested holes must fit; the tool does not silently reduce their count or size.",
+        "Keep plugs is enabled by default: each plug is one brush in its own func_wall, and only those plug brushes are selected after Apply. Disable it for empty holes; then the remaining material is selected.",
+        "Apply replaces the source. One Undo restores the original brush and face selection; Cancel changes nothing. Regenerate the preview after changing geometry parameters."
+      ],
+      "notes": "The surrounding material becomes several convex brushes. A retained plug fills its opening until you remove or move it. If packing fails, try another seed, smaller/fewer holes or a larger surface. Spacing checks use conservative bounding circles, so a rejected random search does not prove that no mathematical layout exists. Plug collision in Settle remains enabled. Nonparallel back faces can create irregular end caps."
+    },
+    "ru": {
+      "title": "Сквозные отверстия — Perforate",
+      "intro": "Создаёт случайные выпуклые многоугольные сквозные отверстия перпендикулярно выбранной поверхности. В каждом отверстии можно сохранить соответствующий браш-заглушку.",
+      "steps": [
+        "Выделите ровно одну поверхность Shift-кликом и откройте Edit → CSG → Perforate…. Нормаль поверхности задаёт направление отверстий через весь браш.",
+        "Задайте Holes (1–64) и Contour sides (3–32). Число сторон относится к 2D-контуру, а не ко всем граням заглушки.",
+        "Задайте Minimum / maximum diameter: минимум 4 единицы, нижняя граница не больше верхней. Диаметр — наибольшее расстояние между вершинами контура. Одинаковые границы фиксируют размер; разные дают каждому отверстию свой размер.",
+        "Задайте Minimum spacing / edge margin, минимум 1 единицу, затем Seed. Нажмите Generate preview и проверьте оранжевые контуры. Должны поместиться все отверстия: инструмент не уменьшает количество или размер автоматически.",
+        "Keep plugs включён по умолчанию: каждая заглушка — один браш в собственном func_wall; после Apply выделяются только эти браши. Отключите флаг для пустых отверстий — тогда выделятся оставшиеся части материала.",
+        "Apply заменяет исходник. Один Undo возвращает браш и выделение поверхности; Cancel ничего не меняет. После изменения геометрических параметров заново создайте предпросмотр."
+      ],
+      "notes": "Материал вокруг отверстий превращается в несколько выпуклых брашей. Сохранённая заглушка заполняет отверстие, пока её не убрать или не переместить. При неудачной упаковке попробуйте другой Seed, меньшее число или размер отверстий, либо большую поверхность. Проверка использует ограничивающие окружности, поэтому отказ случайного поиска не доказывает невозможность любого расположения. Коллизии заглушек в Settle сохраняются. Непараллельная обратная поверхность может дать нестандартные торцы."
+    },
+    "captions": {
+      "en": [
+        "Perforate parameters and preview",
+        "Applied result in the map"
+      ],
+      "ru": [
+        "Параметры и предпросмотр: Сквозные отверстия — Perforate",
+        "Результат в карте после Apply"
+      ]
+    }
+  },
+  {
+    "id": "settle",
+    "group": "Bevel and destruction",
+    "route": "Edit → CSG → Settle…",
+    "images": [
+      "captures/reyond/settle-preview.png",
+      "captures/reyond/settle-applied.png"
+    ],
+    "en": {
+      "title": "Settle",
+      "intro": "Use rigid-body simulation to place selected brushes under gravity, then commit the resulting static geometry to the map.",
+      "steps": [
+        "Create a real floor and leave it unselected. Select 1–128 brushes to drop. Open Edit → CSG → Settle…. Visible unselected brushes, including locked ones, are static obstacles.",
+        "Set Friction and Bounce from 0 to 1. Friction resists sliding; Bounce controls rebound at contact. A bounce comes from collision response, not from a hidden floor.",
+        "Initial kick adds seeded horizontal/upward velocity and rotation. Use 0 for a drop from rest. A small kick helps touching fracture pieces spread; excessive kick can throw them outside the map.",
+        "Set Duration (0.1–20 seconds) and Seed. Simulate / Restart begins the animated wireframe preview. Pause / Resume lets you inspect a moment.",
+        "Apply writes the validated positions and rotations to the existing brushes. It can capture moving pieces as well as a sleeping pile; read the status. Parents and selection are retained. Undo restores the originals, Cancel leaves the map untouched."
+      ],
+      "notes": "There is no implicit ground. Hidden objects and point entities are ignored. Visible Quake 3 patches are static triangle collision surfaces and cannot be selected falling objects. func_wall brushes collide normally. Initial deep overlaps, invalid rotated brushes or world-bound escapes block the result. Do not snap the pile afterward: this changes contact geometry. Exact results can vary between physics-library versions and platforms."
+    },
+    "ru": {
+      "title": "Укладка обломков — Settle",
+      "intro": "Укладывает выделенные браши под действием гравитации, после чего сохраняет полученное положение как статическую геометрию карты.",
+      "steps": [
+        "Создайте настоящий пол и оставьте его невыделенным. Выделите 1–128 падающих брашей и откройте Edit → CSG → Settle…. Видимые невыделенные браши, в том числе заблокированные, становятся неподвижными препятствиями.",
+        "Friction и Bounce задаются от 0 до 1. Friction сопротивляется скольжению, Bounce управляет отскоком при контакте. Отскок возникает из реакции столкновения, а не из скрытого пола.",
+        "Initial kick добавляет скорость вверх и в стороны, а также вращение по Seed. Ноль означает падение из покоя. Небольшой импульс раздвигает соприкасающиеся осколки; чрезмерный может выбросить их за границы карты.",
+        "Задайте Duration (0.1–20 секунд) и Seed. Simulate / Restart запускает анимированный каркасный предпросмотр. Pause / Resume позволяет остановиться на нужном моменте.",
+        "Apply записывает допустимые положения и повороты в существующие браши. Можно сохранить и движущиеся части, и уснувшую кучу — читайте статус. Родительские объекты и выделение сохраняются. Undo возвращает исходники, Cancel не меняет карту."
+      ],
+      "notes": "Автоматического пола нет. Скрытые объекты и точечные сущности игнорируются. Видимые патчи Quake 3 участвуют как неподвижные треугольные поверхности и не могут быть падающими объектами. func_wall сталкиваются как обычные браши. Глубокие начальные пересечения, некорректный поворот и выход за границы мира блокируют результат. Не привязывайте кучу к сетке после укладки: это изменит контакты. Точный результат может отличаться между платформами и версиями физической библиотеки."
+    },
+    "captions": {
+      "en": [
+        "Settle parameters and preview",
+        "Applied result in the map"
+      ],
+      "ru": [
+        "Параметры и предпросмотр: Укладка обломков — Settle",
+        "Результат в карте после Apply"
+      ]
+    }
+  },
+  {
+    "id": "recipes",
+    "group": "Troubleshooting",
+    "route": "",
+    "images": [],
+    "en": {
+      "title": "Recipes and common problems",
+      "intro": "Combine tools in small, inspectable steps. Save a clean source copy when experimenting with a destructive sequence.",
+      "steps": [
+        "Broken wall: create the structural opening, fracture a separate wall section, apply a modest separation, then Settle the selected pieces against an unselected floor. Keep structural sealing geometry separate from decoration.",
+        "Perforated panel: select its front face, generate a few small holes and keep plugs. Apply; move the selected plugs outward to reveal the holes, or Settle them onto the floor.",
+        "Curved modular trim: group a simple module, subdivide if needed, use Bezier Bend, inspect joints and then Array the completed module.",
+        "A tool is disabled: check the required selection type and close the current modal tool. A brush selection is not the same as a face selection or a selected group.",
+        "Apply is disabled: read the tool status. Regenerate stale dialog previews; reduce size, segments or count if the geometry is invalid. Undo is for committed edits; Cancel is for a pending preview.",
+        "Missing textures/models: verify the game directory, mod, definitions and collections. Geometry visible in the editor does not prove that the compiler can find every asset."
+      ],
+      "notes": "Build and run the map after each major stage. The full reference is in English; this bilingual handbook covers the practical workflow and the complete additional tool inventory."
+    },
+    "ru": {
+      "title": "Рецепты и типичные проблемы",
+      "intro": "Комбинируйте инструменты небольшими проверяемыми шагами. Для экспериментов с разрушительными операциями сохраняйте чистую копию исходника.",
+      "steps": [
+        "Разбитая стена: подготовьте конструктивный проём, расколите отдельный участок стены, задайте небольшой Separation и уложите выделенные осколки через Settle на невыделенный пол. Отделяйте герметизирующую геометрию от декора.",
+        "Перфорированная панель: выберите лицевую поверхность, создайте несколько небольших отверстий с Keep plugs. После Apply сдвиньте выделенные заглушки наружу или уложите их через Settle.",
+        "Криволинейный модуль: сгруппируйте простую деталь, при необходимости разделите её, примените Bezier Bend, проверьте стыки и размножьте через Array.",
+        "Инструмент недоступен: проверьте тип выделения и завершите текущий модальный инструмент. Браши, поверхности и выделенная группа — разные виды выбора.",
+        "Apply недоступен: прочитайте статус. Пересоздайте устаревший предпросмотр; при ошибке геометрии уменьшите размер, сегменты или количество. Undo отменяет применённые изменения, Cancel — текущий предпросмотр.",
+        "Нет материалов или моделей: проверьте путь игры, мод, определения и коллекции. Наличие картинки в редакторе не доказывает доступность ресурса для компилятора."
+      ],
+      "notes": "Собирайте и запускайте карту после важных этапов. Полный технический справочник доступен на английском; двуязычное руководство охватывает практический процесс и полный набор дополнительных инструментов."
+    }
+  }
+]

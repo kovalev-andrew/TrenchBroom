@@ -33,3 +33,5 @@ Clamp retains a small precision margin instead of creating zero-area faces or ze
 Original surfaces retain their texture attributes and UV coordinate systems. New bevel faces inherit material and numeric texture attributes from an adjacent surface; seamless UV wrapping across all curved corners is not guaranteed.
 
 Tests cover face-boundary selection, circular radius, convex profiles, vertex caps, per-brush Clamp, texture preservation, non-axis-aligned brushes, preview cancellation and Undo/Redo. Validate maps with the BSP compiler for the target game.
+
+[Illustrated handbook / Руководство с иллюстрациями](https://reyond9079.github.io/ReyondBroom/index.html#bevel)

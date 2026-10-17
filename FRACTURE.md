@@ -2,7 +2,7 @@
 
 **English (primary)** · [Русский](FRACTURE.ru.md) · [Overview](README.md)
 
-This experimental branch is based on TrenchBroom **v2026.2**.
+Fracture is a built-in ReyondBroom geometry tool.
 
 1. Select exactly one brush, with no modal editing tool active.
 2. Open **Edit > CSG > Fracture...**.
@@ -33,7 +33,7 @@ Sites are sampled inside a volume-weighted tetrahedral decomposition of the
 convex brush using a seeded `mt19937`. Each Voronoi cell is the intersection of
 the original brush and the bisector half-spaces of its site against every other
 site. Both sides of each bisector use the same plane points with reversed winding.
-Clipping uses TrenchBroom's existing brush geometry code.
+Clipping uses the editor's brush geometry code.
 
 The operation fails as a whole if clipping fails, a cell is incomplete or too
 small, sites cannot be placed, or total volume exceeds the allowed error. No
@@ -56,7 +56,7 @@ replacement, Undo/Redo, and map serialization/parsing.
 `TbUiLibTest "FractureDialog"` checks preview invalidation, material validation,
 seed regeneration, applying exactly the generated geometry, and cancellation.
 
-TrenchBroom corrects coordinates within 0.001 map units of an integer. The runtime
+The geometry kernel corrects coordinates within 0.001 map units of an integer. The runtime
 plane-distance tolerance accounts for that three-dimensional displacement, and
 the volume tolerance scales with the source surface area. Results are numerical
 brush geometry, not exact symbolic solids.
@@ -64,3 +64,5 @@ brush geometry, not exact symbolic solids.
 The branch also contains a Windows workflow that builds the editor and model
 tests, runs these tests, and packages the editor as a downloadable Actions artifact.
 See BUILD.md for the normal local build prerequisites.
+
+[Illustrated handbook / Руководство с иллюстрациями](https://reyond9079.github.io/ReyondBroom/index.html#fracture)

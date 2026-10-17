@@ -2,8 +2,7 @@
 
 **English (primary)** · [Русский](SETTLE.ru.md) · [Overview](README.md)
 
-Select 1–128 brushes, then choose **Edit → CSG → Settle…**. This native tool is
-included alongside Fracture in this branch, based on TrenchBroom v2026.2.
+Select 1–128 brushes, then choose **Edit → CSG → Settle…**. Settle is a built-in placement tool in ReyondBroom.
 
 **Simulate / Restart** starts an animated isometric wireframe preview. Visible,
 unselected brushes are static collision obstacles, including locked brushes.
@@ -56,3 +55,5 @@ Focused UI tests: `TbUiLibTest "FractureDialog,SettleDialog"`.
 Tests cover gravity, floor and wall contact, stacking, thin-floor CCD, seed
 repeatability, fracture-to-settle, rigid transforms, Valve texture locking, invalid
 input, escape from world bounds, dialog lifecycle and map undo/redo/serialization.
+
+[Illustrated handbook / Руководство с иллюстрациями](https://reyond9079.github.io/ReyondBroom/index.html#settle)
